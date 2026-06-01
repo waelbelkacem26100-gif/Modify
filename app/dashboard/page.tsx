@@ -2,9 +2,11 @@ import { auth } from '@clerk/nextjs/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createServiceRoleClient } from '@/lib/supabase-server'
+import { getUserSubscription, hasActiveAccess } from '@/lib/subscription'
 import StoreConnect from '@/components/dashboard/StoreConnect'
+import SubscribeButton from '@/components/dashboard/SubscribeButton'
 import MetricCard from '@/components/dashboard/MetricCard'
-import { Euro, AlertTriangle, CheckCircle, TrendingUp, ArrowRight, ScanSearch } from 'lucide-react'
+import { Euro, AlertTriangle, CheckCircle, TrendingUp, ArrowRight, ScanSearch, Zap } from 'lucide-react'
 import type { Store, Audit, Fix } from '@/types'
 
 export default async function DashboardPage() {
@@ -12,6 +14,8 @@ export default async function DashboardPage() {
   if (!userId) redirect('/sign-in')
 
   const supabase = await createServiceRoleClient()
+  const subscription = await getUserSubscription(userId)
+  const isSubscribed = hasActiveAccess(subscription)
 
   const { data: store } = await supabase
     .from('stores')
@@ -70,6 +74,13 @@ export default async function DashboardPage() {
           </h1>
           <p className="text-text-secondary text-sm">{typedStore.shop_domain}</p>
         </div>
+        {!isSubscribed && (
+          <div className="flex items-center gap-3 px-4 py-3 bg-primary/10 border border-primary/20 rounded-xl">
+            <Zap className="w-4 h-4 text-primary flex-shrink-0" />
+            <span className="text-text-secondary text-sm">14 jours gratuits pour accéder aux audits</span>
+            <SubscribeButton />
+          </div>
+        )}
         <Link
           href="/dashboard/audit"
           className="inline-flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-dark text-white text-sm font-medium rounded-xl transition-colors"
