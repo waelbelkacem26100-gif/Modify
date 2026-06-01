@@ -1,6 +1,6 @@
 import crypto from 'crypto'
 
-export const SHOPIFY_API_VERSION = '2024-10'
+export const SHOPIFY_API_VERSION = '2025-01'
 
 function shopifyHeaders(accessToken: string): HeadersInit {
   return {
@@ -140,6 +140,35 @@ export async function getProducts(shopDomain: string, accessToken: string, limit
   )
   const data = (await res.json()) as { products: ShopifyProduct[] }
   return data.products
+}
+
+export async function getOrdersForDateRange(
+  shopDomain: string,
+  accessToken: string,
+  dateMin: string,
+  dateMax: string
+): Promise<ShopifyOrder[]> {
+  const params = new URLSearchParams({
+    status: 'any',
+    financial_status: 'paid',
+    created_at_min: dateMin,
+    created_at_max: dateMax,
+    limit: '250',
+    fields: 'id,total_price,created_at',
+  })
+
+  const res = await fetch(
+    `https://${shopDomain}/admin/api/${SHOPIFY_API_VERSION}/orders.json?${params}`,
+    { headers: shopifyHeaders(accessToken) }
+  )
+  const data = (await res.json()) as { orders: ShopifyOrder[] }
+  return data.orders ?? []
+}
+
+export interface ShopifyOrder {
+  id: number
+  total_price: string
+  created_at: string
 }
 
 export interface ShopifyTheme {
