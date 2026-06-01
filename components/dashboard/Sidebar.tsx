@@ -9,11 +9,11 @@ import {
   Wand2,
   BarChart3,
   Zap,
-  Settings,
+  CreditCard,
 } from 'lucide-react'
 
 const navItems = [
-  { href: '/dashboard', icon: LayoutDashboard, label: 'Vue d\'ensemble' },
+  { href: '/dashboard', icon: LayoutDashboard, label: "Vue d'ensemble" },
   { href: '/dashboard/audit', icon: ScanSearch, label: 'Audit IA' },
   { href: '/dashboard/fixes', icon: Wand2, label: 'Correctifs' },
   { href: '/dashboard/tracking', icon: BarChart3, label: 'Suivi' },
@@ -57,11 +57,16 @@ export default function Sidebar() {
       {/* Bottom */}
       <div className="px-3 py-4 border-t border-border space-y-1">
         <Link
-          href="#"
-          className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-text-secondary hover:text-text-primary hover:bg-surface-2 transition-all duration-150"
+          href="/dashboard/subscription"
+          className={[
+            'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150',
+            pathname === '/dashboard/subscription'
+              ? 'bg-primary/10 text-primary border border-primary/20'
+              : 'text-text-secondary hover:text-text-primary hover:bg-surface-2',
+          ].join(' ')}
         >
-          <Settings className="w-4 h-4" />
-          Paramètres
+          <CreditCard className="w-4 h-4 flex-shrink-0" />
+          Mon abonnement
         </Link>
         <div className="flex items-center gap-3 px-3 py-2.5">
           <UserButton
