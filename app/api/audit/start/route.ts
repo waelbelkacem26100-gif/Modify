@@ -1,11 +1,15 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { createServiceRoleClient } from '@/lib/supabase-server'
 import { getThemes, getThemeAssets, getProducts } from '@/lib/shopify'
 import { auditStore } from '@/lib/anthropic'
 import type { Store, Audit } from '@/types'
 
-// GET — fetch latest audit
+export const maxDuration = 300
+
+const STALE_AUDIT_MS = 120_000 // 2 minutes
+
+// GET — fetch latest audit, auto-fail stale ones
 export async function GET() {
   const { userId } = await auth()
   if (!userId) return new NextResponse('Unauthorized', { status: 401 })
@@ -30,7 +34,21 @@ export async function GET() {
     .limit(1)
     .single()
 
-  return NextResponse.json({ audit: audit ?? null })
+  if (!audit) return NextResponse.json({ audit: null })
+
+  // Auto-fail audits stuck in 'running' for more than 2 minutes
+  if (audit.status === 'running') {
+    const ageMs = Date.now() - new Date(audit.created_at).getTime()
+    if (ageMs > STALE_AUDIT_MS) {
+      await supabase
+        .from('audits')
+        .update({ status: 'failed' })
+        .eq('id', audit.id)
+      return NextResponse.json({ audit: { ...audit, status: 'failed' }, timedOut: true })
+    }
+  }
+
+  return NextResponse.json({ audit })
 }
 
 // POST — launch new audit
@@ -54,7 +72,6 @@ export async function POST() {
 
   const typedStore = store as Store
 
-  // Create audit record
   const { data: audit, error: createError } = await supabase
     .from('audits')
     .insert({ store_id: typedStore.id, status: 'running' })
@@ -67,7 +84,6 @@ export async function POST() {
 
   const typedAudit = audit as Audit
 
-  // Run analysis asynchronously (fire and forget, update DB directly)
   runAuditAsync(typedStore, typedAudit.id, supabase).catch(console.error)
 
   return NextResponse.json({ audit: typedAudit })
@@ -80,7 +96,6 @@ async function runAuditAsync(
   supabase: any
 ) {
   try {
-    // Fetch Shopify data
     const themes = await getThemes(store.shop_domain, store.access_token)
     const mainTheme = themes.find((t) => t.role === 'main') ?? themes[0]
 
