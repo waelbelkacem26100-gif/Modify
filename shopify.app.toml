@@ -1,0 +1,15 @@
+name = "Modify"
+client_id = "036ad79f1507855e201e76b608681770"
+application_url = "http://localhost:3000"
+embedded = false
+
+[auth]
+redirect_urls = [
+  "http://localhost:3000/api/shopify/callback"
+]
+
+[access_scopes]
+scopes = "read_themes,write_themes,read_products,write_products,read_analytics,write_content,read_content"
+
+[webhooks]
+api_version = "2026-04"
