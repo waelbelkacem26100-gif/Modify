@@ -41,6 +41,7 @@ export interface Fix {
   file_path: string | null
   theme_id: string | null
   backup_theme_id: string | null
+  original_file_content: string | null
   created_at: string
 }
 

@@ -41,17 +41,16 @@ export async function GET() {
   return NextResponse.json({ fixes: fixes ?? [] })
 }
 
-// POST — generate fixes for an audit (generate_only: true) or apply immediately
+// POST — generate fixes for an audit
 export async function POST(request: NextRequest) {
   const { userId } = await auth()
   if (!userId) return new NextResponse('Unauthorized', { status: 401 })
 
-  const body = await request.json() as { audit_id: string; generate_only?: boolean }
-  const { audit_id, generate_only } = body
+  const body = await request.json() as { audit_id: string }
+  const { audit_id } = body
 
   const supabase = await createServiceRoleClient()
 
-  // Verify ownership
   const { data: audit } = await supabase
     .from('audits')
     .select('*, stores(*)')
@@ -61,9 +60,7 @@ export async function POST(request: NextRequest) {
   if (!audit) return NextResponse.json({ error: 'Audit not found' }, { status: 404 })
 
   const auditTyped = audit as Audit & { stores: Store }
-  if (auditTyped.stores.user_id !== userId) {
-    return new NextResponse('Forbidden', { status: 403 })
-  }
+  if (auditTyped.stores.user_id !== userId) return new NextResponse('Forbidden', { status: 403 })
 
   const store = auditTyped.stores
   const results: AuditResult[] = auditTyped.results ?? []
@@ -72,35 +69,27 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'No audit results to fix' }, { status: 400 })
   }
 
-  // Get main theme
   const themes = await getThemes(store.shop_domain, store.access_token)
   const mainTheme = themes.find((t) => t.role === 'main') ?? themes[0]
-  if (!mainTheme) {
-    return NextResponse.json({ error: 'No theme found' }, { status: 404 })
-  }
+  if (!mainTheme) return NextResponse.json({ error: 'No theme found' }, { status: 404 })
 
   const assets = await getThemeAssets(store.shop_domain, store.access_token, String(mainTheme.id))
-
-  // Generate fixes for issues that have fix_available
-  const fixableIssues = results.filter((r) => r.fix_available).slice(0, 5) // limit to 5
+  const fixableIssues = results.filter((r) => r.fix_available).slice(0, 5)
 
   const fixInserts = await Promise.all(
     fixableIssues.map(async (issue) => {
-      // Find a relevant theme file for the issue
       const relevantFile = findRelevantFile(issue.category, assets.map((a) => a.key))
-
       let liquidBefore: string | null = null
       let liquidAfter: string | null = null
+      let originalFileContent: string | null = null
 
       if (relevantFile) {
         try {
           const asset = await getThemeAsset(
-            store.shop_domain,
-            store.access_token,
-            String(mainTheme.id),
-            relevantFile
+            store.shop_domain, store.access_token, String(mainTheme.id), relevantFile
           )
           if (asset?.value) {
+            originalFileContent = asset.value
             const fix = await generateFix(issue, asset.value, relevantFile)
             liquidBefore = fix.before
             liquidAfter = fix.after
@@ -121,6 +110,7 @@ export async function POST(request: NextRequest) {
         liquid_after: liquidAfter,
         file_path: relevantFile,
         theme_id: String(mainTheme.id),
+        original_file_content: originalFileContent,
       }
     })
   )
@@ -130,9 +120,7 @@ export async function POST(request: NextRequest) {
     .insert(fixInserts)
     .select()
 
-  if (error) {
-    return NextResponse.json({ error: 'Failed to save fixes' }, { status: 500 })
-  }
+  if (error) return NextResponse.json({ error: 'Failed to save fixes' }, { status: 500 })
 
   return NextResponse.json({ fixes: insertedFixes, generated: true })
 }
@@ -158,68 +146,77 @@ export async function PATCH(request: NextRequest) {
   const typedFix = fix as Fix & { audits: Audit & { stores: Store } }
   const store = typedFix.audits.stores
 
-  if (store.user_id !== userId) {
-    return new NextResponse('Forbidden', { status: 403 })
-  }
+  if (store.user_id !== userId) return new NextResponse('Forbidden', { status: 403 })
 
-  // Apply the fix to the theme
   if (typedFix.theme_id && typedFix.file_path && typedFix.liquid_before && typedFix.liquid_after) {
     try {
       const asset = await getThemeAsset(
-        store.shop_domain,
-        store.access_token,
-        typedFix.theme_id,
-        typedFix.file_path
+        store.shop_domain, store.access_token, typedFix.theme_id, typedFix.file_path
       )
 
-      if (asset?.value) {
-        const updatedCode = asset.value.replace(typedFix.liquid_before, typedFix.liquid_after)
-        await updateThemeAsset(
-          store.shop_domain,
-          store.access_token,
-          typedFix.theme_id,
-          typedFix.file_path,
-          updatedCode
+      if (!asset?.value) {
+        return NextResponse.json(
+          { error: 'Impossible de lire le fichier thème Shopify' },
+          { status: 502 }
         )
       }
+
+      const updatedCode = asset.value.replace(typedFix.liquid_before, typedFix.liquid_after)
+
+      // Verify the replace actually changed the file
+      if (updatedCode === asset.value) {
+        return NextResponse.json(
+          {
+            error:
+              'Le correctif n\'a pas pu être appliqué — le thème a peut-être été modifié depuis la génération du correctif. Régénérez le correctif.',
+            code: 'REPLACE_NO_MATCH',
+          },
+          { status: 422 }
+        )
+      }
+
+      // Store original content for reliable rollback, then apply
+      await supabase
+        .from('fixes')
+        .update({ original_file_content: asset.value })
+        .eq('id', fix_id)
+
+      await updateThemeAsset(
+        store.shop_domain, store.access_token, typedFix.theme_id, typedFix.file_path, updatedCode
+      )
     } catch (e) {
       console.error('Failed to apply fix to Shopify:', e)
+      return NextResponse.json(
+        { error: 'Erreur lors de la communication avec l\'API Shopify' },
+        { status: 502 }
+      )
     }
   }
 
-  // Update status
   await supabase.from('fixes').update({ status: 'applied' }).eq('id', fix_id)
-
   return NextResponse.json({ success: true })
 }
 
 function findRelevantFile(category: string, fileKeys: string[]): string | null {
   const patterns: Record<string, string[]> = {
-    theme: ['sections/product-template.liquid', 'templates/product.liquid', 'sections/main-product.liquid'],
-    product: ['sections/main-product.liquid', 'sections/product-template.liquid', 'templates/product.json'],
-    trust: ['sections/footer.liquid', 'snippets/trust-badge.liquid', 'sections/main-product.liquid'],
-    speed: ['layout/theme.liquid', 'snippets/head-scripts.liquid'],
-    checkout: ['layout/checkout.liquid', 'snippets/cart-drawer.liquid', 'sections/cart-template.liquid'],
+    theme: ['sections/main-product.liquid', 'sections/product-template.liquid', 'templates/product.liquid'],
+    product: ['sections/main-product.liquid', 'sections/product-template.liquid'],
+    trust: ['sections/main-product.liquid', 'sections/footer.liquid'],
+    speed: ['layout/theme.liquid'],
+    checkout: ['sections/cart-template.liquid', 'snippets/cart-drawer.liquid'],
   }
 
-  const candidates = patterns[category] ?? []
-  for (const candidate of candidates) {
+  for (const candidate of patterns[category] ?? []) {
     if (fileKeys.includes(candidate)) return candidate
   }
 
-  // Fallback: find any matching file
   const fallbacks: Record<string, RegExp> = {
     theme: /sections\/.*product/,
     product: /sections\/.*product|templates\/product/,
-    trust: /footer|trust/,
+    trust: /footer|product/,
     speed: /layout\/theme/,
     checkout: /cart|checkout/,
   }
 
-  const fallback = fallbacks[category]
-  if (fallback) {
-    return fileKeys.find((k) => fallback.test(k)) ?? null
-  }
-
-  return null
+  return fileKeys.find((k) => fallbacks[category]?.test(k)) ?? null
 }

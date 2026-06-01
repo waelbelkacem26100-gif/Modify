@@ -76,7 +76,8 @@ export default function FixPanel({ issue, auditId, onClose, onApplied }: FixPane
         setApplied(true)
         onApplied?.(fix.id)
       } else {
-        setError('Échec de l\'application du correctif')
+        const data = await res.json() as { error?: string }
+        setError(data.error ?? 'Échec de l\'application du correctif')
       }
     } catch {
       setError('Erreur réseau')
