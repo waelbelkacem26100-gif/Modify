@@ -6,6 +6,7 @@ import { getUserSubscription, hasActiveAccess } from '@/lib/subscription'
 import StoreConnect from '@/components/dashboard/StoreConnect'
 import SubscribeButton from '@/components/dashboard/SubscribeButton'
 import MetricCard from '@/components/dashboard/MetricCard'
+import OnboardingProgress from '@/components/dashboard/OnboardingProgress'
 import { Euro, AlertTriangle, CheckCircle, TrendingUp, ArrowRight, ScanSearch, Zap } from 'lucide-react'
 import type { Store, Audit, Fix } from '@/types'
 
@@ -36,6 +37,11 @@ export default async function DashboardPage() {
             Connectez votre première boutique pour démarrer l&apos;analyse.
           </p>
         </div>
+        <OnboardingProgress
+          hasStore={false}
+          hasCompletedAudit={false}
+          hasAppliedFix={false}
+        />
         <StoreConnect />
       </div>
     )
@@ -64,8 +70,16 @@ export default async function DashboardPage() {
   const totalRecovered = appliedFixes.reduce((sum, f) => sum + f.impact_euros, 0)
   const issueCount = typedAudit?.results?.length ?? 0
 
+  const hasCompletedAudit = typedAudit?.status === 'completed'
+  const hasAppliedFix = appliedFixes.length > 0
+
   return (
     <div className="p-8">
+      <OnboardingProgress
+        hasStore={true}
+        hasCompletedAudit={hasCompletedAudit}
+        hasAppliedFix={hasAppliedFix}
+      />
       {/* Header */}
       <div className="mb-8 flex items-start justify-between">
         <div>
