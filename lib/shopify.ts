@@ -171,6 +171,25 @@ export interface ShopifyOrder {
   created_at: string
 }
 
+export async function createBackupTheme(
+  shopDomain: string,
+  accessToken: string
+): Promise<ShopifyTheme> {
+  const date = new Date().toISOString().split('T')[0]
+  const res = await fetch(
+    `https://${shopDomain}/admin/api/${SHOPIFY_API_VERSION}/themes.json`,
+    {
+      method: 'POST',
+      headers: shopifyHeaders(accessToken),
+      body: JSON.stringify({
+        theme: { name: `Modify Backup ${date}`, role: 'unpublished' },
+      }),
+    }
+  )
+  const data = (await res.json()) as { theme: ShopifyTheme }
+  return data.theme
+}
+
 export interface ShopifyTheme {
   id: number
   name: string

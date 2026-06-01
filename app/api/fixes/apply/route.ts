@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { createServiceRoleClient } from '@/lib/supabase-server'
-import { getThemes, getThemeAssets, getThemeAsset, updateThemeAsset } from '@/lib/shopify'
+import {
+  getThemes,
+  getThemeAssets,
+  getThemeAsset,
+  updateThemeAsset,
+  createBackupTheme,
+} from '@/lib/shopify'
 import { generateFix } from '@/lib/anthropic'
 import type { Store, Audit, AuditResult, Fix } from '@/types'
 
@@ -125,7 +131,7 @@ export async function POST(request: NextRequest) {
   return NextResponse.json({ fixes: insertedFixes, generated: true })
 }
 
-// PATCH — apply a specific fix
+// PATCH — apply a specific fix with backup-before-write
 export async function PATCH(request: NextRequest) {
   const { userId } = await auth()
   if (!userId) return new NextResponse('Unauthorized', { status: 401 })
@@ -148,53 +154,90 @@ export async function PATCH(request: NextRequest) {
 
   if (store.user_id !== userId) return new NextResponse('Forbidden', { status: 403 })
 
-  if (typedFix.theme_id && typedFix.file_path && typedFix.liquid_before && typedFix.liquid_after) {
-    try {
-      const asset = await getThemeAsset(
-        store.shop_domain, store.access_token, typedFix.theme_id, typedFix.file_path
-      )
+  if (!typedFix.theme_id || !typedFix.file_path || !typedFix.liquid_before || !typedFix.liquid_after) {
+    return NextResponse.json({ error: 'Correctif incomplet — régénérez-le' }, { status: 400 })
+  }
 
-      if (!asset?.value) {
-        return NextResponse.json(
-          { error: 'Impossible de lire le fichier thème Shopify' },
-          { status: 502 }
-        )
-      }
+  try {
+    // 1. Fetch current file from Shopify
+    const asset = await getThemeAsset(
+      store.shop_domain, store.access_token, typedFix.theme_id, typedFix.file_path
+    )
 
-      const updatedCode = asset.value.replace(typedFix.liquid_before, typedFix.liquid_after)
-
-      // Verify the replace actually changed the file
-      if (updatedCode === asset.value) {
-        return NextResponse.json(
-          {
-            error:
-              'Le correctif n\'a pas pu être appliqué — le thème a peut-être été modifié depuis la génération du correctif. Régénérez le correctif.',
-            code: 'REPLACE_NO_MATCH',
-          },
-          { status: 422 }
-        )
-      }
-
-      // Store original content for reliable rollback, then apply
-      await supabase
-        .from('fixes')
-        .update({ original_file_content: asset.value })
-        .eq('id', fix_id)
-
-      await updateThemeAsset(
-        store.shop_domain, store.access_token, typedFix.theme_id, typedFix.file_path, updatedCode
-      )
-    } catch (e) {
-      console.error('Failed to apply fix to Shopify:', e)
+    if (!asset?.value) {
       return NextResponse.json(
-        { error: 'Erreur lors de la communication avec l\'API Shopify' },
+        { error: 'Impossible de lire le fichier thème Shopify' },
         { status: 502 }
       )
     }
-  }
 
-  await supabase.from('fixes').update({ status: 'applied' }).eq('id', fix_id)
-  return NextResponse.json({ success: true })
+    // 2. Verify the replace will actually work
+    const updatedCode = asset.value.replace(typedFix.liquid_before, typedFix.liquid_after)
+    if (updatedCode === asset.value) {
+      return NextResponse.json(
+        {
+          error:
+            "Le correctif n'a pas pu être appliqué — le thème a peut-être été modifié depuis la génération. Régénérez le correctif.",
+          code: 'REPLACE_NO_MATCH',
+        },
+        { status: 422 }
+      )
+    }
+
+    // 3. Create or reuse a backup theme for this audit
+    let backupThemeId = typedFix.backup_theme_id
+
+    if (!backupThemeId) {
+      // Check if another fix in this audit already has a backup theme
+      const { data: existingBackupFix } = await supabase
+        .from('fixes')
+        .select('backup_theme_id')
+        .eq('audit_id', typedFix.audit_id)
+        .not('backup_theme_id', 'is', null)
+        .limit(1)
+        .single()
+
+      backupThemeId = existingBackupFix?.backup_theme_id ?? null
+    }
+
+    if (!backupThemeId) {
+      // Create a new backup theme
+      const backupTheme = await createBackupTheme(store.shop_domain, store.access_token)
+      backupThemeId = String(backupTheme.id)
+    }
+
+    // 4. Copy the current file to the backup theme before modifying
+    await updateThemeAsset(
+      store.shop_domain,
+      store.access_token,
+      backupThemeId,
+      typedFix.file_path,
+      asset.value
+    )
+
+    // 5. Apply the fix to the main theme
+    await updateThemeAsset(
+      store.shop_domain, store.access_token, typedFix.theme_id, typedFix.file_path, updatedCode
+    )
+
+    // 6. Persist backup_theme_id and original_file_content
+    await supabase
+      .from('fixes')
+      .update({
+        status: 'applied',
+        backup_theme_id: backupThemeId,
+        original_file_content: asset.value,
+      })
+      .eq('id', fix_id)
+
+    return NextResponse.json({ success: true })
+  } catch (e) {
+    console.error('Failed to apply fix:', e)
+    return NextResponse.json(
+      { error: "Erreur lors de la communication avec l'API Shopify" },
+      { status: 502 }
+    )
+  }
 }
 
 function findRelevantFile(category: string, fileKeys: string[]): string | null {
