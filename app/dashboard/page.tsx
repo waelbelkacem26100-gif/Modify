@@ -6,7 +6,6 @@ import { getUserSubscription, hasActiveAccess } from '@/lib/subscription'
 import { isAdmin } from '@/lib/config'
 import StoreConnect from '@/components/dashboard/StoreConnect'
 import SubscribeButton from '@/components/dashboard/SubscribeButton'
-import DisconnectStoreButton from '@/components/dashboard/DisconnectStoreButton'
 import MetricCard from '@/components/dashboard/MetricCard'
 import OnboardingProgress from '@/components/dashboard/OnboardingProgress'
 import { Euro, AlertTriangle, CheckCircle, TrendingUp, ArrowRight, ScanSearch, Zap } from 'lucide-react'
@@ -90,9 +89,6 @@ export default async function DashboardPage() {
               {typedStore.shop_name ?? typedStore.shop_domain}
             </h1>
             <p className="text-text-secondary text-xs sm:text-sm truncate">{typedStore.shop_domain}</p>
-            <div className="mt-1 -ml-3">
-              <DisconnectStoreButton shopDomain={typedStore.shop_domain} />
-            </div>
           </div>
           <Link
             href="/dashboard/audit"

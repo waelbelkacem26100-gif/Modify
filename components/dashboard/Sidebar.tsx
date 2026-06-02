@@ -1,7 +1,8 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
+import { useState } from 'react'
 import { UserButton } from '@clerk/nextjs'
 import {
   LayoutDashboard,
@@ -12,6 +13,7 @@ import {
   CreditCard,
   Package,
   Home,
+  LogOut,
 } from 'lucide-react'
 
 const navItems = [
@@ -22,8 +24,30 @@ const navItems = [
   { href: '/dashboard/tracking', icon: BarChart3, label: 'Suivi' },
 ]
 
-export default function Sidebar() {
+interface Props {
+  shopDomain: string | null
+}
+
+export default function Sidebar({ shopDomain }: Props) {
   const pathname = usePathname()
+  const router = useRouter()
+  const [disconnecting, setDisconnecting] = useState(false)
+
+  async function handleDisconnect() {
+    if (!shopDomain) return
+    const ok = window.confirm(
+      `Déconnecter ${shopDomain} ?\n\nTous les audits et correctifs associés seront supprimés.`
+    )
+    if (!ok) return
+    setDisconnecting(true)
+    try {
+      await fetch('/api/shopify/disconnect', { method: 'DELETE' })
+      router.push('/dashboard/connect')
+      router.refresh()
+    } finally {
+      setDisconnecting(false)
+    }
+  }
 
   return (
     <aside className="hidden md:flex w-56 bg-surface border-r border-border flex-col h-screen sticky top-0">
@@ -35,8 +59,26 @@ export default function Sidebar() {
         <span className="font-syne font-bold text-base text-text-primary">Modify</span>
       </Link>
 
+      {/* Store badge + disconnect */}
+      {shopDomain && (
+        <div className="px-3 pt-3 pb-1">
+          <div className="px-3 py-2 bg-surface-2 rounded-xl">
+            <p className="text-[10px] text-text-muted uppercase tracking-wide font-medium mb-0.5">Boutique connectée</p>
+            <p className="text-xs text-text-primary font-medium truncate">{shopDomain}</p>
+            <button
+              onClick={handleDisconnect}
+              disabled={disconnecting}
+              className="mt-1.5 flex items-center gap-1 text-[10px] text-text-muted hover:text-danger transition-colors disabled:opacity-50"
+            >
+              <LogOut className="w-3 h-3" />
+              {disconnecting ? 'Déconnexion…' : 'Déconnecter'}
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Nav */}
-      <nav className="flex-1 px-3 py-4 space-y-1">
+      <nav className="flex-1 px-3 py-3 space-y-1">
         {navItems.map((item) => {
           const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href))
           return (
@@ -82,9 +124,7 @@ export default function Sidebar() {
           <UserButton
             appearance={{
               variables: { colorPrimary: '#FF5C35' },
-              elements: {
-                avatarBox: 'w-7 h-7',
-              },
+              elements: { avatarBox: 'w-7 h-7' },
             }}
           />
           <span className="text-sm text-text-secondary">Mon compte</span>
