@@ -3,7 +3,8 @@ import { auth } from '@clerk/nextjs/server'
 import { createServiceRoleClient } from '@/lib/supabase-server'
 import { getThemes, getThemeAssets, getThemeAsset } from '@/lib/shopify'
 import { generateFix } from '@/lib/anthropic'
-import type { Store, Audit, AuditResult } from '@/types'
+import { computeRiskGroup } from '@/lib/theme-backup'
+import type { Store, Audit, AuditResult, RiskGroup } from '@/types'
 
 function findRelevantFile(category: string, fileKeys: string[]): string | null {
   const patterns: Record<string, string[]> = {
@@ -98,6 +99,8 @@ export async function POST(request: NextRequest) {
     }
   }
 
+  const riskGroup: RiskGroup = issue.risk_group ?? computeRiskGroup(issue.category)
+
   const { data: fix, error } = await supabase
     .from('fixes')
     .insert({
@@ -111,6 +114,8 @@ export async function POST(request: NextRequest) {
       liquid_after: liquidAfter,
       file_path: relevantFile,
       theme_id: String(mainTheme.id),
+      risk_group: riskGroup,
+      verification_status: 'pending',
     })
     .select()
     .single()

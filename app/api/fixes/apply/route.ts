@@ -6,12 +6,15 @@ import {
   getThemeAssets,
   getThemeAsset,
   updateThemeAsset,
-  createBackupTheme,
+  verifyThemeAsset,
 } from '@/lib/shopify'
 import { generateFix } from '@/lib/anthropic'
-import type { Store, Audit, AuditResult, Fix } from '@/types'
+import { getOrCreateSessionBackup, computeRiskGroup } from '@/lib/theme-backup'
+import { logAction } from '@/lib/audit-log'
+import type { Store, Audit, AuditResult, Fix, RiskGroup } from '@/types'
 
-// GET — list fixes for latest audit
+// ─── GET: list fixes for latest audit ────────────────────────────────────────
+
 export async function GET() {
   const { userId } = await auth()
   if (!userId) return new NextResponse('Unauthorized', { status: 401 })
@@ -19,35 +22,26 @@ export async function GET() {
   const supabase = await createServiceRoleClient()
 
   const { data: store } = await supabase
-    .from('stores')
-    .select('id')
-    .eq('user_id', userId)
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .single()
+    .from('stores').select('id').eq('user_id', userId)
+    .order('created_at', { ascending: false }).limit(1).single()
 
   if (!store) return NextResponse.json({ fixes: [] })
 
   const { data: audit } = await supabase
-    .from('audits')
-    .select('id')
-    .eq('store_id', store.id)
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .single()
+    .from('audits').select('id').eq('store_id', store.id)
+    .order('created_at', { ascending: false }).limit(1).single()
 
   if (!audit) return NextResponse.json({ fixes: [] })
 
   const { data: fixes } = await supabase
-    .from('fixes')
-    .select('*')
-    .eq('audit_id', audit.id)
+    .from('fixes').select('*').eq('audit_id', audit.id)
     .order('impact_euros', { ascending: false })
 
   return NextResponse.json({ fixes: fixes ?? [] })
 }
 
-// POST — generate fixes for an audit
+// ─── POST: generate fixes for an audit ───────────────────────────────────────
+
 export async function POST(request: NextRequest) {
   const { userId } = await auth()
   if (!userId) return new NextResponse('Unauthorized', { status: 401 })
@@ -58,10 +52,7 @@ export async function POST(request: NextRequest) {
   const supabase = await createServiceRoleClient()
 
   const { data: audit } = await supabase
-    .from('audits')
-    .select('*, stores(*)')
-    .eq('id', audit_id)
-    .single()
+    .from('audits').select('*, stores(*)').eq('id', audit_id).single()
 
   if (!audit) return NextResponse.json({ error: 'Audit not found' }, { status: 404 })
 
@@ -71,19 +62,19 @@ export async function POST(request: NextRequest) {
   const store = auditTyped.stores
   const results: AuditResult[] = auditTyped.results ?? []
 
-  if (results.length === 0) {
-    return NextResponse.json({ error: 'No audit results to fix' }, { status: 400 })
-  }
+  if (results.length === 0) return NextResponse.json({ error: 'No audit results' }, { status: 400 })
 
   const themes = await getThemes(store.shop_domain, store.access_token)
   const mainTheme = themes.find((t) => t.role === 'main') ?? themes[0]
   if (!mainTheme) return NextResponse.json({ error: 'No theme found' }, { status: 404 })
 
   const assets = await getThemeAssets(store.shop_domain, store.access_token, String(mainTheme.id))
+
   const fixableIssues = results.filter((r) => r.fix_available).slice(0, 5)
 
   const fixInserts = await Promise.all(
     fixableIssues.map(async (issue) => {
+      const riskGroup: RiskGroup = issue.risk_group ?? computeRiskGroup(issue.category)
       const relevantFile = findRelevantFile(issue.category, assets.map((a) => a.key))
       let liquidBefore: string | null = null
       let liquidAfter: string | null = null
@@ -117,35 +108,33 @@ export async function POST(request: NextRequest) {
         file_path: relevantFile,
         theme_id: String(mainTheme.id),
         original_file_content: originalFileContent,
+        risk_group: riskGroup,
+        verification_status: 'pending',
       }
     })
   )
 
   const { data: insertedFixes, error } = await supabase
-    .from('fixes')
-    .insert(fixInserts)
-    .select()
+    .from('fixes').insert(fixInserts).select()
 
   if (error) return NextResponse.json({ error: 'Failed to save fixes' }, { status: 500 })
 
   return NextResponse.json({ fixes: insertedFixes, generated: true })
 }
 
-// PATCH — apply a specific fix with backup-before-write
+// ─── PATCH: apply a specific fix with full safety system ─────────────────────
+
 export async function PATCH(request: NextRequest) {
   const { userId } = await auth()
   if (!userId) return new NextResponse('Unauthorized', { status: 401 })
 
-  const body = await request.json() as { fix_id: string }
-  const { fix_id } = body
+  const body = await request.json() as { fix_id: string; confirm_high_risk?: boolean }
+  const { fix_id, confirm_high_risk = false } = body
 
   const supabase = await createServiceRoleClient()
 
   const { data: fix } = await supabase
-    .from('fixes')
-    .select('*, audits(*, stores(*))')
-    .eq('id', fix_id)
-    .single()
+    .from('fixes').select('*, audits(*, stores(*))').eq('id', fix_id).single()
 
   if (!fix) return NextResponse.json({ error: 'Fix not found' }, { status: 404 })
 
@@ -155,94 +144,122 @@ export async function PATCH(request: NextRequest) {
   if (store.user_id !== userId) return new NextResponse('Forbidden', { status: 403 })
 
   if (!typedFix.theme_id || !typedFix.file_path || !typedFix.liquid_before || !typedFix.liquid_after) {
-    return NextResponse.json({ error: 'Correctif incomplet — régénérez-le' }, { status: 400 })
+    return NextResponse.json({ error: 'Correctif incomplet — régénérez-le depuis le panel' }, { status: 400 })
+  }
+
+  const riskGroup: RiskGroup = typedFix.risk_group ?? computeRiskGroup(typedFix.type)
+
+  // Group C requires explicit confirmation
+  if (riskGroup === 'c' && !confirm_high_risk) {
+    return NextResponse.json({
+      error: 'Ce correctif est classé RISQUE ÉLEVÉ. Confirmez avec confirm_high_risk:true.',
+      code: 'HIGH_RISK_CONFIRMATION_REQUIRED',
+      risk_group: 'c',
+    }, { status: 428 })
   }
 
   try {
-    // 1. Fetch current file from Shopify
+    // ── Step 1: Ensure session backup exists (Groups B and C) ──────────────
+    let backupThemeId = store.backup_theme_id
+
+    if (riskGroup !== 'a') {
+      backupThemeId = await getOrCreateSessionBackup(store, supabase)
+      await logAction(supabase, store.id, 'session_backup_ready',
+        { backup_theme_id: backupThemeId }, 'success', fix_id)
+    }
+
+    // ── Step 2: Read current file from main theme ──────────────────────────
     const asset = await getThemeAsset(
       store.shop_domain, store.access_token, typedFix.theme_id, typedFix.file_path
     )
 
     if (!asset?.value) {
-      return NextResponse.json(
-        { error: 'Impossible de lire le fichier thème Shopify' },
-        { status: 502 }
-      )
+      await logAction(supabase, store.id, 'file_read_failed',
+        { file: typedFix.file_path }, 'failed', fix_id)
+      return NextResponse.json({ error: 'Impossible de lire le fichier thème Shopify' }, { status: 502 })
     }
 
-    // 2. Verify the replace will actually work
+    // ── Step 3: Verify the replace will actually match ─────────────────────
     const updatedCode = asset.value.replace(typedFix.liquid_before, typedFix.liquid_after)
     if (updatedCode === asset.value) {
-      return NextResponse.json(
-        {
-          error:
-            "Le correctif n'a pas pu être appliqué — le thème a peut-être été modifié depuis la génération. Régénérez le correctif.",
-          code: 'REPLACE_NO_MATCH',
-        },
-        { status: 422 }
+      await logAction(supabase, store.id, 'replace_no_match',
+        { file: typedFix.file_path, group: riskGroup }, 'failed', fix_id)
+      return NextResponse.json({
+        error: "Le correctif n'a pas pu être appliqué — le thème a peut-être été modifié depuis la génération. Régénérez le correctif.",
+        code: 'REPLACE_NO_MATCH',
+      }, { status: 422 })
+    }
+
+    // ── Step 4: Snapshot — copy file to backup theme (Group B and C) ───────
+    if (riskGroup !== 'a' && backupThemeId) {
+      await updateThemeAsset(
+        store.shop_domain, store.access_token, backupThemeId, typedFix.file_path, asset.value
       )
+      await logAction(supabase, store.id, 'file_snapshot_saved',
+        { file: typedFix.file_path, backup_theme: backupThemeId }, 'success', fix_id)
     }
 
-    // 3. Create or reuse a backup theme for this audit
-    let backupThemeId = typedFix.backup_theme_id
-
-    if (!backupThemeId) {
-      // Check if another fix in this audit already has a backup theme
-      const { data: existingBackupFix } = await supabase
-        .from('fixes')
-        .select('backup_theme_id')
-        .eq('audit_id', typedFix.audit_id)
-        .not('backup_theme_id', 'is', null)
-        .limit(1)
-        .single()
-
-      backupThemeId = existingBackupFix?.backup_theme_id ?? null
-    }
-
-    if (!backupThemeId) {
-      // Create a new backup theme
-      const backupTheme = await createBackupTheme(store.shop_domain, store.access_token)
-      backupThemeId = String(backupTheme.id)
-    }
-
-    // 4. Copy the current file to the backup theme before modifying
-    await updateThemeAsset(
-      store.shop_domain,
-      store.access_token,
-      backupThemeId,
-      typedFix.file_path,
-      asset.value
-    )
-
-    // 5. Apply the fix to the main theme
+    // ── Step 5: Apply fix to main theme ────────────────────────────────────
     await updateThemeAsset(
       store.shop_domain, store.access_token, typedFix.theme_id, typedFix.file_path, updatedCode
     )
+    await logAction(supabase, store.id, 'fix_applied_to_theme',
+      { file: typedFix.file_path, group: riskGroup }, 'success', fix_id)
 
-    // 6. Persist backup_theme_id and original_file_content
-    await supabase
-      .from('fixes')
-      .update({
-        status: 'applied',
-        backup_theme_id: backupThemeId,
-        original_file_content: asset.value,
-      })
-      .eq('id', fix_id)
-
-    return NextResponse.json({ success: true })
-  } catch (e) {
-    console.error('Failed to apply fix:', e)
-    return NextResponse.json(
-      { error: "Erreur lors de la communication avec l'API Shopify" },
-      { status: 502 }
+    // ── Step 6: Post-modification verification ─────────────────────────────
+    const verified = await verifyThemeAsset(
+      store.shop_domain, store.access_token, typedFix.theme_id, typedFix.file_path,
+      typedFix.liquid_after
     )
+
+    if (!verified) {
+      // Auto-rollback
+      await logAction(supabase, store.id, 'verification_failed',
+        { file: typedFix.file_path }, 'failed', fix_id)
+
+      await updateThemeAsset(
+        store.shop_domain, store.access_token, typedFix.theme_id, typedFix.file_path, asset.value
+      )
+      await logAction(supabase, store.id, 'auto_rollback_executed',
+        { file: typedFix.file_path }, 'warning', fix_id)
+
+      await supabase.from('fixes').update({
+        status: 'failed',
+        verification_status: 'failed',
+      }).eq('id', fix_id)
+
+      return NextResponse.json({
+        error: 'La modification a été annulée automatiquement — la vérification post-application a échoué.',
+        code: 'VERIFICATION_FAILED',
+      }, { status: 422 })
+    }
+
+    // ── Step 7: Persist everything ─────────────────────────────────────────
+    await supabase.from('fixes').update({
+      status: 'applied',
+      verification_status: 'verified',
+      original_file_content: asset.value,
+      backup_theme_id: backupThemeId,
+    }).eq('id', fix_id)
+
+    await logAction(supabase, store.id, 'verification_passed',
+      { file: typedFix.file_path, group: riskGroup }, 'success', fix_id)
+
+    return NextResponse.json({ success: true, group: riskGroup })
+
+  } catch (e) {
+    console.error('Apply fix error:', e)
+    await logAction(supabase, store.id, 'apply_error',
+      { error: String(e) }, 'failed', fix_id)
+    return NextResponse.json({ error: "Erreur de communication avec l'API Shopify" }, { status: 502 })
   }
 }
 
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
 function findRelevantFile(category: string, fileKeys: string[]): string | null {
   const patterns: Record<string, string[]> = {
-    theme: ['sections/main-product.liquid', 'sections/product-template.liquid', 'templates/product.liquid'],
+    theme: ['sections/main-product.liquid', 'sections/product-template.liquid'],
     product: ['sections/main-product.liquid', 'sections/product-template.liquid'],
     trust: ['sections/main-product.liquid', 'sections/footer.liquid'],
     speed: ['layout/theme.liquid'],

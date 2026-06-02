@@ -64,13 +64,22 @@ export default function FixPanel({ issue, auditId, onClose, onApplied }: FixPane
 
   async function applyFix() {
     if (!fix) return
+
+    // Group C requires explicit confirmation
+    if (fix.risk_group === 'c') {
+      const ok = confirm(
+        '⚠️ RISQUE ÉLEVÉ\n\nCe correctif modifie la navigation, le checkout ou le layout principal.\n\nUn backup complet sera effectué avant toute modification.\nVous pourrez faire un rollback immédiat si nécessaire.\n\nConfirmer l\'application ?'
+      )
+      if (!ok) return
+    }
+
     setApplying(true)
     setError('')
     try {
       const res = await fetch('/api/fixes/apply', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fix_id: fix.id }),
+        body: JSON.stringify({ fix_id: fix.id, confirm_high_risk: fix.risk_group === 'c' }),
       })
       if (res.ok) {
         setApplied(true)

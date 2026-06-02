@@ -45,8 +45,14 @@ Return a JSON array of 6-10 conversion issues. Each issue must follow this exact
   "impact_euros": 450,
   "priority": "high|medium|low",
   "fix_available": true,
-  "recommendation": "Specific actionable recommendation"
+  "recommendation": "Specific actionable recommendation",
+  "risk_group": "a|b|c"
 }
+
+risk_group must be:
+  "a" = only needs Products API or metafields — NO Liquid file change (e.g. missing description, missing meta SEO)
+  "b" = modifies non-critical Liquid sections — trust badge, breadcrumb, urgency indicator, CTA styling
+  "c" = HIGH RISK — modifies navigation, checkout flow, main layout, homepage structure
 
 Focus on:
 - Missing trust signals (reviews, guarantees, security badges)

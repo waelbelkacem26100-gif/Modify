@@ -173,7 +173,8 @@ export interface ShopifyOrder {
 
 export async function createBackupTheme(
   shopDomain: string,
-  accessToken: string
+  accessToken: string,
+  name?: string
 ): Promise<ShopifyTheme> {
   const date = new Date().toISOString().split('T')[0]
   const res = await fetch(
@@ -182,12 +183,48 @@ export async function createBackupTheme(
       method: 'POST',
       headers: shopifyHeaders(accessToken),
       body: JSON.stringify({
-        theme: { name: `Modify Backup ${date}`, role: 'unpublished' },
+        theme: { name: name ?? `Modify Backup ${date}`, role: 'unpublished' },
       }),
     }
   )
   const data = (await res.json()) as { theme: ShopifyTheme }
   return data.theme
+}
+
+export async function verifyThemeAsset(
+  shopDomain: string,
+  accessToken: string,
+  themeId: string,
+  filePath: string,
+  expectedSnippet: string
+): Promise<boolean> {
+  try {
+    const asset = await getThemeAsset(shopDomain, accessToken, themeId, filePath)
+    if (!asset?.value) return false
+    // Check first 200 chars of the expected snippet to account for minor whitespace diffs
+    return asset.value.includes(expectedSnippet.trim().slice(0, 200))
+  } catch {
+    return false
+  }
+}
+
+export async function promoteThemeToMain(
+  shopDomain: string,
+  accessToken: string,
+  themeId: string
+): Promise<void> {
+  const res = await fetch(
+    `https://${shopDomain}/admin/api/${SHOPIFY_API_VERSION}/themes/${themeId}.json`,
+    {
+      method: 'PUT',
+      headers: shopifyHeaders(accessToken),
+      body: JSON.stringify({ theme: { id: parseInt(themeId), role: 'main' } }),
+    }
+  )
+  if (!res.ok) {
+    const err = await res.text()
+    throw new Error(`Failed to promote theme ${themeId}: ${err}`)
+  }
 }
 
 export interface ShopifyTheme {
