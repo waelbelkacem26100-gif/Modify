@@ -78,10 +78,12 @@ Estimate realistic monthly revenue impact in euros. Return ONLY valid JSON array
 export async function generateFix(
   issue: AuditResult,
   liquidCode: string,
-  filePath: string
+  filePath: string,
+  riskGroup?: string
 ): Promise<{ before: string | null; after: string | null }> {
-  // Group A fixes go via Products API — no Liquid file change needed
-  if (issue.risk_group === 'a') {
+  // Group A fixes go via Products API — no Liquid file change needed.
+  // Prefer the caller-supplied classified riskGroup over issue.risk_group (Claude's raw value).
+  if ((riskGroup ?? issue.risk_group) === 'a') {
     return { before: null, after: null }
   }
 

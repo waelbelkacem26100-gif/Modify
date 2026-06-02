@@ -43,16 +43,8 @@ export async function POST(request: NextRequest) {
 
   const supabase = await createServiceRoleClient()
 
-  // Check if fix already exists for this issue
-  const { data: existing } = await supabase
-    .from('fixes')
-    .select('*')
-    .eq('audit_id', audit_id)
-    .eq('title', issue.title)
-    .limit(1)
-    .single()
-
-  if (existing) return NextResponse.json({ fix: existing })
+  // ── Classify FIRST — determines whether liquid generation is needed at all ──
+  const riskGroup: RiskGroup = classifyRiskGroup(issue.category, issue.title, issue.risk_group)
 
   // Verify ownership
   const { data: audit } = await supabase
@@ -70,7 +62,30 @@ export async function POST(request: NextRequest) {
 
   const store = typedAudit.stores
 
-  // Get theme files
+  // Check if a fix already exists — but clean up stale Group A fixes with liquid data
+  const { data: existing } = await supabase
+    .from('fixes')
+    .select('*')
+    .eq('audit_id', audit_id)
+    .eq('title', issue.title)
+    .limit(1)
+    .single()
+
+  if (existing) {
+    if (riskGroup === 'a' && (existing.liquid_before || existing.liquid_after || existing.risk_group !== 'a')) {
+      // Stale fix: had liquid data but should be Group A — clear it in place
+      const { data: cleaned } = await supabase
+        .from('fixes')
+        .update({ risk_group: 'a', liquid_before: null, liquid_after: null, file_path: null, theme_id: null })
+        .eq('id', existing.id)
+        .select()
+        .single()
+      return NextResponse.json({ fix: cleaned ?? existing })
+    }
+    return NextResponse.json({ fix: existing })
+  }
+
+  // Get theme files (only needed for B/C Liquid fixes)
   const themes = await getThemes(store.shop_domain, store.access_token)
   const mainTheme = themes.find((t) => t.role === 'main') ?? themes[0]
 
@@ -78,27 +93,26 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'No theme found' }, { status: 404 })
   }
 
-  const assets = await getThemeAssets(store.shop_domain, store.access_token, String(mainTheme.id))
-  const fileKeys = assets.map((a) => a.key)
-  const relevantFile = findRelevantFile(issue.category, fileKeys)
-
   let liquidBefore: string | null = null
   let liquidAfter: string | null = null
+  let relevantFile: string | null = null
 
-  const riskGroup: RiskGroup = classifyRiskGroup(issue.category, issue.title, issue.risk_group)
-
-  // Group A: descriptions applied via Products API at apply time — no Liquid needed
-  if (riskGroup !== 'a' && relevantFile) {
-    const asset = await getThemeAsset(
-      store.shop_domain,
-      store.access_token,
-      String(mainTheme.id),
-      relevantFile
-    )
-    if (asset?.value) {
-      const result = await generateFix(issue, asset.value, relevantFile)
-      liquidBefore = result.before
-      liquidAfter = result.after
+  // Group A: no Liquid — descriptions applied via Products API at apply time
+  if (riskGroup !== 'a') {
+    const assets = await getThemeAssets(store.shop_domain, store.access_token, String(mainTheme.id))
+    relevantFile = findRelevantFile(issue.category, assets.map((a) => a.key))
+    if (relevantFile) {
+      const asset = await getThemeAsset(
+        store.shop_domain,
+        store.access_token,
+        String(mainTheme.id),
+        relevantFile
+      )
+      if (asset?.value) {
+        const result = await generateFix(issue, asset.value, relevantFile, riskGroup)
+        liquidBefore = result.before
+        liquidAfter = result.after
+      }
     }
   }
 
@@ -113,8 +127,8 @@ export async function POST(request: NextRequest) {
       status: 'pending',
       liquid_before: liquidBefore,
       liquid_after: liquidAfter,
-      file_path: riskGroup !== 'a' ? relevantFile : null,
-      theme_id: riskGroup !== 'a' ? String(mainTheme.id) : null,
+      file_path: relevantFile,
+      theme_id: riskGroup !== 'a' && mainTheme ? String(mainTheme.id) : null,
       risk_group: riskGroup,
       verification_status: 'pending',
     })

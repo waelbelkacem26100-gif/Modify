@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
             )
             if (asset?.value) {
               originalFileContent = asset.value
-              const fix = await generateFix(issue, asset.value, relevantFile)
+              const fix = await generateFix(issue, asset.value, relevantFile, riskGroup)
               liquidBefore = fix.before
               liquidAfter = fix.after
             }
