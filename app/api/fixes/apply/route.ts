@@ -149,7 +149,22 @@ export async function PATCH(request: NextRequest) {
 
   if (store.user_id !== userId) return new NextResponse('Forbidden', { status: 403 })
 
+  // ── Debug: log raw DB state before any classification ─────────────────────
+  console.log('[PATCH /fixes/apply] fix loaded from DB:', {
+    fix_id: typedFix.id,
+    risk_group_db: typedFix.risk_group,
+    type: typedFix.type,
+    title: typedFix.title,
+    file_path: typedFix.file_path,
+    theme_id: typedFix.theme_id,
+    liquid_before: typedFix.liquid_before?.slice(0, 120) ?? null,
+    liquid_after: typedFix.liquid_after?.slice(0, 120) ?? null,
+  })
+
   const riskGroup: RiskGroup = classifyRiskGroup(typedFix.type, typedFix.title, typedFix.risk_group)
+
+  console.log('[PATCH /fixes/apply] classifyRiskGroup result:', riskGroup,
+    '(db was:', typedFix.risk_group, ')')
 
   // Group C requires explicit confirmation
   if (riskGroup === 'c' && !confirm_high_risk) {
@@ -162,9 +177,13 @@ export async function PATCH(request: NextRequest) {
 
   // ── Group A: apply via Products API (no Liquid change) ───────────────────
   if (riskGroup === 'a') {
+    console.log('[PATCH /fixes/apply] → taking GROUP A path (Products API)')
     try {
       const products = await getProducts(store.shop_domain, store.access_token, 50)
       const productsWithoutDesc = products.filter((p) => !p.body_html?.trim())
+
+      console.log('[PATCH /fixes/apply] Group A: total products fetched:', products.length,
+        '| without description:', productsWithoutDesc.length)
 
       for (const product of productsWithoutDesc.slice(0, 10)) {
         const descResult = await generateProductDescription({
@@ -179,6 +198,7 @@ export async function PATCH(request: NextRequest) {
           store.shop_domain, store.access_token, product.id, html,
           descResult.seo_title, descResult.meta_description
         )
+        console.log('[PATCH /fixes/apply] Group A: updated product', product.id, product.title)
       }
 
       await logAction(supabase, store.id, 'product_descriptions_applied',
@@ -189,13 +209,16 @@ export async function PATCH(request: NextRequest) {
         verification_status: 'verified',
       }).eq('id', fix_id)
 
+      console.log('[PATCH /fixes/apply] Group A: done, fix marked applied')
       return NextResponse.json({ success: true, group: 'a' })
     } catch (e) {
-      console.error('Product description fix error:', e)
+      console.error('[PATCH /fixes/apply] Group A error:', e)
       await logAction(supabase, store.id, 'product_fix_error', { error: String(e) }, 'failed', fix_id)
       return NextResponse.json({ error: 'Erreur lors de la mise à jour des descriptions produit' }, { status: 502 })
     }
   }
+
+  console.log('[PATCH /fixes/apply] → taking GROUP B/C path (Liquid injection)')
 
   // ── Group B/C: Liquid anchor-based injection ──────────────────────────────
   if (!typedFix.theme_id || !typedFix.file_path || !typedFix.liquid_before || !typedFix.liquid_after) {
