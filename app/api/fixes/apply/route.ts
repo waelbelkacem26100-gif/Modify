@@ -7,8 +7,10 @@ import {
   getThemeAsset,
   updateThemeAsset,
   verifyThemeAsset,
+  getProducts,
+  updateProductDescription,
 } from '@/lib/shopify'
-import { generateFix } from '@/lib/anthropic'
+import { generateFix, generateProductDescription, buildProductHtml } from '@/lib/anthropic'
 import { getOrCreateSessionBackup, computeRiskGroup } from '@/lib/theme-backup'
 import { logAction } from '@/lib/audit-log'
 import type { Store, Audit, AuditResult, Fix, RiskGroup } from '@/types'
@@ -75,24 +77,28 @@ export async function POST(request: NextRequest) {
   const fixInserts = await Promise.all(
     fixableIssues.map(async (issue) => {
       const riskGroup: RiskGroup = issue.risk_group ?? computeRiskGroup(issue.category)
-      const relevantFile = findRelevantFile(issue.category, assets.map((a) => a.key))
       let liquidBefore: string | null = null
       let liquidAfter: string | null = null
       let originalFileContent: string | null = null
+      let relevantFile: string | null = null
 
-      if (relevantFile) {
-        try {
-          const asset = await getThemeAsset(
-            store.shop_domain, store.access_token, String(mainTheme.id), relevantFile
-          )
-          if (asset?.value) {
-            originalFileContent = asset.value
-            const fix = await generateFix(issue, asset.value, relevantFile)
-            liquidBefore = fix.before
-            liquidAfter = fix.after
+      // Group A: descriptions applied via Products API at apply time — no Liquid needed
+      if (riskGroup !== 'a') {
+        relevantFile = findRelevantFile(issue.category, assets.map((a) => a.key))
+        if (relevantFile) {
+          try {
+            const asset = await getThemeAsset(
+              store.shop_domain, store.access_token, String(mainTheme.id), relevantFile
+            )
+            if (asset?.value) {
+              originalFileContent = asset.value
+              const fix = await generateFix(issue, asset.value, relevantFile)
+              liquidBefore = fix.before
+              liquidAfter = fix.after
+            }
+          } catch (e) {
+            console.error('Fix generation failed for', issue.id, e)
           }
-        } catch (e) {
-          console.error('Fix generation failed for', issue.id, e)
         }
       }
 
@@ -106,7 +112,7 @@ export async function POST(request: NextRequest) {
         liquid_before: liquidBefore,
         liquid_after: liquidAfter,
         file_path: relevantFile,
-        theme_id: String(mainTheme.id),
+        theme_id: riskGroup !== 'a' ? String(mainTheme.id) : null,
         original_file_content: originalFileContent,
         risk_group: riskGroup,
         verification_status: 'pending',
@@ -143,10 +149,6 @@ export async function PATCH(request: NextRequest) {
 
   if (store.user_id !== userId) return new NextResponse('Forbidden', { status: 403 })
 
-  if (!typedFix.theme_id || !typedFix.file_path || !typedFix.liquid_before || !typedFix.liquid_after) {
-    return NextResponse.json({ error: 'Correctif incomplet — régénérez-le depuis le panel' }, { status: 400 })
-  }
-
   const riskGroup: RiskGroup = typedFix.risk_group ?? computeRiskGroup(typedFix.type)
 
   // Group C requires explicit confirmation
@@ -158,15 +160,53 @@ export async function PATCH(request: NextRequest) {
     }, { status: 428 })
   }
 
-  try {
-    // ── Step 1: Ensure session backup exists (Groups B and C) ──────────────
-    let backupThemeId = store.backup_theme_id
+  // ── Group A: apply via Products API (no Liquid change) ───────────────────
+  if (riskGroup === 'a') {
+    try {
+      const products = await getProducts(store.shop_domain, store.access_token, 50)
+      const productsWithoutDesc = products.filter((p) => !p.body_html?.trim())
 
-    if (riskGroup !== 'a') {
-      backupThemeId = await getOrCreateSessionBackup(store, supabase)
-      await logAction(supabase, store.id, 'session_backup_ready',
-        { backup_theme_id: backupThemeId }, 'success', fix_id)
+      for (const product of productsWithoutDesc.slice(0, 10)) {
+        const descResult = await generateProductDescription({
+          title: product.title,
+          product_type: product.product_type,
+          tags: product.tags,
+          variants: product.variants,
+          image_count: product.images.length,
+        })
+        const html = buildProductHtml(descResult)
+        await updateProductDescription(
+          store.shop_domain, store.access_token, product.id, html,
+          descResult.seo_title, descResult.meta_description
+        )
+      }
+
+      await logAction(supabase, store.id, 'product_descriptions_applied',
+        { updated: Math.min(productsWithoutDesc.length, 10) }, 'success', fix_id)
+
+      await supabase.from('fixes').update({
+        status: 'applied',
+        verification_status: 'verified',
+      }).eq('id', fix_id)
+
+      return NextResponse.json({ success: true, group: 'a' })
+    } catch (e) {
+      console.error('Product description fix error:', e)
+      await logAction(supabase, store.id, 'product_fix_error', { error: String(e) }, 'failed', fix_id)
+      return NextResponse.json({ error: 'Erreur lors de la mise à jour des descriptions produit' }, { status: 502 })
     }
+  }
+
+  // ── Group B/C: Liquid anchor-based injection ──────────────────────────────
+  if (!typedFix.theme_id || !typedFix.file_path || !typedFix.liquid_before || !typedFix.liquid_after) {
+    return NextResponse.json({ error: 'Correctif incomplet — régénérez-le depuis le panel' }, { status: 400 })
+  }
+
+  try {
+    // ── Step 1: Ensure session backup exists ───────────────────────────────
+    const backupThemeId = await getOrCreateSessionBackup(store, supabase)
+    await logAction(supabase, store.id, 'session_backup_ready',
+      { backup_theme_id: backupThemeId }, 'success', fix_id)
 
     // ── Step 2: Read current file from main theme ──────────────────────────
     const asset = await getThemeAsset(
@@ -179,19 +219,19 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'Impossible de lire le fichier thème Shopify' }, { status: 502 })
     }
 
-    // ── Step 3: Verify the replace will actually match ─────────────────────
-    const updatedCode = asset.value.replace(typedFix.liquid_before, typedFix.liquid_after)
-    if (updatedCode === asset.value) {
-      await logAction(supabase, store.id, 'replace_no_match',
+    // ── Step 3: Anchor-based injection ────────────────────────────────────
+    const updatedCode = applyAnchorInjection(asset.value, typedFix.liquid_before, typedFix.liquid_after)
+    if (updatedCode === null) {
+      await logAction(supabase, store.id, 'anchor_not_found',
         { file: typedFix.file_path, group: riskGroup }, 'failed', fix_id)
       return NextResponse.json({
-        error: "Le correctif n'a pas pu être appliqué — le thème a peut-être été modifié depuis la génération. Régénérez le correctif.",
-        code: 'REPLACE_NO_MATCH',
+        error: "L'ancre d'injection est introuvable dans le fichier. Régénérez le correctif.",
+        code: 'ANCHOR_NOT_FOUND',
       }, { status: 422 })
     }
 
-    // ── Step 4: Snapshot — copy file to backup theme (Group B and C) ───────
-    if (riskGroup !== 'a' && backupThemeId) {
+    // ── Step 4: Snapshot to backup theme ──────────────────────────────────
+    if (backupThemeId) {
       await updateThemeAsset(
         store.shop_domain, store.access_token, backupThemeId, typedFix.file_path, asset.value
       )
@@ -213,7 +253,6 @@ export async function PATCH(request: NextRequest) {
     )
 
     if (!verified) {
-      // Auto-rollback
       await logAction(supabase, store.id, 'verification_failed',
         { file: typedFix.file_path }, 'failed', fix_id)
 
@@ -256,6 +295,14 @@ export async function PATCH(request: NextRequest) {
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
+
+function applyAnchorInjection(fileContent: string, anchor: string, code: string): string | null {
+  const idx = fileContent.indexOf(anchor)
+  if (idx === -1) return null
+  const lineEnd = fileContent.indexOf('\n', idx + anchor.length)
+  const insertAt = lineEnd === -1 ? fileContent.length : lineEnd + 1
+  return fileContent.slice(0, insertAt) + code + '\n' + fileContent.slice(insertAt)
+}
 
 function findRelevantFile(category: string, fileKeys: string[]): string | null {
   const patterns: Record<string, string[]> = {

@@ -85,7 +85,10 @@ export async function POST(request: NextRequest) {
   let liquidBefore: string | null = null
   let liquidAfter: string | null = null
 
-  if (relevantFile) {
+  const riskGroup: RiskGroup = issue.risk_group ?? computeRiskGroup(issue.category)
+
+  // Group A: descriptions applied via Products API at apply time — no Liquid needed
+  if (riskGroup !== 'a' && relevantFile) {
     const asset = await getThemeAsset(
       store.shop_domain,
       store.access_token,
@@ -99,8 +102,6 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  const riskGroup: RiskGroup = issue.risk_group ?? computeRiskGroup(issue.category)
-
   const { data: fix, error } = await supabase
     .from('fixes')
     .insert({
@@ -112,8 +113,8 @@ export async function POST(request: NextRequest) {
       status: 'pending',
       liquid_before: liquidBefore,
       liquid_after: liquidAfter,
-      file_path: relevantFile,
-      theme_id: String(mainTheme.id),
+      file_path: riskGroup !== 'a' ? relevantFile : null,
+      theme_id: riskGroup !== 'a' ? String(mainTheme.id) : null,
       risk_group: riskGroup,
       verification_status: 'pending',
     })

@@ -79,20 +79,26 @@ export async function generateFix(
   issue: AuditResult,
   liquidCode: string,
   filePath: string
-): Promise<{ before: string; after: string }> {
+): Promise<{ before: string | null; after: string | null }> {
+  // Group A fixes go via Products API — no Liquid file change needed
+  if (issue.risk_group === 'a') {
+    return { before: null, after: null }
+  }
+
   const message = await anthropic.messages.create({
     model: 'claude-opus-4-8',
     max_tokens: 4096,
     messages: [
       {
         role: 'user',
-        content: `You are a Shopify Liquid expert. Generate a fix for this conversion issue.
+        content: `You are a Shopify Liquid expert. Generate a fix for this conversion issue using anchor-based injection.
 
 Issue: ${issue.title}
 Category: ${issue.category}
 Description: ${issue.description}
 Recommendation: ${issue.recommendation}
 File: ${filePath}
+Risk group: ${issue.risk_group}
 
 Current Liquid code:
 \`\`\`liquid
@@ -101,11 +107,15 @@ ${liquidCode.slice(0, 3000)}
 
 Return a JSON object with exactly this structure:
 {
-  "before": "the original code snippet that needs changing (exact excerpt)",
-  "after": "the fixed code snippet replacing it"
+  "anchor": "a unique Liquid tag or expression from the file used as injection point (must appear verbatim in the file)",
+  "code": "the new Liquid code to inject immediately after the anchor line"
 }
 
-Make minimal, targeted changes. The fix should directly address the conversion issue. Return ONLY valid JSON, no markdown.`,
+Rules:
+- "anchor" must be a complete Liquid expression or tag that appears exactly once in the file (e.g. "{{ product.title }}", "{% endschema %}", "{% if product.available %}")
+- "code" is inserted on a new line directly after the line containing the anchor
+- Make minimal, targeted changes that directly address the conversion issue
+- Return ONLY valid JSON, no markdown`,
       },
     ],
   })
@@ -113,7 +123,8 @@ Make minimal, targeted changes. The fix should directly address the conversion i
   const content = message.content[0]
   if (content.type !== 'text') throw new Error('Unexpected response type')
 
-  return JSON.parse(content.text) as { before: string; after: string }
+  const result = JSON.parse(content.text) as { anchor: string; code: string }
+  return { before: result.anchor, after: result.code }
 }
 
 // ─── Product descriptions ─────────────────────────────────────────────────────
