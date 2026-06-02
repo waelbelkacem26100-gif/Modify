@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createServiceRoleClient } from '@/lib/supabase-server'
 import { getUserSubscription, hasActiveAccess } from '@/lib/subscription'
+import { isAdmin } from '@/lib/config'
 import StoreConnect from '@/components/dashboard/StoreConnect'
 import SubscribeButton from '@/components/dashboard/SubscribeButton'
 import MetricCard from '@/components/dashboard/MetricCard'
@@ -16,7 +17,7 @@ export default async function DashboardPage() {
 
   const supabase = await createServiceRoleClient()
   const subscription = await getUserSubscription(userId)
-  const isSubscribed = hasActiveAccess(subscription)
+  const isSubscribed = isAdmin(userId) || hasActiveAccess(subscription)
 
   const { data: store } = await supabase
     .from('stores')
