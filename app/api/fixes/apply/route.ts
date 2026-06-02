@@ -11,7 +11,7 @@ import {
   updateProductDescription,
 } from '@/lib/shopify'
 import { generateFix, generateProductDescription, buildProductHtml } from '@/lib/anthropic'
-import { getOrCreateSessionBackup, computeRiskGroup } from '@/lib/theme-backup'
+import { getOrCreateSessionBackup, classifyRiskGroup } from '@/lib/theme-backup'
 import { logAction } from '@/lib/audit-log'
 import type { Store, Audit, AuditResult, Fix, RiskGroup } from '@/types'
 
@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
 
   const fixInserts = await Promise.all(
     fixableIssues.map(async (issue) => {
-      const riskGroup: RiskGroup = issue.risk_group ?? computeRiskGroup(issue.category)
+      const riskGroup: RiskGroup = classifyRiskGroup(issue.category, issue.title, issue.risk_group)
       let liquidBefore: string | null = null
       let liquidAfter: string | null = null
       let originalFileContent: string | null = null
@@ -149,7 +149,7 @@ export async function PATCH(request: NextRequest) {
 
   if (store.user_id !== userId) return new NextResponse('Forbidden', { status: 403 })
 
-  const riskGroup: RiskGroup = typedFix.risk_group ?? computeRiskGroup(typedFix.type)
+  const riskGroup: RiskGroup = classifyRiskGroup(typedFix.type, typedFix.title, typedFix.risk_group)
 
   // Group C requires explicit confirmation
   if (riskGroup === 'c' && !confirm_high_risk) {

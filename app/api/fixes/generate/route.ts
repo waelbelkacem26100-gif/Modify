@@ -3,7 +3,7 @@ import { auth } from '@clerk/nextjs/server'
 import { createServiceRoleClient } from '@/lib/supabase-server'
 import { getThemes, getThemeAssets, getThemeAsset } from '@/lib/shopify'
 import { generateFix } from '@/lib/anthropic'
-import { computeRiskGroup } from '@/lib/theme-backup'
+import { classifyRiskGroup } from '@/lib/theme-backup'
 import type { Store, Audit, AuditResult, RiskGroup } from '@/types'
 
 function findRelevantFile(category: string, fileKeys: string[]): string | null {
@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
   let liquidBefore: string | null = null
   let liquidAfter: string | null = null
 
-  const riskGroup: RiskGroup = issue.risk_group ?? computeRiskGroup(issue.category)
+  const riskGroup: RiskGroup = classifyRiskGroup(issue.category, issue.title, issue.risk_group)
 
   // Group A: descriptions applied via Products API at apply time — no Liquid needed
   if (riskGroup !== 'a' && relevantFile) {

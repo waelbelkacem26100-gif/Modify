@@ -59,3 +59,21 @@ export function computeRiskGroup(category: string): 'a' | 'b' | 'c' {
     default:         return 'b'
   }
 }
+
+const DESCRIPTION_RE = /description/i
+
+/**
+ * Authoritative risk group for an issue or stored fix.
+ * Overrides whatever Claude returned — product/description issues are always 'a'.
+ */
+export function classifyRiskGroup(
+  category: string,
+  title: string,
+  claudeRiskGroup?: string | null
+): 'a' | 'b' | 'c' {
+  if (category === 'product' || DESCRIPTION_RE.test(title)) return 'a'
+  if (claudeRiskGroup === 'a' || claudeRiskGroup === 'b' || claudeRiskGroup === 'c') {
+    return claudeRiskGroup
+  }
+  return computeRiskGroup(category)
+}
