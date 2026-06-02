@@ -210,7 +210,77 @@ export interface ShopifyProduct {
   id: number
   title: string
   body_html: string
-  images: Array<{ src: string }>
-  variants: Array<{ price: string; compare_at_price: string | null }>
+  tags: string
+  handle: string
+  product_type: string
+  images: Array<{ id: number; src: string; alt?: string }>
+  variants: Array<{
+    id: number
+    title: string
+    price: string
+    compare_at_price: string | null
+    option1?: string
+    option2?: string
+    option3?: string
+  }>
   status: string
+}
+
+export async function getProductsDetailed(
+  shopDomain: string,
+  accessToken: string,
+  limit = 50
+): Promise<ShopifyProduct[]> {
+  const res = await fetch(
+    `https://${shopDomain}/admin/api/${SHOPIFY_API_VERSION}/products.json?limit=${limit}&status=active`,
+    { headers: shopifyHeaders(accessToken) }
+  )
+  const data = (await res.json()) as { products: ShopifyProduct[] }
+  return data.products ?? []
+}
+
+export async function updateProductDescription(
+  shopDomain: string,
+  accessToken: string,
+  productId: number,
+  bodyHtml: string,
+  seoTitle?: string | null,
+  metaDescription?: string | null
+): Promise<void> {
+  interface Metafield {
+    key: string
+    value: string
+    type: string
+    namespace: string
+  }
+  interface ProductUpdate {
+    id: number
+    body_html: string
+    metafields?: Metafield[]
+  }
+
+  const productUpdate: ProductUpdate = { id: productId, body_html: bodyHtml }
+  const metafields: Metafield[] = []
+
+  if (seoTitle) {
+    metafields.push({ key: 'title_tag', value: seoTitle, type: 'single_line_text_field', namespace: 'global' })
+  }
+  if (metaDescription) {
+    metafields.push({ key: 'description_tag', value: metaDescription, type: 'single_line_text_field', namespace: 'global' })
+  }
+  if (metafields.length > 0) productUpdate.metafields = metafields
+
+  const res = await fetch(
+    `https://${shopDomain}/admin/api/${SHOPIFY_API_VERSION}/products/${productId}.json`,
+    {
+      method: 'PUT',
+      headers: shopifyHeaders(accessToken),
+      body: JSON.stringify({ product: productUpdate }),
+    }
+  )
+
+  if (!res.ok) {
+    const err = await res.text()
+    throw new Error(`Shopify PUT /products/${productId} failed: ${err}`)
+  }
 }

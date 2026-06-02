@@ -2,14 +2,14 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, ScanSearch, Wand2, BarChart3, CreditCard } from 'lucide-react'
+import { LayoutDashboard, ScanSearch, Wand2, BarChart3, Package } from 'lucide-react'
 
 const navItems = [
-  { href: '/dashboard', icon: LayoutDashboard, label: "Accueil" },
+  { href: '/dashboard', icon: LayoutDashboard, label: 'Accueil' },
   { href: '/dashboard/audit', icon: ScanSearch, label: 'Audit' },
   { href: '/dashboard/fixes', icon: Wand2, label: 'Correctifs' },
+  { href: '/dashboard/products', icon: Package, label: 'Produits' },
   { href: '/dashboard/tracking', icon: BarChart3, label: 'Suivi' },
-  { href: '/dashboard/subscription', icon: CreditCard, label: 'Abonnement' },
 ]
 
 export default function MobileNav() {
@@ -17,7 +17,7 @@ export default function MobileNav() {
 
   return (
     <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-surface/95 backdrop-blur-sm border-t border-border">
-      <div className="flex items-center justify-around px-1 py-1.5 safe-bottom">
+      <div className="flex items-center justify-around px-1 py-1.5">
         {navItems.map((item) => {
           const isActive =
             pathname === item.href ||

@@ -10,12 +10,14 @@ import {
   BarChart3,
   Zap,
   CreditCard,
+  Package,
 } from 'lucide-react'
 
 const navItems = [
   { href: '/dashboard', icon: LayoutDashboard, label: "Vue d'ensemble" },
   { href: '/dashboard/audit', icon: ScanSearch, label: 'Audit IA' },
   { href: '/dashboard/fixes', icon: Wand2, label: 'Correctifs' },
+  { href: '/dashboard/products', icon: Package, label: 'Produits' },
   { href: '/dashboard/tracking', icon: BarChart3, label: 'Suivi' },
 ]
 

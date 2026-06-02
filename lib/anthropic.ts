@@ -109,3 +109,79 @@ Make minimal, targeted changes. The fix should directly address the conversion i
 
   return JSON.parse(content.text) as { before: string; after: string }
 }
+
+// ─── Product descriptions ─────────────────────────────────────────────────────
+
+export interface ProductDescriptionResult {
+  description_html: string
+  bullet_points: string[]
+  meta_description: string
+  seo_title: string | null
+}
+
+export interface ProductDataForDescription {
+  title: string
+  product_type: string
+  tags: string
+  variants: Array<{ title: string; price: string; option1?: string; option2?: string }>
+  image_count: number
+}
+
+export async function generateProductDescription(
+  product: ProductDataForDescription
+): Promise<ProductDescriptionResult> {
+  const variantSummary = product.variants
+    .slice(0, 6)
+    .map((v) => `${v.option1 ?? v.title} — ${parseFloat(v.price).toLocaleString('fr-FR')}€`)
+    .join(', ')
+
+  const message = await anthropic.messages.create({
+    model: 'claude-opus-4-8',
+    max_tokens: 2048,
+    messages: [
+      {
+        role: 'user',
+        content: `Tu es un expert copywriter e-commerce spécialisé dans les fiches produit haute conversion pour Shopify. Tu écris en français, avec un ton professionnel, bénéfice-first et orienté conversion.
+
+Génère une fiche produit premium pour :
+Produit : ${product.title}
+Type : ${product.product_type || 'Non spécifié'}
+Tags : ${product.tags || 'Aucun'}
+Variantes disponibles : ${variantSummary || 'Taille unique'}
+Nombre d'images : ${product.image_count}
+
+Retourne UNIQUEMENT un JSON valide avec cette structure exacte :
+{
+  "description_html": "<p>Description principale 150-200 mots. Commence par le bénéfice ou le désir du client. Évoque ensuite le produit, ses matériaux ou fabrication si pertinent, les cas d'usage concrets, et un détail qui crée de la désirabilité. Zéro cliché marketing générique. HTML propre, une seule balise p.</p>",
+  "bullet_points": [
+    "Point 1 : commence par un verbe ou adjectif fort, spécifique au produit",
+    "Point 2 : avantage concret et mesurable si possible",
+    "Point 3 : différenciant ou caractéristique clé",
+    "Point 4 : usage ou bénéfice pratique",
+    "Point 5 : rassurance ou promesse (livraison, qualité, garantie…)"
+  ],
+  "meta_description": "155 caractères max — mot-clé principal naturellement intégré, formulation incitative au clic",
+  "seo_title": "Titre SEO enrichi en mots-clés si le titre actuel est court ou vague, sinon null"
+}
+
+Règles :
+- Tout en français
+- Description : 150 à 200 mots, bénéfices concrets, zéro cliché
+- Bullet points : 5 exactement, commencent par un mot fort
+- Meta description : MAXIMUM 155 caractères, compte soigneusement
+- seo_title : null si le titre original est déjà bon
+- Retourne UNIQUEMENT le JSON, pas de markdown ni d'explication`,
+      },
+    ],
+  })
+
+  const content = message.content[0]
+  if (content.type !== 'text') throw new Error('Unexpected response type')
+
+  return JSON.parse(content.text) as ProductDescriptionResult
+}
+
+export function buildProductHtml(result: ProductDescriptionResult): string {
+  const bullets = result.bullet_points.map((bp) => `  <li>✓ ${bp}</li>`).join('\n')
+  return `${result.description_html}\n\n<ul>\n${bullets}\n</ul>`
+}
