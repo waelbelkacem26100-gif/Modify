@@ -220,8 +220,39 @@ export async function PATCH(request: NextRequest) {
 
   console.log('[PATCH /fixes/apply] → taking GROUP B/C path (Liquid injection)')
 
-  // ── Group B/C: Liquid anchor-based injection ──────────────────────────────
-  if (!typedFix.theme_id || !typedFix.file_path || !typedFix.liquid_before || !typedFix.liquid_after) {
+  // ── Fallback: null liquid fields = product description fix that slipped through ──
+  // (e.g. risk_group mismatch in DB — apply via Products API regardless)
+  if (!typedFix.liquid_before || !typedFix.liquid_after) {
+    console.log('[PATCH /fixes/apply] Fallback: null liquid fields — routing to Products API')
+    try {
+      const products = await getProducts(store.shop_domain, store.access_token, 50)
+      const productsWithoutDesc = products.filter((p) => !p.body_html?.trim())
+      for (const product of productsWithoutDesc.slice(0, 10)) {
+        const descResult = await generateProductDescription({
+          title: product.title,
+          product_type: product.product_type,
+          tags: product.tags,
+          variants: product.variants,
+          image_count: product.images.length,
+        })
+        await updateProductDescription(
+          store.shop_domain, store.access_token, product.id, buildProductHtml(descResult),
+          descResult.seo_title, descResult.meta_description
+        )
+        console.log('[PATCH /fixes/apply] Fallback: updated product', product.id, product.title)
+      }
+      await logAction(supabase, store.id, 'product_descriptions_applied',
+        { updated: Math.min(productsWithoutDesc.length, 10), via: 'fallback' }, 'success', fix_id)
+      await supabase.from('fixes').update({ status: 'applied', verification_status: 'verified' }).eq('id', fix_id)
+      return NextResponse.json({ success: true, group: 'a' })
+    } catch (e) {
+      console.error('[PATCH /fixes/apply] Fallback error:', e)
+      return NextResponse.json({ error: 'Erreur lors de la mise à jour des descriptions produit' }, { status: 502 })
+    }
+  }
+
+  // ── Group B/C: require all Liquid fields ──────────────────────────────────
+  if (!typedFix.theme_id || !typedFix.file_path) {
     return NextResponse.json({ error: 'Correctif incomplet — régénérez-le depuis le panel' }, { status: 400 })
   }
 
