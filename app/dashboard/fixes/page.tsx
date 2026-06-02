@@ -85,8 +85,8 @@ export default function FixesPage() {
   }
 
   return (
-    <div className="p-8 max-w-4xl">
-      <div className="mb-8">
+    <div className="p-4 sm:p-8 max-w-4xl">
+      <div className="mb-6 sm:mb-8">
         <h1 className="font-syne font-bold text-2xl text-text-primary mb-1">Correctifs</h1>
         <p className="text-text-secondary text-sm">
           Appliquez les correctifs générés par l&apos;IA avec preview before/after et rollback instantané.
@@ -95,18 +95,18 @@ export default function FixesPage() {
 
       {/* Summary */}
       {fixes.length > 0 && (
-        <div className="grid grid-cols-3 gap-4 mb-6">
-          <div className="bg-surface border border-border rounded-xl p-4 text-center">
-            <p className="text-text-muted text-xs mb-1">Total correctifs</p>
-            <p className="font-syne font-bold text-2xl text-text-primary">{fixes.length}</p>
+        <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-6">
+          <div className="bg-surface border border-border rounded-xl p-3 sm:p-4 text-center">
+            <p className="text-text-muted text-[10px] sm:text-xs mb-1">Total</p>
+            <p className="font-syne font-bold text-xl sm:text-2xl text-text-primary">{fixes.length}</p>
           </div>
-          <div className="bg-surface border border-border rounded-xl p-4 text-center">
-            <p className="text-text-muted text-xs mb-1">Appliqués</p>
-            <p className="font-syne font-bold text-2xl text-success">{appliedCount}</p>
+          <div className="bg-surface border border-border rounded-xl p-3 sm:p-4 text-center">
+            <p className="text-text-muted text-[10px] sm:text-xs mb-1">Appliqués</p>
+            <p className="font-syne font-bold text-xl sm:text-2xl text-success">{appliedCount}</p>
           </div>
-          <div className="bg-surface border border-border rounded-xl p-4 text-center">
-            <p className="text-text-muted text-xs mb-1">Revenus récupérés</p>
-            <p className="font-syne font-bold text-2xl text-primary">
+          <div className="bg-surface border border-border rounded-xl p-3 sm:p-4 text-center">
+            <p className="text-text-muted text-[10px] sm:text-xs mb-1">Récupérés</p>
+            <p className="font-syne font-bold text-xl sm:text-2xl text-primary">
               €{totalImpact.toLocaleString('fr-FR')}
             </p>
           </div>

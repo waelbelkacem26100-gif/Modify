@@ -28,8 +28,8 @@ export default async function DashboardPage() {
 
   if (!store) {
     return (
-      <div className="p-8">
-        <div className="mb-8">
+      <div className="p-4 sm:p-8">
+        <div className="mb-6 sm:mb-8">
           <h1 className="font-syne font-bold text-2xl text-text-primary mb-1">
             Bienvenue sur Modify
           </h1>
@@ -74,38 +74,45 @@ export default async function DashboardPage() {
   const hasAppliedFix = appliedFixes.length > 0
 
   return (
-    <div className="p-8">
+    <div className="p-4 sm:p-8">
       <OnboardingProgress
         hasStore={true}
         hasCompletedAudit={hasCompletedAudit}
         hasAppliedFix={hasAppliedFix}
       />
       {/* Header */}
-      <div className="mb-8 flex items-start justify-between">
-        <div>
-          <h1 className="font-syne font-bold text-2xl text-text-primary mb-1">
-            {typedStore.shop_name ?? typedStore.shop_domain}
-          </h1>
-          <p className="text-text-secondary text-sm">{typedStore.shop_domain}</p>
+      <div className="mb-6 sm:mb-8">
+        <div className="flex items-start justify-between gap-3 mb-3">
+          <div className="min-w-0">
+            <h1 className="font-syne font-bold text-xl sm:text-2xl text-text-primary mb-0.5 truncate">
+              {typedStore.shop_name ?? typedStore.shop_domain}
+            </h1>
+            <p className="text-text-secondary text-xs sm:text-sm truncate">{typedStore.shop_domain}</p>
+          </div>
+          <Link
+            href="/dashboard/audit"
+            className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 bg-primary hover:bg-primary-dark text-white text-xs sm:text-sm font-medium rounded-xl transition-colors flex-shrink-0"
+          >
+            <ScanSearch className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <span className="hidden xs:inline">Lancer un scan</span>
+            <span className="xs:hidden">Scanner</span>
+          </Link>
         </div>
         {!isSubscribed && (
-          <div className="flex items-center gap-3 px-4 py-3 bg-primary/10 border border-primary/20 rounded-xl">
-            <Zap className="w-4 h-4 text-primary flex-shrink-0" />
-            <span className="text-text-secondary text-sm">14 jours gratuits pour accéder aux audits</span>
-            <SubscribeButton />
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 px-4 py-3 bg-primary/10 border border-primary/20 rounded-xl">
+            <div className="flex items-center gap-2 min-w-0">
+              <Zap className="w-4 h-4 text-primary flex-shrink-0" />
+              <span className="text-text-secondary text-sm">14 jours gratuits pour accéder aux audits</span>
+            </div>
+            <div className="flex-shrink-0">
+              <SubscribeButton />
+            </div>
           </div>
         )}
-        <Link
-          href="/dashboard/audit"
-          className="inline-flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-dark text-white text-sm font-medium rounded-xl transition-colors"
-        >
-          <ScanSearch className="w-4 h-4" />
-          Lancer un scan
-        </Link>
       </div>
 
       {/* Metrics */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
         <MetricCard
           icon={Euro}
           label="Revenus récupérés"

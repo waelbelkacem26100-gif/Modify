@@ -105,7 +105,7 @@ export default function FixPanel({ issue, auditId, onClose, onApplied }: FixPane
         ].join(' ')}
       >
         {/* Header */}
-        <div className="flex items-start justify-between p-6 border-b border-border">
+        <div className="flex items-start justify-between p-4 sm:p-6 border-b border-border">
           <div className="flex-1 min-w-0 pr-4">
             <div className="flex items-center gap-2 mb-1">
               <Wand2 className="w-4 h-4 text-primary flex-shrink-0" />
@@ -126,7 +126,7 @@ export default function FixPanel({ issue, auditId, onClose, onApplied }: FixPane
         </div>
 
         {/* Body */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-5">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-5">
           {/* Issue info */}
           {issue && (
             <div className="bg-surface-2 border border-border rounded-xl p-4 space-y-2">
@@ -208,7 +208,7 @@ export default function FixPanel({ issue, auditId, onClose, onApplied }: FixPane
         </div>
 
         {/* Footer */}
-        <div className="p-6 border-t border-border space-y-3">
+        <div className="p-4 sm:p-6 border-t border-border space-y-3">
           {applied ? (
             <div className="flex items-center justify-center gap-2 py-3 bg-success/10 border border-success/20 rounded-xl text-success">
               <CheckCircle className="w-4 h-4" />

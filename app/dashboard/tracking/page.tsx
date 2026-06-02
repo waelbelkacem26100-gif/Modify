@@ -80,8 +80,8 @@ export default async function TrackingPage() {
     : undefined
 
   return (
-    <div className="p-8 max-w-5xl">
-      <div className="mb-8">
+    <div className="p-4 sm:p-8 max-w-5xl">
+      <div className="mb-6 sm:mb-8">
         <h1 className="font-syne font-bold text-2xl text-text-primary mb-1">Suivi de conversion</h1>
         <p className="text-text-secondary text-sm">
           Mesure de l&apos;uplift de conversion sur 14 jours avant/après application des correctifs.
@@ -89,7 +89,7 @@ export default async function TrackingPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
         {[
           {
             icon: TrendingUp,

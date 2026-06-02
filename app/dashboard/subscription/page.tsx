@@ -111,8 +111,8 @@ export default async function SubscriptionPage() {
   const isActive = ['active', 'trialing'].includes(subscription.status)
 
   return (
-    <div className="p-8 max-w-2xl">
-      <div className="mb-8">
+    <div className="p-4 sm:p-8 max-w-2xl">
+      <div className="mb-6 sm:mb-8">
         <h1 className="font-syne font-bold text-2xl text-text-primary mb-1">Mon abonnement</h1>
         <p className="text-text-secondary text-sm">Gérez votre abonnement Modify.</p>
       </div>
@@ -138,7 +138,7 @@ export default async function SubscriptionPage() {
       </div>
 
       {/* Dates */}
-      <div className="grid grid-cols-2 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-6">
         {trialEnd && subscription.status === 'trialing' && (
           <div className="bg-surface border border-border rounded-xl p-4">
             <div className="flex items-center gap-2 mb-1">

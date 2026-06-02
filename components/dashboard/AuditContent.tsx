@@ -118,8 +118,8 @@ export default function AuditPage() {
 
   return (
     <>
-      <div className="p-8 max-w-4xl">
-        <div className="mb-8">
+      <div className="p-4 sm:p-8 max-w-4xl">
+        <div className="mb-6 sm:mb-8">
           <h1 className="font-syne font-bold text-2xl text-text-primary mb-1">Audit IA</h1>
           <p className="text-text-secondary text-sm">
             Analyse complète de votre boutique pour détecter les fuites de conversion.
@@ -181,21 +181,21 @@ export default function AuditPage() {
         {/* Results */}
         {audit?.status === 'completed' && audit.results && (
           <>
-            <div className="grid grid-cols-3 gap-4 mb-6">
-              <div className="bg-surface border border-border rounded-xl p-4 text-center">
-                <p className="text-text-muted text-xs mb-1">Problèmes trouvés</p>
-                <p className="font-syne font-bold text-2xl text-warning">{audit.results.length}</p>
+            <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-6">
+              <div className="bg-surface border border-border rounded-xl p-3 sm:p-4 text-center">
+                <p className="text-text-muted text-[10px] sm:text-xs mb-1">Problèmes</p>
+                <p className="font-syne font-bold text-xl sm:text-2xl text-warning">{audit.results.length}</p>
               </div>
-              <div className="bg-surface border border-border rounded-xl p-4 text-center">
-                <p className="text-text-muted text-xs mb-1">Impact potentiel</p>
-                <p className="font-syne font-bold text-2xl text-primary">
+              <div className="bg-surface border border-border rounded-xl p-3 sm:p-4 text-center">
+                <p className="text-text-muted text-[10px] sm:text-xs mb-1">Impact</p>
+                <p className="font-syne font-bold text-xl sm:text-2xl text-primary">
                   €{totalImpact.toLocaleString('fr-FR')}
                 </p>
                 <p className="text-text-muted text-xs">/mois</p>
               </div>
-              <div className="bg-surface border border-border rounded-xl p-4 text-center">
-                <p className="text-text-muted text-xs mb-1">Correctifs dispo.</p>
-                <p className="font-syne font-bold text-2xl text-success">
+              <div className="bg-surface border border-border rounded-xl p-3 sm:p-4 text-center">
+                <p className="text-text-muted text-[10px] sm:text-xs mb-1">Correctifs</p>
+                <p className="font-syne font-bold text-xl sm:text-2xl text-success">
                   {audit.results.filter((r) => r.fix_available).length}
                 </p>
               </div>
