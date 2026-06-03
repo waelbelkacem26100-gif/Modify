@@ -224,14 +224,22 @@ export async function PATCH(request: NextRequest) {
     const fileContent: string = asset.value
 
     // ── Step 3: Anchor-based injection with live-file fallback ───────────
-    let updatedCode = applyAnchorInjection(fileContent, typedFix.liquid_before, typedFix.liquid_after)
+    // NEVER inject around a schema block: matches {% schema %}, {%- schema -%},
+    // {% endschema %} and trimmed variants. Injecting there corrupts the JSON
+    // settings block and breaks the whole section.
+    const isSchemaAnchor = (a: string) => /schema\s*-?%\}/.test(a) || /\{%-?\s*schema/.test(a)
+
+    // If the DB-stored anchor is a schema tag (stale/bad data), don't even try it
+    let updatedCode = isSchemaAnchor(typedFix.liquid_before)
+      ? null
+      : applyAnchorInjection(fileContent, typedFix.liquid_before, typedFix.liquid_after)
     let usedAnchor = typedFix.liquid_before
 
     if (updatedCode === null) {
-      // Primary anchor is stale — extract real anchors from the live file and
-      // pick the first safe one (exclude {% schema %} which is a JSON block)
+      // Primary anchor unusable — extract real anchors from the live file,
+      // excluding ALL schema/endschema variants
       const realAnchors = extractRealAnchors(fileContent).filter(
-        (a) => a !== typedFix.liquid_before && !a.startsWith('{% schema') && a.length >= 10
+        (a) => a !== typedFix.liquid_before && !isSchemaAnchor(a) && a.length >= 10
       )
       console.log('[B/C] Primary anchor not found:', JSON.stringify(typedFix.liquid_before))
       console.log('[B/C] Real anchors available:', realAnchors.slice(0, 5))
