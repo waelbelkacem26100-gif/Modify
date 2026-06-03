@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { createServiceRoleClient } from '@/lib/supabase-server'
-import { updateThemeAsset } from '@/lib/shopify'
+import { getThemes, updateThemeAsset } from '@/lib/shopify'
 import { logAction } from '@/lib/audit-log'
 import type { Fix, Audit, Store } from '@/types'
 
@@ -38,13 +38,22 @@ export async function POST() {
 
   const typedFixes = fixes as Fix[]
 
+  // Resolve the active theme live — fix.theme_id may be stale (deleted theme).
+  // All restores target the currently published theme.
+  const themes = await getThemes(typedStore.shop_domain, typedStore.access_token)
+  const activeTheme = themes.find((t) => t.role === 'main') ?? themes[0]
+  if (!activeTheme) {
+    return NextResponse.json({ error: 'Thème principal introuvable' }, { status: 502 })
+  }
+  const activeThemeId = String(activeTheme.id)
+
   // For each unique file_path, restore from the OLDEST fix (which has the pre-Modify original content)
   const filesSeen = new Set<string>()
   const results: Array<{ file: string; status: 'ok' | 'failed' }> = []
   const fixIds: string[] = []
 
   for (const fix of typedFixes) {
-    if (!fix.file_path || !fix.theme_id) continue
+    if (!fix.file_path) continue
     if (filesSeen.has(fix.file_path)) continue // already restored from older fix
     filesSeen.add(fix.file_path)
 
@@ -54,7 +63,7 @@ export async function POST() {
       await updateThemeAsset(
         typedStore.shop_domain,
         typedStore.access_token,
-        fix.theme_id,
+        activeThemeId,
         fix.file_path,
         fix.original_file_content
       )

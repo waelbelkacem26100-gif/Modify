@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { createServiceRoleClient } from '@/lib/supabase-server'
-import { getThemeAsset, updateThemeAsset } from '@/lib/shopify'
+import { getThemes, getThemeAsset, updateThemeAsset } from '@/lib/shopify'
 import { logAction } from '@/lib/audit-log'
 import type { Fix, Audit, Store } from '@/types'
 
@@ -28,11 +28,20 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Ce correctif n\'est pas appliqué' }, { status: 400 })
   }
 
-  if (!typedFix.theme_id || !typedFix.file_path) {
+  if (!typedFix.file_path) {
     return NextResponse.json({ error: 'Informations de thème manquantes' }, { status: 400 })
   }
 
   try {
+    // Resolve the active (main) theme live — fix.theme_id may point to a
+    // deleted theme, so always restore onto the currently published theme.
+    const themes = await getThemes(store.shop_domain, store.access_token)
+    const activeTheme = themes.find((t) => t.role === 'main') ?? themes[0]
+    if (!activeTheme) {
+      return NextResponse.json({ error: 'Thème principal introuvable sur cette boutique' }, { status: 502 })
+    }
+    const activeThemeId = String(activeTheme.id)
+
     if (typedFix.backup_theme_id && typedFix.file_path) {
       // Priority 1: restore from Shopify backup theme (full file, exact state)
       const backupAsset = await getThemeAsset(
@@ -47,19 +56,19 @@ export async function POST(request: NextRequest) {
       }
 
       await updateThemeAsset(
-        store.shop_domain, store.access_token, typedFix.theme_id, typedFix.file_path, backupAsset.value
+        store.shop_domain, store.access_token, activeThemeId, typedFix.file_path, backupAsset.value
       )
       await logAction(supabase, store.id, 'rollback_from_backup_theme',
-        { file: typedFix.file_path }, 'success', fix_id)
+        { file: typedFix.file_path, theme_id: activeThemeId }, 'success', fix_id)
 
     } else if (typedFix.original_file_content) {
       // Priority 2: restore from DB-stored original content
       await updateThemeAsset(
-        store.shop_domain, store.access_token, typedFix.theme_id, typedFix.file_path,
+        store.shop_domain, store.access_token, activeThemeId, typedFix.file_path,
         typedFix.original_file_content
       )
       await logAction(supabase, store.id, 'rollback_from_db_snapshot',
-        { file: typedFix.file_path }, 'success', fix_id)
+        { file: typedFix.file_path, theme_id: activeThemeId }, 'success', fix_id)
 
     } else {
       return NextResponse.json(
