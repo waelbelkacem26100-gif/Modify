@@ -1,0 +1,55 @@
+{%- liquid
+  assign rating = block.settings.rating | times: 1.0
+  assign full = rating | floor
+-%}
+<div class="modify-social-proof" style="--modify-star: {{ block.settings.star_color }};" {{ block.shopify_attributes }}>
+  <div class="modify-stars" role="img" aria-label="{{ rating }} / 5">
+    {%- for i in (1..5) -%}
+      <svg viewBox="0 0 24 24" width="18" height="18" class="modify-star {% if i <= full %}is-full{% endif %}" aria-hidden="true">
+        <path fill="currentColor" d="m12 2 3 6.3 6.9.9-5 4.8 1.2 6.8L12 18l-6.1 3.6 1.2-6.8-5-4.8 6.9-.9L12 2Z"/>
+      </svg>
+    {%- endfor -%}
+    <span class="modify-rating-num">{{ rating }}</span>
+  </div>
+
+  <p class="modify-review-count">
+    {{ block.settings.count }} {{ block.settings.count_label }}
+  </p>
+
+  {%- if block.settings.quote != blank -%}
+    <blockquote class="modify-review-quote">
+      “{{ block.settings.quote }}”
+      {%- if block.settings.author != blank -%}
+        <cite>— {{ block.settings.author }}</cite>
+      {%- endif -%}
+    </blockquote>
+  {%- endif -%}
+</div>
+
+{% stylesheet %}
+.modify-social-proof { margin: 1rem 0; }
+.modify-stars { display: inline-flex; align-items: center; gap: 2px; }
+.modify-star { color: #d1d5db; }
+.modify-star.is-full { color: var(--modify-star, #f59e0b); }
+.modify-rating-num { margin-left: .4rem; font-weight: 600; font-size: .9rem; }
+.modify-review-count { font-size: .8rem; opacity: .7; margin: .25rem 0 0; }
+.modify-review-quote { font-style: italic; font-size: .9rem; margin: .6rem 0 0; padding-left: .8rem; border-left: 3px solid var(--modify-star, #f59e0b); }
+.modify-review-quote cite { display: block; font-style: normal; font-size: .8rem; opacity: .6; margin-top: .25rem; }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Modify Social Proof",
+  "target": "section",
+  "enabled_on": { "templates": ["product"] },
+  "settings": [
+    { "type": "range", "id": "rating", "label": "Note moyenne", "min": 1, "max": 5, "step": 0.1, "default": 4.8 },
+    { "type": "color", "id": "star_color", "label": "Couleur des étoiles", "default": "#f59e0b" },
+    { "type": "text", "id": "count", "label": "Nombre d'avis", "default": "247" },
+    { "type": "text", "id": "count_label", "label": "Libellé", "default": "avis clients vérifiés" },
+    { "type": "header", "content": "Témoignage (optionnel)" },
+    { "type": "textarea", "id": "quote", "label": "Citation", "default": "Qualité au rendez-vous, livraison rapide. Je recommande !" },
+    { "type": "text", "id": "author", "label": "Auteur", "default": "Marie L., cliente vérifiée" }
+  ]
+}
+{% endschema %}

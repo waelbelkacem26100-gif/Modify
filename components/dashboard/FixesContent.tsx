@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import Button from '@/components/ui/Button'
 import Badge from '@/components/ui/Badge'
+import ActivationCard from '@/components/dashboard/ActivationCard'
 import type { Fix, RiskGroup } from '@/types'
 
 interface FixWithExpand extends Fix { expanded?: boolean }
@@ -186,6 +187,10 @@ export default function FixesContent() {
 
   const filtered = activeTab === 'all' ? fixes : fixes.filter((f) => (f.risk_group ?? 'b') === activeTab)
 
+  // Group B/C correctifs are delivered as Theme App Extension blocks the
+  // merchant activates once in the theme editor — show the guided onboarding.
+  const hasThemeFixes = fixes.some((f) => (f.risk_group ?? 'b') !== 'a')
+
   if (loading) {
     return (
       <div className="p-4 sm:p-8 flex items-center justify-center min-h-64">
@@ -216,6 +221,9 @@ export default function FixesContent() {
           </Button>
         )}
       </div>
+
+      {/* Guided activation for Theme App Extension blocks (Group B/C) */}
+      {hasThemeFixes && <ActivationCard />}
 
       {/* Report banner */}
       {fixes.length > 0 && (

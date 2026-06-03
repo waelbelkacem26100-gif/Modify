@@ -1,0 +1,51 @@
+{%- liquid
+  assign qty = product.selected_or_first_available_variant.inventory_quantity
+  assign threshold = block.settings.low_stock_threshold
+  assign show = false
+  if block.settings.mode == 'always'
+    assign show = true
+  elsif block.settings.mode == 'low_stock' and product.selected_or_first_available_variant.inventory_management == 'shopify' and qty > 0 and qty <= threshold
+    assign show = true
+  endif
+-%}
+{%- if show -%}
+  <div class="modify-urgency" style="--modify-urgency: {{ block.settings.color }};" {{ block.shopify_attributes }}>
+    <span class="modify-urgency-dot"></span>
+    <span class="modify-urgency-text">
+      {%- if block.settings.mode == 'low_stock' -%}
+        {{ block.settings.low_stock_text | replace: '[qty]', qty }}
+      {%- else -%}
+        {{ block.settings.message }}
+      {%- endif -%}
+    </span>
+  </div>
+{%- endif -%}
+
+{% stylesheet %}
+.modify-urgency { display: inline-flex; align-items: center; gap: .5rem; margin: .75rem 0; padding: .5rem .85rem; border-radius: 8px; background: color-mix(in srgb, var(--modify-urgency, #ef4444) 10%, transparent); font-size: .875rem; font-weight: 500; color: var(--modify-urgency, #ef4444); }
+.modify-urgency-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--modify-urgency, #ef4444); animation: modify-pulse 1.4s ease-in-out infinite; }
+@keyframes modify-pulse { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: .4; transform: scale(.7); } }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Modify Urgency",
+  "target": "section",
+  "enabled_on": { "templates": ["product"] },
+  "settings": [
+    {
+      "type": "select", "id": "mode", "label": "Mode", "default": "low_stock",
+      "options": [
+        { "value": "low_stock", "label": "Stock faible (dynamique)" },
+        { "value": "always", "label": "Message permanent" }
+      ]
+    },
+    { "type": "color", "id": "color", "label": "Couleur", "default": "#ef4444" },
+    { "type": "header", "content": "Stock faible" },
+    { "type": "range", "id": "low_stock_threshold", "label": "Seuil d'affichage", "min": 1, "max": 50, "step": 1, "default": 10 },
+    { "type": "text", "id": "low_stock_text", "label": "Texte ([qty] = quantité)", "default": "Plus que [qty] en stock — commandez vite !" },
+    { "type": "header", "content": "Message permanent" },
+    { "type": "text", "id": "message", "label": "Message", "default": "🔥 Article très demandé en ce moment" }
+  ]
+}
+{% endschema %}

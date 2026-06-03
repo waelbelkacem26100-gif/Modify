@@ -1,0 +1,40 @@
+{%- comment -%}
+  Modify JSON-LD — app embed block (renders in <head> store-wide).
+  Outputs Product structured data on product pages only.
+{%- endcomment -%}
+{%- if template.name == 'product' and product -%}
+  {%- assign variant = product.selected_or_first_available_variant -%}
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org/",
+      "@type": "Product",
+      "name": {{ product.title | json }},
+      "description": {{ product.description | strip_html | truncatewords: 50 | json }},
+      "image": {{ product.featured_image | image_url: width: 1000 | prepend: "https:" | json }},
+      {% if variant.sku != blank %}"sku": {{ variant.sku | json }},{% endif %}
+      "brand": { "@type": "Brand", "name": {{ product.vendor | json }} },
+      "offers": {
+        "@type": "Offer",
+        "url": {{ request.origin | append: product.url | json }},
+        "price": {{ variant.price | divided_by: 100.0 | json }},
+        "priceCurrency": {{ cart.currency.iso_code | json }},
+        "availability": "{% if product.available %}https://schema.org/InStock{% else %}https://schema.org/OutOfStock{% endif %}"
+      }
+      {%- if product.metafields.reviews.rating_count and product.metafields.reviews.rating_count.value > 0 -%}
+      ,"aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": {{ product.metafields.reviews.rating.value.rating | json }},
+        "reviewCount": {{ product.metafields.reviews.rating_count.value | json }}
+      }
+      {%- endif -%}
+    }
+  </script>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "Modify JSON-LD",
+  "target": "head",
+  "settings": []
+}
+{% endschema %}
