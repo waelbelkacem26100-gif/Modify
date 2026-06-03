@@ -130,6 +130,10 @@ export async function updateThemeAsset(
       body: JSON.stringify({ asset: { key, value } }),
     }
   )
+  if (!res.ok) {
+    const body = await res.text()
+    throw new Error(`Shopify PUT asset ${key} failed ${res.status}: ${body.slice(0, 200)}`)
+  }
   return res.json()
 }
 

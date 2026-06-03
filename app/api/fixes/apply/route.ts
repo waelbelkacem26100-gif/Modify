@@ -212,27 +212,31 @@ export async function PATCH(request: NextRequest) {
     }
     const fileContent: string = asset.value
 
-    // ── Step 3: Anchor-based injection with fallback chain ────────────────
+    // ── Step 3: Anchor-based injection with live-file fallback ───────────
     let updatedCode = applyAnchorInjection(fileContent, typedFix.liquid_before, typedFix.liquid_after)
     let usedAnchor = typedFix.liquid_before
 
     if (updatedCode === null) {
-      // Primary anchor not found — extract real anchors from the current file
-      // and try them in priority order (works for any theme, not just Dawn)
-      const realAnchors = extractRealAnchors(fileContent)
-      const fallback = realAnchors.find(
-        (a) => a !== typedFix.liquid_before && a.length >= 10
-      ) ?? null
+      // Primary anchor is stale — extract real anchors from the live file and
+      // pick the first safe one (exclude {% schema %} which is a JSON block)
+      const realAnchors = extractRealAnchors(fileContent).filter(
+        (a) => a !== typedFix.liquid_before && !a.startsWith('{% schema') && a.length >= 10
+      )
+      console.log('[B/C] Primary anchor not found:', JSON.stringify(typedFix.liquid_before))
+      console.log('[B/C] Real anchors available:', realAnchors.slice(0, 5))
 
-      if (fallback) {
-        updatedCode = applyAnchorInjection(fileContent, fallback, typedFix.liquid_after)
-        usedAnchor = fallback
-        console.log('[B/C] Primary anchor not found, using dynamic fallback:', fallback)
-        await logAction(supabase, store.id, 'anchor_fallback_used',
-          { file: typedFix.file_path, original: typedFix.liquid_before, fallback }, 'warning', fix_id)
-
-        // Update DB so future applications use the working anchor directly
-        await supabase.from('fixes').update({ liquid_before: fallback }).eq('id', fix_id)
+      for (const candidate of realAnchors) {
+        const attempt = applyAnchorInjection(fileContent, candidate, typedFix.liquid_after)
+        if (attempt !== null && attempt !== fileContent) {
+          updatedCode = attempt
+          usedAnchor = candidate
+          console.log('[B/C] Auto-healed anchor:', JSON.stringify(candidate))
+          await logAction(supabase, store.id, 'anchor_auto_healed',
+            { file: typedFix.file_path, stale: typedFix.liquid_before, healed: candidate }, 'warning', fix_id)
+          // Persist working anchor so next apply succeeds on first try
+          await supabase.from('fixes').update({ liquid_before: candidate }).eq('id', fix_id)
+          break
+        }
       }
     }
 
@@ -245,14 +249,14 @@ export async function PATCH(request: NextRequest) {
       }, { status: 422 })
     }
 
-    console.log('[B/C] Injection via anchor:', usedAnchor)
-
-    // Idempotency — code was already present, skip upload
+    // Idempotency — injected code already present, nothing to write
     if (updatedCode === fileContent) {
       console.log('[B/C] Idempotent — fix already applied, skipping upload')
       await supabase.from('fixes').update({ status: 'applied', verification_status: 'verified' }).eq('id', fix_id)
       return NextResponse.json({ success: true, group: riskGroup, note: 'already_applied' })
     }
+
+    console.log('[B/C] Injecting via anchor:', JSON.stringify(usedAnchor))
 
     // ── Step 4: Snapshot to backup theme ──────────────────────────────────
     if (backupThemeId) {
@@ -405,14 +409,17 @@ async function applyGroupA(store: Store, supabase: any, fix_id: string): Promise
 }
 
 function applyAnchorInjection(fileContent: string, anchor: string, code: string): string | null {
-  // B1 fix: idempotency — if the injected code is already present, skip
+  // Idempotency — if injected code is already present, signal no-op via fileContent
   const trimmed = code.trim()
   if (trimmed.length >= 20 && fileContent.includes(trimmed)) {
-    return fileContent  // already applied, no-op
+    return fileContent
   }
 
   const idx = fileContent.indexOf(anchor)
-  if (idx === -1) return null
+  if (idx === -1) {
+    // Anchor not present in file — caller must try a fallback
+    return null
+  }
   const lineEnd = fileContent.indexOf('\n', idx + anchor.length)
   const insertAt = lineEnd === -1 ? fileContent.length : lineEnd + 1
   return fileContent.slice(0, insertAt) + code + '\n' + fileContent.slice(insertAt)
