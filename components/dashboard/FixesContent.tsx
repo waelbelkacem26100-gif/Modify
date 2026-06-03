@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import {
   Wand2, CheckCircle, RotateCcw, Code2, ChevronDown, ChevronUp,
   AlertTriangle, Shield, Zap, RotateCcw as RollbackAll, RefreshCw,
+  Eye, Rocket,
 } from 'lucide-react'
 import Button from '@/components/ui/Button'
 import Badge from '@/components/ui/Badge'
@@ -48,15 +49,48 @@ export default function FixesContent() {
   const [rollbackAllLoading, setRollbackAllLoading] = useState(false)
   const [activeTab, setActiveTab] = useState<Tab>('all')
   const [applyErrors, setApplyErrors] = useState<Record<string, string>>({})
+  const [promoting, setPromoting] = useState<string | null>(null)
+  const [shopDomain, setShopDomain] = useState<string | null>(null)
 
   const fetchFixes = useCallback(async () => {
     const res = await fetch('/api/fixes/apply')
     if (res.ok) {
-      const data = await res.json() as { fixes: Fix[] }
+      const data = await res.json() as { fixes: Fix[]; shop_domain?: string }
       setFixes(data.fixes ?? [])
+      setShopDomain(data.shop_domain ?? null)
     }
     setLoading(false)
   }, [])
+
+  function previewUrl(fix: Fix): string | null {
+    if (!fix.preview_theme_id || !shopDomain) return null
+    return `https://${shopDomain}/admin/themes/${fix.preview_theme_id}/editor`
+  }
+
+  async function promoteFix(fix: Fix) {
+    const ok = confirm(
+      '🚀 APPLIQUER EN LIVE\n\nLe thème preview va devenir le thème publié de votre boutique.\nL\'ancien thème reste disponible en sauvegarde.\n\nConfirmer ?'
+    )
+    if (!ok) return
+
+    setPromoting(fix.id)
+    setApplyErrors((prev) => ({ ...prev, [fix.id]: '' }))
+    try {
+      const res = await fetch('/api/fixes/promote', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fix_id: fix.id }),
+      })
+      const data = await res.json() as { error?: string }
+      if (res.ok) {
+        setFixes((prev) => prev.map((f) => f.id === fix.id ? { ...f, status: 'applied' } : f))
+      } else {
+        setApplyErrors((prev) => ({ ...prev, [fix.id]: data.error ?? 'Erreur inconnue' }))
+      }
+    } finally {
+      setPromoting(null)
+    }
+  }
 
   useEffect(() => { fetchFixes() }, [fetchFixes])
 
@@ -64,7 +98,7 @@ export default function FixesContent() {
     const riskGroup: RiskGroup = fix.risk_group ?? 'b'
     if (riskGroup === 'c') {
       const ok = confirm(
-        '⚠️ RISQUE ÉLEVÉ — Groupe C\n\nCe correctif modifie la navigation, le checkout ou le layout principal.\nUn backup est créé automatiquement avant toute modification.\n\nConfirmer ?'
+        '⚠️ RISQUE ÉLEVÉ — Groupe C\n\nCe correctif sera appliqué sur un thème PREVIEW (copie de votre thème).\nVotre boutique en ligne n\'est PAS modifiée.\nVous pourrez prévisualiser puis publier vous-même.\n\nContinuer ?'
       )
       if (!ok) return
     }
@@ -77,9 +111,15 @@ export default function FixesContent() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ fix_id: fix.id, confirm_high_risk: riskGroup === 'c' }),
       })
-      const data = await res.json() as { error?: string }
+      const data = await res.json() as { error?: string; status?: string; preview_theme_id?: string; preview_url?: string }
       if (res.ok) {
-        setFixes((prev) => prev.map((f) => f.id === fix.id ? { ...f, status: 'applied' } : f))
+        // Group C returns a preview (status 'preview') instead of going live
+        const newStatus = data.status === 'preview' ? 'preview' : 'applied'
+        setFixes((prev) => prev.map((f) =>
+          f.id === fix.id
+            ? { ...f, status: newStatus, preview_theme_id: data.preview_theme_id ?? f.preview_theme_id }
+            : f
+        ))
       } else {
         setApplyErrors((prev) => ({ ...prev, [fix.id]: data.error ?? 'Erreur inconnue' }))
       }
@@ -267,7 +307,7 @@ export default function FixesContent() {
                         </span>
 
                         {/* Status badge */}
-                        <Badge variant={fix.status as 'applied' | 'pending' | 'rolled_back'}>
+                        <Badge variant={fix.status as 'applied' | 'pending' | 'rolled_back' | 'failed' | 'preview'}>
                           {fix.status === 'applied' ? 'Appliqué' :
                            fix.status === 'rolled_back' ? 'Annulé' :
                            fix.status === 'failed' ? 'Échec' :
@@ -317,6 +357,30 @@ export default function FixesContent() {
                           <CheckCircle className="w-3.5 h-3.5" />
                           Appliquer
                         </Button>
+                      )}
+                      {fix.status === 'preview' && (
+                        <>
+                          {previewUrl(fix) && (
+                            <a
+                              href={previewUrl(fix)!}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-border text-text-secondary hover:text-text-primary hover:bg-surface-2 transition-colors"
+                            >
+                              <Eye className="w-3.5 h-3.5" />
+                              Prévisualiser
+                            </a>
+                          )}
+                          <Button
+                            size="sm"
+                            variant="primary"
+                            onClick={() => promoteFix(fix)}
+                            loading={promoting === fix.id}
+                          >
+                            <Rocket className="w-3.5 h-3.5" />
+                            Appliquer en live
+                          </Button>
+                        </>
                       )}
                       {fix.status === 'applied' && (
                         <Button

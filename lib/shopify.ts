@@ -195,6 +195,89 @@ export async function createBackupTheme(
   return data.theme
 }
 
+// ─── Full theme duplication (for safe, promotable Group C previews) ─────────────
+
+const TEXT_ASSET_RE = /\.(liquid|json|js|css|scss|svg|txt|md)$/i
+
+async function putAssetValue(
+  shopDomain: string, accessToken: string, themeId: string, key: string, value: string
+): Promise<void> {
+  await fetch(
+    `https://${shopDomain}/admin/api/${SHOPIFY_API_VERSION}/themes/${themeId}/assets.json`,
+    { method: 'PUT', headers: shopifyHeaders(accessToken), body: JSON.stringify({ asset: { key, value } }) }
+  )
+}
+
+async function putAssetSrc(
+  shopDomain: string, accessToken: string, themeId: string, key: string, src: string
+): Promise<void> {
+  await fetch(
+    `https://${shopDomain}/admin/api/${SHOPIFY_API_VERSION}/themes/${themeId}/assets.json`,
+    { method: 'PUT', headers: shopifyHeaders(accessToken), body: JSON.stringify({ asset: { key, src } }) }
+  )
+}
+
+/**
+ * Creates an unpublished theme that is a FULL copy of `sourceThemeId`.
+ * Text assets are copied by value; binary assets (images, fonts) by `src`
+ * referencing the source theme's CDN URL. Best-effort: per-asset failures are
+ * logged and skipped. Used for Group C previews so the theme can later be
+ * promoted to main WITHOUT missing files.
+ */
+export async function duplicateTheme(
+  shopDomain: string,
+  accessToken: string,
+  sourceThemeId: string,
+  name: string
+): Promise<{ themeId: string; copied: number; failed: number }> {
+  const created = await createBackupTheme(shopDomain, accessToken, name)
+  const newId = String(created.id)
+
+  const assets = await getThemeAssets(shopDomain, accessToken, sourceThemeId)
+  let copied = 0
+  let failed = 0
+
+  for (const a of assets) {
+    try {
+      if (TEXT_ASSET_RE.test(a.key)) {
+        const full = await getThemeAsset(shopDomain, accessToken, sourceThemeId, a.key)
+        if (full?.value != null) {
+          await putAssetValue(shopDomain, accessToken, newId, a.key, full.value)
+          copied++
+        } else if (a.public_url) {
+          await putAssetSrc(shopDomain, accessToken, newId, a.key, a.public_url)
+          copied++
+        }
+      } else if (a.public_url) {
+        await putAssetSrc(shopDomain, accessToken, newId, a.key, a.public_url)
+        copied++
+      }
+    } catch (e) {
+      failed++
+      console.error('[duplicateTheme] skip', a.key, '→', String(e))
+    }
+  }
+
+  console.log(`[duplicateTheme] ${newId} ← ${sourceThemeId}: ${copied} copied, ${failed} failed`)
+  return { themeId: newId, copied, failed }
+}
+
+/**
+ * Safety guard before promoting a preview theme to main: confirms the theme
+ * has the critical files a published theme needs. Prevents promoting an
+ * incomplete duplicate (which would break the storefront).
+ */
+export async function themeHasCoreFiles(
+  shopDomain: string,
+  accessToken: string,
+  themeId: string
+): Promise<boolean> {
+  const layout = await getThemeAsset(shopDomain, accessToken, themeId, 'layout/theme.liquid')
+  if (!layout?.value || layout.value.length < 100) return false
+  if (!/<\/head>/i.test(layout.value) || !/<\/body>/i.test(layout.value)) return false
+  return true
+}
+
 export async function verifyThemeAsset(
   shopDomain: string,
   accessToken: string,

@@ -1,4 +1,4 @@
-type BadgeVariant = 'high' | 'medium' | 'low' | 'applied' | 'pending' | 'rolled_back' | 'running' | 'completed' | 'failed' | 'default'
+type BadgeVariant = 'high' | 'medium' | 'low' | 'applied' | 'pending' | 'rolled_back' | 'running' | 'completed' | 'failed' | 'preview' | 'default'
 
 interface BadgeProps {
   variant?: BadgeVariant
@@ -16,6 +16,7 @@ const variantClasses: Record<BadgeVariant, string> = {
   running: 'bg-primary/10 text-primary border-primary/20',
   completed: 'bg-success/10 text-success border-success/20',
   failed: 'bg-danger/10 text-danger border-danger/20',
+  preview: 'bg-primary/10 text-primary border-primary/20',
   default: 'bg-surface-2 text-text-secondary border-border',
 }
 

@@ -15,9 +15,12 @@ import {
   updateProductMetafields,
 } from '@/lib/shopify'
 import { generateFix, generateProductDescription, buildProductHtml, extractRealAnchors } from '@/lib/anthropic'
+import { duplicateTheme } from '@/lib/shopify'
 import { getOrCreateSessionBackup, classifyRiskGroup } from '@/lib/theme-backup'
 import { logAction } from '@/lib/audit-log'
 import type { Store, Audit, AuditResult, Fix, RiskGroup } from '@/types'
+
+export const maxDuration = 300 // theme duplication for Group C previews can be slow
 
 // ─── GET: list fixes for latest audit ────────────────────────────────────────
 
@@ -28,7 +31,7 @@ export async function GET() {
   const supabase = await createServiceRoleClient()
 
   const { data: store } = await supabase
-    .from('stores').select('id').eq('user_id', userId)
+    .from('stores').select('id, shop_domain').eq('user_id', userId)
     .order('created_at', { ascending: false }).limit(1).single()
 
   if (!store) return NextResponse.json({ fixes: [] })
@@ -43,7 +46,7 @@ export async function GET() {
     .from('fixes').select('*').eq('audit_id', audit.id)
     .order('impact_euros', { ascending: false })
 
-  return NextResponse.json({ fixes: fixes ?? [] })
+  return NextResponse.json({ fixes: fixes ?? [], shop_domain: store.shop_domain })
 }
 
 // ─── POST: generate fixes for an audit ───────────────────────────────────────
@@ -280,7 +283,51 @@ export async function PATCH(request: NextRequest) {
 
     console.log('[B/C] Injecting via anchor:', JSON.stringify(usedAnchor))
 
-    // ── Step 4: Snapshot to backup theme ──────────────────────────────────
+    // ── GROUP C: apply on a PREVIEW theme only — never touch the live theme ──
+    if (riskGroup === 'c') {
+      // Reuse an existing preview theme if it still exists, else duplicate active
+      let previewThemeId = typedFix.preview_theme_id
+      const previewExists = previewThemeId && themes.some((t) => String(t.id) === previewThemeId)
+
+      if (!previewExists) {
+        console.log('[Group C] Duplicating active theme for preview…')
+        const dup = await duplicateTheme(
+          store.shop_domain, store.access_token, activeThemeId,
+          `Modify Preview ${new Date().toISOString().slice(0, 16).replace('T', ' ')}`
+        )
+        previewThemeId = dup.themeId
+        await logAction(supabase, store.id, 'preview_theme_created',
+          { preview_theme_id: previewThemeId, copied: dup.copied, failed: dup.failed }, 'success', fix_id)
+      }
+
+      // Write the modified file onto the PREVIEW theme only
+      await updateThemeAsset(
+        store.shop_domain, store.access_token, previewThemeId!, typedFix.file_path, updatedCode
+      )
+      await logAction(supabase, store.id, 'preview_fix_applied',
+        { file: typedFix.file_path, preview_theme_id: previewThemeId }, 'success', fix_id)
+
+      const previewUrl = `https://${store.shop_domain}/admin/themes/${previewThemeId}/editor`
+
+      await supabase.from('fixes').update({
+        status: 'preview',
+        verification_status: 'verified',
+        preview_theme_id: previewThemeId,
+        original_file_content: fileContent,
+        theme_id: activeThemeId,
+      }).eq('id', fix_id)
+
+      console.log('[Group C] Preview ready:', previewUrl)
+      return NextResponse.json({
+        success: true,
+        group: 'c',
+        status: 'preview',
+        preview_theme_id: previewThemeId,
+        preview_url: previewUrl,
+      })
+    }
+
+    // ── Step 4: Snapshot to backup theme (Group B) ────────────────────────
     if (backupThemeId) {
       await updateThemeAsset(
         store.shop_domain, store.access_token, backupThemeId, typedFix.file_path, fileContent
