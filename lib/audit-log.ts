@@ -10,15 +10,22 @@ export async function logAction(
   fixId?: string | null
 ): Promise<void> {
   try {
-    await supabase.from('audit_logs').insert({
+    // PostgREST errors do NOT throw — they come back in `error`. Surface them
+    // so schema/RLS problems (e.g. missing column → PGRST204 / HTTP 400) are
+    // diagnosable instead of being silently swallowed.
+    const { error } = await supabase.from('audit_logs').insert({
       store_id: storeId,
       fix_id: fixId ?? null,
       action,
       details: details ?? null,
       status,
     })
+    if (error) {
+      console.error('[audit-log] insert rejected:', error.code, '-', error.message,
+        error.hint ? `(hint: ${error.hint})` : '')
+    }
   } catch (e) {
-    // Logging must never throw — absorb silently
-    console.error('[audit-log] Failed to write log:', e)
+    // Network/unexpected throw — logging must never break the caller's flow
+    console.error('[audit-log] insert threw:', e)
   }
 }
