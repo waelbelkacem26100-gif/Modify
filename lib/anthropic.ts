@@ -87,6 +87,8 @@ export async function generateFix(
     return { before: null, after: null }
   }
 
+  const realAnchors = extractRealAnchors(liquidCode)
+
   const message = await anthropic.messages.create({
     model: 'claude-opus-4-8',
     max_tokens: 4096,
@@ -100,7 +102,9 @@ Category: ${issue.category}
 Description: ${issue.description}
 Recommendation: ${issue.recommendation}
 File: ${filePath}
-Risk group: ${issue.risk_group}
+
+VALID ANCHORS — copy one character-for-character (these are extracted from the actual file):
+${realAnchors.map((a) => `  ${a}`).join('\n')}
 
 Current Liquid code:
 \`\`\`liquid
@@ -109,12 +113,13 @@ ${liquidCode.slice(0, 3000)}
 
 Return a JSON object with exactly this structure:
 {
-  "anchor": "a unique Liquid tag or expression from the file used as injection point (must appear verbatim in the file)",
+  "anchor": "one line from the VALID ANCHORS list above, copied exactly",
   "code": "the new Liquid code to inject immediately after the anchor line"
 }
 
 Rules:
-- "anchor" must be a complete Liquid expression or tag that appears exactly once in the file (e.g. "{{ product.title }}", "{% endschema %}", "{% if product.available %}")
+- "anchor" MUST be copied verbatim from the VALID ANCHORS list — do NOT invent new anchors
+- Prefer {{ product.title }} or {{ product.price | money }} as anchors for visibility-related fixes
 - "code" is inserted on a new line directly after the line containing the anchor
 - Make minimal, targeted changes that directly address the conversion issue
 - Return ONLY valid JSON, no markdown`,
@@ -126,7 +131,59 @@ Rules:
   if (content.type !== 'text') throw new Error('Unexpected response type')
 
   const result = JSON.parse(content.text) as { anchor: string; code: string }
-  return { before: result.anchor, after: result.code }
+
+  // Safety check: if Claude ignored the list and invented an anchor that doesn't exist,
+  // fall back to the first universal anchor found in the file
+  const anchor = liquidCode.includes(result.anchor)
+    ? result.anchor
+    : realAnchors.find((a) => ANCHOR_FALLBACK_PRIORITY.includes(a)) ?? realAnchors[0] ?? result.anchor
+
+  return { before: anchor, after: result.code }
+}
+
+// Ordered list of anchors present in virtually every Shopify product template
+export const ANCHOR_FALLBACK_PRIORITY = [
+  '{{ product.title }}',
+  '{{ product.price | money }}',
+  '{{ product.price }}',
+  '{{ product.description }}',
+  "{% form 'product', product %}",
+  "{% form 'product', product, id: 'product-form' %}",
+  '{% endschema %}',
+  '{% schema %}',
+]
+
+function extractRealAnchors(liquidCode: string): string[] {
+  const seen = new Set<string>()
+  const results: string[] = []
+
+  const add = (s: string) => {
+    const t = s.trim()
+    if (t && t.length <= 120 && !seen.has(t)) {
+      seen.add(t)
+      results.push(t)
+    }
+  }
+
+  // {{ product.xxx }} and {{ product.xxx | filter }} expressions
+  const exprRe = /\{\{-?\s*product\.[a-zA-Z_.|\s\[\]'"(),\-\w]+?\s*-?\}\}/g
+  for (const m of liquidCode.matchAll(exprRe)) add(m[0])
+
+  // {% if/unless/form ... %} tags that reference product, cart, or available
+  const tagRe = /\{%-?\s*(?:if|unless|form)\s[^%\n]{0,100}-?%\}/g
+  for (const m of liquidCode.matchAll(tagRe)) {
+    if (/product|available|cart/.test(m[0])) add(m[0])
+  }
+
+  // {% schema %} / {% endschema %} — always unique in a section file
+  for (const token of ['{% schema %}', '{% endschema %}', '{%- schema -%}', '{%- endschema -%}']) {
+    if (liquidCode.includes(token)) add(token)
+  }
+
+  // Prioritise: put ANCHOR_FALLBACK_PRIORITY anchors at the front
+  const priority = ANCHOR_FALLBACK_PRIORITY.filter((a) => results.includes(a))
+  const rest = results.filter((a) => !priority.includes(a))
+  return [...priority, ...rest].slice(0, 20)
 }
 
 // ─── Product descriptions ─────────────────────────────────────────────────────

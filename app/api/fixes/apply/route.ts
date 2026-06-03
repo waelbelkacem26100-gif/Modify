@@ -11,7 +11,7 @@ import {
   getProduct,
   updateProductDescription,
 } from '@/lib/shopify'
-import { generateFix, generateProductDescription, buildProductHtml } from '@/lib/anthropic'
+import { generateFix, generateProductDescription, buildProductHtml, ANCHOR_FALLBACK_PRIORITY } from '@/lib/anthropic'
 import { getOrCreateSessionBackup, classifyRiskGroup } from '@/lib/theme-backup'
 import { logAction } from '@/lib/audit-log'
 import type { Store, Audit, AuditResult, Fix, RiskGroup } from '@/types'
@@ -210,19 +210,39 @@ export async function PATCH(request: NextRequest) {
         { file: typedFix.file_path }, 'failed', fix_id)
       return NextResponse.json({ error: 'Impossible de lire le fichier thème Shopify' }, { status: 502 })
     }
+    const fileContent: string = asset.value
 
-    // ── Step 3: Anchor-based injection ────────────────────────────────────
-    const updatedCode = applyAnchorInjection(asset.value, typedFix.liquid_before, typedFix.liquid_after)
+    // ── Step 3: Anchor-based injection with fallback chain ────────────────
+    let updatedCode = applyAnchorInjection(fileContent, typedFix.liquid_before, typedFix.liquid_after)
+    let usedAnchor = typedFix.liquid_before
+
+    if (updatedCode === null) {
+      // Primary anchor not found — try universal fallbacks present in the file
+      const fallback = ANCHOR_FALLBACK_PRIORITY.find(
+        (a) => a !== typedFix.liquid_before && fileContent.includes(a)
+      )
+      if (fallback) {
+        updatedCode = applyAnchorInjection(fileContent, fallback, typedFix.liquid_after)
+        usedAnchor = fallback
+        console.log('[B/C] Primary anchor not found, using fallback:', fallback)
+        await logAction(supabase, store.id, 'anchor_fallback_used',
+          { file: typedFix.file_path, original: typedFix.liquid_before, fallback }, 'warning', fix_id)
+      }
+    }
+
     if (updatedCode === null) {
       await logAction(supabase, store.id, 'anchor_not_found',
-        { file: typedFix.file_path, group: riskGroup }, 'failed', fix_id)
+        { file: typedFix.file_path, group: riskGroup, tried: typedFix.liquid_before }, 'failed', fix_id)
       return NextResponse.json({
-        error: "L'ancre d'injection est introuvable dans le fichier. Régénérez le correctif.",
+        error: `Aucune ancre valide trouvée dans ${typedFix.file_path}. Ancre tentée : "${typedFix.liquid_before}". Régénérez le correctif.`,
         code: 'ANCHOR_NOT_FOUND',
       }, { status: 422 })
     }
-    // B1 fix: idempotent — code was already present, skip upload
-    if (updatedCode === asset.value) {
+
+    console.log('[B/C] Injection via anchor:', usedAnchor)
+
+    // Idempotency — code was already present, skip upload
+    if (updatedCode === fileContent) {
       console.log('[B/C] Idempotent — fix already applied, skipping upload')
       await supabase.from('fixes').update({ status: 'applied', verification_status: 'verified' }).eq('id', fix_id)
       return NextResponse.json({ success: true, group: riskGroup, note: 'already_applied' })
@@ -231,7 +251,7 @@ export async function PATCH(request: NextRequest) {
     // ── Step 4: Snapshot to backup theme ──────────────────────────────────
     if (backupThemeId) {
       await updateThemeAsset(
-        store.shop_domain, store.access_token, backupThemeId, typedFix.file_path, asset.value
+        store.shop_domain, store.access_token, backupThemeId, typedFix.file_path, fileContent
       )
       await logAction(supabase, store.id, 'file_snapshot_saved',
         { file: typedFix.file_path, backup_theme: backupThemeId }, 'success', fix_id)
@@ -257,7 +277,7 @@ export async function PATCH(request: NextRequest) {
 
       // Auto-rollback to pre-fix content
       await updateThemeAsset(
-        store.shop_domain, store.access_token, typedFix.theme_id, typedFix.file_path, asset.value
+        store.shop_domain, store.access_token, typedFix.theme_id, typedFix.file_path, fileContent
       )
       await logAction(supabase, store.id, 'auto_rollback_executed',
         { file: typedFix.file_path }, 'warning', fix_id)
@@ -277,7 +297,7 @@ export async function PATCH(request: NextRequest) {
     await supabase.from('fixes').update({
       status: 'applied',
       verification_status: 'verified',
-      original_file_content: asset.value,
+      original_file_content: fileContent,
       backup_theme_id: backupThemeId,
     }).eq('id', fix_id)
 
