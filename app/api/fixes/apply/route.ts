@@ -15,7 +15,10 @@ import {
   updateProductMetafields,
 } from '@/lib/shopify'
 import { generateFix, generateProductDescription, buildProductHtml, extractRealAnchors } from '@/lib/anthropic'
-import { duplicateTheme } from '@/lib/shopify'
+import { duplicateTheme, ThemeWriteForbiddenError } from '@/lib/shopify'
+
+const THEME_WRITE_FORBIDDEN_MSG =
+  "Shopify bloque l'écriture de fichiers thème via l'API (une exemption Shopify est requise, le scope write_themes ne suffit plus). Les correctifs Groupe B/C ne peuvent pas être appliqués automatiquement — voir Theme App Extensions."
 import { getOrCreateSessionBackup, classifyRiskGroup } from '@/lib/theme-backup'
 import { logAction } from '@/lib/audit-log'
 import type { Store, Audit, AuditResult, Fix, RiskGroup } from '@/types'
@@ -391,6 +394,13 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ success: true, group: riskGroup })
 
   } catch (e) {
+    if (e instanceof ThemeWriteForbiddenError) {
+      console.error('[B/C] theme write forbidden:', e.message)
+      await logAction(supabase, store.id, 'theme_write_forbidden',
+        { status: e.status, detail: e.detail }, 'failed', fix_id)
+      await supabase.from('fixes').update({ status: 'failed', verification_status: 'failed' }).eq('id', fix_id)
+      return NextResponse.json({ error: THEME_WRITE_FORBIDDEN_MSG, code: 'THEME_WRITE_FORBIDDEN' }, { status: 403 })
+    }
     console.error('Apply fix error:', e)
     await logAction(supabase, store.id, 'apply_error',
       { error: String(e) }, 'failed', fix_id)
@@ -665,6 +675,12 @@ async function applyGroupAJsonLd(store: Store, supabase: any, fix_id: string): P
     }).eq('id', fix_id)
     return NextResponse.json({ success: true, group: 'a', subtype: 'json-ld' })
   } catch (e) {
+    if (e instanceof ThemeWriteForbiddenError) {
+      console.error('[Group A · json-ld] theme write forbidden:', e.message)
+      await logAction(supabase, store.id, 'theme_write_forbidden', { status: e.status }, 'failed', fix_id)
+      await supabase.from('fixes').update({ status: 'failed', verification_status: 'failed' }).eq('id', fix_id)
+      return NextResponse.json({ error: THEME_WRITE_FORBIDDEN_MSG, code: 'THEME_WRITE_FORBIDDEN' }, { status: 403 })
+    }
     console.error('[Group A · json-ld] fatal:', e)
     await logAction(supabase, store.id, 'jsonld_error', { error: String(e) }, 'failed', fix_id)
     return NextResponse.json({ error: 'Erreur lors de l\'injection du JSON-LD' }, { status: 502 })

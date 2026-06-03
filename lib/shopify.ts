@@ -115,6 +115,19 @@ export async function getThemeAsset(
   return data.asset
 }
 
+/**
+ * Thrown when Shopify refuses theme-file writes. Since 2024 the REST Asset
+ * write endpoint returns 404 and the GraphQL themeFilesUpsert returns
+ * ACCESS_DENIED unless the app holds a Shopify-granted theme-files exemption
+ * (write_themes scope alone is no longer sufficient).
+ */
+export class ThemeWriteForbiddenError extends Error {
+  constructor(public status: number, public detail: string) {
+    super(`THEME_WRITE_FORBIDDEN (${status}): ${detail}`)
+    this.name = 'ThemeWriteForbiddenError'
+  }
+}
+
 export async function updateThemeAsset(
   shopDomain: string,
   accessToken: string,
@@ -132,6 +145,11 @@ export async function updateThemeAsset(
   )
   if (!res.ok) {
     const body = await res.text()
+    // 404/403 on a theme asset PUT = Shopify blocks theme-file writes (deprecated
+    // REST endpoint / missing theme-files exemption), not a transient error.
+    if (res.status === 404 || res.status === 403) {
+      throw new ThemeWriteForbiddenError(res.status, body.slice(0, 200))
+    }
     throw new Error(`Shopify PUT asset ${key} failed ${res.status}: ${body.slice(0, 200)}`)
   }
   return res.json()
