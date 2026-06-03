@@ -14,7 +14,7 @@ function stripJsonComments(raw: string): string {
 
 // App blocks: present in a template's section blocks → considered active.
 function appBlockActive(templateJson: string, handle: string): boolean {
-  return templateJson.includes(`/blocks/${handle}/`)
+  return templateJson.includes(`blocks/${handle}/`)
 }
 
 // App embeds: present in settings_data current.blocks AND not disabled.
