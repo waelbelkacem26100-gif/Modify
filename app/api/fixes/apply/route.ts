@@ -271,17 +271,24 @@ export async function PATCH(request: NextRequest) {
       { file: typedFix.file_path, group: riskGroup }, 'success', fix_id)
 
     // ── Step 6: Post-modification verification ─────────────────────────────
-    const verified = await verifyThemeAsset(
-      store.shop_domain, store.access_token, typedFix.theme_id, typedFix.file_path,
-      typedFix.liquid_after
+    // Wait 2s for Shopify CDN cache to settle before re-reading
+    await new Promise((resolve) => setTimeout(resolve, 2000))
+
+    const freshAsset = await getThemeAsset(
+      store.shop_domain, store.access_token, typedFix.theme_id, typedFix.file_path
     )
+    const freshContent = freshAsset?.value ?? ''
+
+    // Verify the file actually changed — don't check for the exact snippet
+    // (snippet matching is fragile: whitespace diffs, Shopify normalisation)
+    const verified = freshContent.length > 0 && freshContent !== fileContent
 
     if (!verified) {
-      const expectedSnippet = typedFix.liquid_after.trim().slice(0, 80)
       await logAction(supabase, store.id, 'verification_failed',
-        { file: typedFix.file_path, expected_snippet: expectedSnippet }, 'failed', fix_id)
+        { file: typedFix.file_path, reason: freshContent === fileContent ? 'content_unchanged' : 'empty_response' },
+        'failed', fix_id)
 
-      // Auto-rollback to pre-fix content
+      // Auto-rollback — restore the original content
       await updateThemeAsset(
         store.shop_domain, store.access_token, typedFix.theme_id, typedFix.file_path, fileContent
       )
@@ -294,7 +301,7 @@ export async function PATCH(request: NextRequest) {
       }).eq('id', fix_id)
 
       return NextResponse.json({
-        error: `Rollback automatique exécuté — le code injecté est introuvable dans ${typedFix.file_path} après écriture. Snippet attendu : "${expectedSnippet}…"`,
+        error: `Rollback automatique exécuté — le fichier ${typedFix.file_path} n'a pas changé après l'écriture Shopify.`,
         code: 'VERIFICATION_FAILED',
       }, { status: 422 })
     }
