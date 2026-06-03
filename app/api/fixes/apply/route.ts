@@ -279,6 +279,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     // ── Step 5: Apply fix to active theme ─────────────────────────────────
+    console.log('[PUT] writing to theme:', activeThemeId, '| active:', activeThemeId, '| backup:', backupThemeId)
     await updateThemeAsset(
       store.shop_domain, store.access_token, activeThemeId, typedFix.file_path, updatedCode
     )
