@@ -189,20 +189,31 @@ export async function PATCH(request: NextRequest) {
     return applyGroupA(store, supabase, fix_id)
   }
 
-  // ── Group B/C: require all Liquid fields ──────────────────────────────────
-  if (!typedFix.theme_id || !typedFix.file_path) {
+  // ── Group B/C: require file_path (theme_id resolved live below) ─────────
+  if (!typedFix.file_path) {
     return NextResponse.json({ error: 'Correctif incomplet — régénérez-le depuis le panel' }, { status: 400 })
   }
 
   try {
-    // ── Step 1: Ensure session backup exists ───────────────────────────────
+    // ── Step 1a: Resolve the active (main) theme ID live ───────────────────
+    // Never trust fix.theme_id from DB — it may point to a deleted theme.
+    const themes = await getThemes(store.shop_domain, store.access_token)
+    const activeTheme = themes.find((t) => t.role === 'main') ?? themes[0]
+    if (!activeTheme) {
+      return NextResponse.json({ error: 'Thème principal introuvable sur cette boutique' }, { status: 502 })
+    }
+    const activeThemeId = String(activeTheme.id)
+    console.log('[B/C] Active theme:', activeThemeId, activeTheme.name,
+      '| stored theme_id was:', typedFix.theme_id ?? '(null)')
+
+    // ── Step 1b: Ensure session backup exists ──────────────────────────────
     const backupThemeId = await getOrCreateSessionBackup(store, supabase)
     await logAction(supabase, store.id, 'session_backup_ready',
       { backup_theme_id: backupThemeId }, 'success', fix_id)
 
-    // ── Step 2: Read current file from main theme ──────────────────────────
+    // ── Step 2: Read current file from active theme ────────────────────────
     const asset = await getThemeAsset(
-      store.shop_domain, store.access_token, typedFix.theme_id, typedFix.file_path
+      store.shop_domain, store.access_token, activeThemeId, typedFix.file_path
     )
 
     if (!asset?.value) {
@@ -267,24 +278,21 @@ export async function PATCH(request: NextRequest) {
         { file: typedFix.file_path, backup_theme: backupThemeId }, 'success', fix_id)
     }
 
-    // ── Step 5: Apply fix to main theme ────────────────────────────────────
+    // ── Step 5: Apply fix to active theme ─────────────────────────────────
     await updateThemeAsset(
-      store.shop_domain, store.access_token, typedFix.theme_id, typedFix.file_path, updatedCode
+      store.shop_domain, store.access_token, activeThemeId, typedFix.file_path, updatedCode
     )
     await logAction(supabase, store.id, 'fix_applied_to_theme',
-      { file: typedFix.file_path, group: riskGroup }, 'success', fix_id)
+      { file: typedFix.file_path, theme_id: activeThemeId, group: riskGroup }, 'success', fix_id)
 
     // ── Step 6: Post-modification verification ─────────────────────────────
-    // Wait 2s for Shopify CDN cache to settle before re-reading
     await new Promise((resolve) => setTimeout(resolve, 2000))
 
     const freshAsset = await getThemeAsset(
-      store.shop_domain, store.access_token, typedFix.theme_id, typedFix.file_path
+      store.shop_domain, store.access_token, activeThemeId, typedFix.file_path
     )
     const freshContent = freshAsset?.value ?? ''
 
-    // Verify the file actually changed — don't check for the exact snippet
-    // (snippet matching is fragile: whitespace diffs, Shopify normalisation)
     const verified = freshContent.length > 0 && freshContent !== fileContent
 
     if (!verified) {
@@ -292,9 +300,8 @@ export async function PATCH(request: NextRequest) {
         { file: typedFix.file_path, reason: freshContent === fileContent ? 'content_unchanged' : 'empty_response' },
         'failed', fix_id)
 
-      // Auto-rollback — restore the original content
       await updateThemeAsset(
-        store.shop_domain, store.access_token, typedFix.theme_id, typedFix.file_path, fileContent
+        store.shop_domain, store.access_token, activeThemeId, typedFix.file_path, fileContent
       )
       await logAction(supabase, store.id, 'auto_rollback_executed',
         { file: typedFix.file_path }, 'warning', fix_id)
@@ -310,12 +317,13 @@ export async function PATCH(request: NextRequest) {
       }, { status: 422 })
     }
 
-    // ── Step 7: Persist everything ─────────────────────────────────────────
+    // ── Step 7: Persist everything (update theme_id to active) ────────────
     await supabase.from('fixes').update({
       status: 'applied',
       verification_status: 'verified',
       original_file_content: fileContent,
       backup_theme_id: backupThemeId,
+      theme_id: activeThemeId,
     }).eq('id', fix_id)
 
     await logAction(supabase, store.id, 'verification_passed',
