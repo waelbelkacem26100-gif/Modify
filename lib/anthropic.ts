@@ -141,19 +141,28 @@ Rules:
   return { before: anchor, after: result.code }
 }
 
-// Ordered list of anchors present in virtually every Shopify product template
+// Priority-ordered fallback anchors.
+// Covers Dawn (Shopify default), Debut, Venture, and simple custom themes.
+// `extractRealAnchors` filters this list against the actual file at runtime.
 export const ANCHOR_FALLBACK_PRIORITY = [
+  // Dawn / modern themes — product.title rendered with | escape filter
+  '<h1>{{ product.title | escape }}</h1>',
+  '{{ product.title | escape }}',
+  // Classic / minimal themes — no filter
   '{{ product.title }}',
+  // Description block (Dawn uses {%- ... -%} trimming)
+  '{%- if product.description != blank -%}',
+  '{% if product.description != blank %}',
+  '{{ product.description }}',
+  // Price — rendered differently per theme; try both
   '{{ product.price | money }}',
   '{{ product.price }}',
-  '{{ product.description }}',
-  "{% form 'product', product %}",
-  "{% form 'product', product, id: 'product-form' %}",
-  '{% endschema %}',
+  // Schema markers — always present in any .liquid section file
   '{% schema %}',
+  '{% endschema %}',
 ]
 
-function extractRealAnchors(liquidCode: string): string[] {
+export function extractRealAnchors(liquidCode: string): string[] {
   const seen = new Set<string>()
   const results: string[] = []
 

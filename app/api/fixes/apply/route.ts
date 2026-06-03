@@ -11,7 +11,7 @@ import {
   getProduct,
   updateProductDescription,
 } from '@/lib/shopify'
-import { generateFix, generateProductDescription, buildProductHtml, ANCHOR_FALLBACK_PRIORITY } from '@/lib/anthropic'
+import { generateFix, generateProductDescription, buildProductHtml, extractRealAnchors } from '@/lib/anthropic'
 import { getOrCreateSessionBackup, classifyRiskGroup } from '@/lib/theme-backup'
 import { logAction } from '@/lib/audit-log'
 import type { Store, Audit, AuditResult, Fix, RiskGroup } from '@/types'
@@ -217,16 +217,22 @@ export async function PATCH(request: NextRequest) {
     let usedAnchor = typedFix.liquid_before
 
     if (updatedCode === null) {
-      // Primary anchor not found — try universal fallbacks present in the file
-      const fallback = ANCHOR_FALLBACK_PRIORITY.find(
-        (a) => a !== typedFix.liquid_before && fileContent.includes(a)
-      )
+      // Primary anchor not found — extract real anchors from the current file
+      // and try them in priority order (works for any theme, not just Dawn)
+      const realAnchors = extractRealAnchors(fileContent)
+      const fallback = realAnchors.find(
+        (a) => a !== typedFix.liquid_before && a.length >= 10
+      ) ?? null
+
       if (fallback) {
         updatedCode = applyAnchorInjection(fileContent, fallback, typedFix.liquid_after)
         usedAnchor = fallback
-        console.log('[B/C] Primary anchor not found, using fallback:', fallback)
+        console.log('[B/C] Primary anchor not found, using dynamic fallback:', fallback)
         await logAction(supabase, store.id, 'anchor_fallback_used',
           { file: typedFix.file_path, original: typedFix.liquid_before, fallback }, 'warning', fix_id)
+
+        // Update DB so future applications use the working anchor directly
+        await supabase.from('fixes').update({ liquid_before: fallback }).eq('id', fix_id)
       }
     }
 
