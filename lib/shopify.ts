@@ -263,6 +263,24 @@ export interface ShopifyProduct {
   status: string
 }
 
+export async function getProduct(
+  shopDomain: string,
+  accessToken: string,
+  productId: number
+): Promise<ShopifyProduct | null> {
+  try {
+    const res = await fetch(
+      `https://${shopDomain}/admin/api/${SHOPIFY_API_VERSION}/products/${productId}.json?fields=id,title,body_html`,
+      { headers: shopifyHeaders(accessToken) }
+    )
+    if (!res.ok) return null
+    const data = (await res.json()) as { product?: ShopifyProduct }
+    return data.product ?? null
+  } catch {
+    return null
+  }
+}
+
 export async function getProductsDetailed(
   shopDomain: string,
   accessToken: string,

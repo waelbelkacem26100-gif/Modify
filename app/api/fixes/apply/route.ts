@@ -8,6 +8,7 @@ import {
   updateThemeAsset,
   verifyThemeAsset,
   getProducts,
+  getProduct,
   updateProductDescription,
 } from '@/lib/shopify'
 import { generateFix, generateProductDescription, buildProductHtml } from '@/lib/anthropic'
@@ -250,9 +251,11 @@ export async function PATCH(request: NextRequest) {
     )
 
     if (!verified) {
+      const expectedSnippet = typedFix.liquid_after.trim().slice(0, 80)
       await logAction(supabase, store.id, 'verification_failed',
-        { file: typedFix.file_path }, 'failed', fix_id)
+        { file: typedFix.file_path, expected_snippet: expectedSnippet }, 'failed', fix_id)
 
+      // Auto-rollback to pre-fix content
       await updateThemeAsset(
         store.shop_domain, store.access_token, typedFix.theme_id, typedFix.file_path, asset.value
       )
@@ -265,7 +268,7 @@ export async function PATCH(request: NextRequest) {
       }).eq('id', fix_id)
 
       return NextResponse.json({
-        error: 'La modification a été annulée automatiquement — la vérification post-application a échoué.',
+        error: `Rollback automatique exécuté — le code injecté est introuvable dans ${typedFix.file_path} après écriture. Snippet attendu : "${expectedSnippet}…"`,
         code: 'VERIFICATION_FAILED',
       }, { status: 422 })
     }
@@ -331,8 +334,14 @@ async function applyGroupA(store: Store, supabase: any, fix_id: string): Promise
           store.shop_domain, store.access_token, product.id, html,
           descResult.seo_title, descResult.meta_description
         )
+        // B3 fix: verify via GET that body_html actually changed
+        const verified = await getProduct(store.shop_domain, store.access_token, product.id)
+        if (!verified?.body_html?.trim()) {
+          console.error('[Group A] ✗ verification failed for', product.id, '— body_html empty after PUT')
+          throw new Error(`Verification failed: body_html empty after PUT for product ${product.id}`)
+        }
+        console.log('[Group A] ✓ verified product', product.id, '— body_html length:', verified.body_html.length)
         updatedCount++
-        console.log('[Group A] ✓ updated product', product.id)
       } catch (perProductErr) {
         console.error('[Group A] ✗ failed product', product.id, product.title, '→', String(perProductErr))
       }
