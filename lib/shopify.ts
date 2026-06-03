@@ -343,3 +343,76 @@ export async function updateProductDescription(
     throw new Error(`Shopify PUT /products/${productId} failed: ${err}`)
   }
 }
+
+// ─── Group A handlers: image alt text + SEO metafields ──────────────────────────
+
+export async function getProductWithImages(
+  shopDomain: string,
+  accessToken: string,
+  productId: number
+): Promise<ShopifyProduct | null> {
+  try {
+    const res = await fetch(
+      `https://${shopDomain}/admin/api/${SHOPIFY_API_VERSION}/products/${productId}.json?fields=id,title,images`,
+      { headers: shopifyHeaders(accessToken) }
+    )
+    if (!res.ok) return null
+    const data = (await res.json()) as { product?: ShopifyProduct }
+    return data.product ?? null
+  } catch {
+    return null
+  }
+}
+
+export async function updateProductImageAlt(
+  shopDomain: string,
+  accessToken: string,
+  productId: number,
+  imageId: number,
+  alt: string
+): Promise<void> {
+  const res = await fetch(
+    `https://${shopDomain}/admin/api/${SHOPIFY_API_VERSION}/products/${productId}/images/${imageId}.json`,
+    {
+      method: 'PUT',
+      headers: shopifyHeaders(accessToken),
+      body: JSON.stringify({ image: { id: imageId, alt } }),
+    }
+  )
+  if (!res.ok) {
+    const err = await res.text()
+    throw new Error(`Shopify PUT image alt ${productId}/${imageId} failed: ${err}`)
+  }
+}
+
+export async function updateProductMetafields(
+  shopDomain: string,
+  accessToken: string,
+  productId: number,
+  seoTitle?: string | null,
+  metaDescription?: string | null
+): Promise<void> {
+  interface Metafield { key: string; value: string; type: string; namespace: string }
+  const metafields: Metafield[] = []
+  if (seoTitle) {
+    metafields.push({ key: 'title_tag', value: seoTitle, type: 'single_line_text_field', namespace: 'global' })
+  }
+  if (metaDescription) {
+    metafields.push({ key: 'description_tag', value: metaDescription, type: 'single_line_text_field', namespace: 'global' })
+  }
+  if (metafields.length === 0) return
+
+  const res = await fetch(
+    `https://${shopDomain}/admin/api/${SHOPIFY_API_VERSION}/products/${productId}.json`,
+    {
+      method: 'PUT',
+      headers: shopifyHeaders(accessToken),
+      // Note: no body_html — only the SEO metafields are updated
+      body: JSON.stringify({ product: { id: productId, metafields } }),
+    }
+  )
+  if (!res.ok) {
+    const err = await res.text()
+    throw new Error(`Shopify PUT metafields ${productId} failed: ${err}`)
+  }
+}

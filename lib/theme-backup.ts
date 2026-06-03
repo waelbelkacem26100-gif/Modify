@@ -66,16 +66,22 @@ export function computeRiskGroup(category: string): 'a' | 'b' | 'c' {
 const PRODUCT_DESC_RE =
   /\bproducts?\b.{0,30}\bdescriptions?\b|\bdescriptions?\b.{0,30}\b(missing|absent|lack|empty|manqu|inexistant)\b/i
 
+// No-risk content/SEO fixes handled by Group A handlers (Products/Assets API).
+// Tight phrases so Group B/C visual fixes are never pulled in by accident.
+const GROUP_A_CONTENT_RE =
+  /alt[\s-]?text|alt attribute|texte alternatif|image alt|json[\s-]?ld|structured data|données structurées|rich snippet|schema\.org|meta[\s-]?(title|description|tag)|balise meta|title tag|meta seo/i
+
 /**
  * Authoritative risk group for an issue or stored fix.
- * Overrides whatever Claude returned — product/description issues are always 'a'.
+ * Overrides whatever Claude returned — product/description + no-risk SEO
+ * content fixes (alt text, JSON-LD, meta tags) are always 'a'.
  */
 export function classifyRiskGroup(
   category: string,
   title: string,
   claudeRiskGroup?: string | null
 ): 'a' | 'b' | 'c' {
-  if (category === 'product' || PRODUCT_DESC_RE.test(title)) return 'a'
+  if (category === 'product' || PRODUCT_DESC_RE.test(title) || GROUP_A_CONTENT_RE.test(title)) return 'a'
   if (claudeRiskGroup === 'a' || claudeRiskGroup === 'b' || claudeRiskGroup === 'c') {
     return claudeRiskGroup
   }
