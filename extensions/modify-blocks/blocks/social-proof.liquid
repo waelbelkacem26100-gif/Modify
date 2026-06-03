@@ -2,40 +2,34 @@
   assign rating = block.settings.rating | times: 1.0
   assign full = rating | floor
 -%}
-<div class="modify-social-proof" style="--modify-star: {{ block.settings.star_color }};" {{ block.shopify_attributes }}>
-  <div class="modify-stars" role="img" aria-label="{{ rating }} / 5">
+<div class="modify-social-proof" style="margin: 1rem 0;" {{ block.shopify_attributes }}>
+  <div class="modify-stars" role="img" aria-label="{{ rating }} / 5" style="display: inline-flex; align-items: center; gap: 2px;">
     {%- for i in (1..5) -%}
-      <svg viewBox="0 0 24 24" width="18" height="18" class="modify-star {% if i <= full %}is-full{% endif %}" aria-hidden="true">
+      {%- if i <= full -%}
+        {%- assign star_color = block.settings.star_color -%}
+      {%- else -%}
+        {%- assign star_color = '#d1d5db' -%}
+      {%- endif -%}
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" style="color: {{ star_color }};">
         <path fill="currentColor" d="m12 2 3 6.3 6.9.9-5 4.8 1.2 6.8L12 18l-6.1 3.6 1.2-6.8-5-4.8 6.9-.9L12 2Z"/>
       </svg>
     {%- endfor -%}
-    <span class="modify-rating-num">{{ rating }}</span>
+    <span class="modify-rating-num" style="margin-left: .4rem; font-weight: 600; font-size: .9rem;">{{ rating }}</span>
   </div>
 
-  <p class="modify-review-count">
+  <p class="modify-review-count" style="font-size: .8rem; opacity: .7; margin: .25rem 0 0;">
     {{ block.settings.count }} {{ block.settings.count_label }}
   </p>
 
   {%- if block.settings.quote != blank -%}
-    <blockquote class="modify-review-quote">
+    <blockquote class="modify-review-quote" style="font-style: italic; font-size: .9rem; margin: .6rem 0 0; padding-left: .8rem; border-left: 3px solid {{ block.settings.star_color }};">
       “{{ block.settings.quote }}”
       {%- if block.settings.author != blank -%}
-        <cite>— {{ block.settings.author }}</cite>
+        <cite style="display: block; font-style: normal; font-size: .8rem; opacity: .6; margin-top: .25rem;">— {{ block.settings.author }}</cite>
       {%- endif -%}
     </blockquote>
   {%- endif -%}
 </div>
-
-{% stylesheet %}
-.modify-social-proof { margin: 1rem 0; }
-.modify-stars { display: inline-flex; align-items: center; gap: 2px; }
-.modify-star { color: #d1d5db; }
-.modify-star.is-full { color: var(--modify-star, #f59e0b); }
-.modify-rating-num { margin-left: .4rem; font-weight: 600; font-size: .9rem; }
-.modify-review-count { font-size: .8rem; opacity: .7; margin: .25rem 0 0; }
-.modify-review-quote { font-style: italic; font-size: .9rem; margin: .6rem 0 0; padding-left: .8rem; border-left: 3px solid var(--modify-star, #f59e0b); }
-.modify-review-quote cite { display: block; font-style: normal; font-size: .8rem; opacity: .6; margin-top: .25rem; }
-{% endstylesheet %}
 
 {% schema %}
 {

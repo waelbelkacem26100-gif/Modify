@@ -1,48 +1,44 @@
 {%- liquid
   assign align = block.settings.alignment
+  assign justify = 'flex-start'
+  if align == 'center'
+    assign justify = 'center'
+  elsif align == 'right'
+    assign justify = 'flex-end'
+  endif
+  assign heading_align = 'left'
+  if align == 'center'
+    assign heading_align = 'center'
+  endif
 -%}
-<div
-  class="modify-trust-badges modify-align-{{ align }}"
-  style="--modify-accent: {{ block.settings.accent_color }};"
-  {{ block.shopify_attributes }}
->
+<div class="modify-trust-badges" style="margin: 1rem 0;" {{ block.shopify_attributes }}>
   {%- if block.settings.heading != blank -%}
-    <p class="modify-trust-heading">{{ block.settings.heading }}</p>
+    <p class="modify-trust-heading" style="font-size: .8rem; text-transform: uppercase; letter-spacing: .05em; opacity: .6; margin: 0 0 .5rem; text-align: {{ heading_align }};">{{ block.settings.heading }}</p>
   {%- endif -%}
 
-  <div class="modify-trust-row">
+  <div class="modify-trust-row" style="display: flex; flex-wrap: wrap; gap: 1rem; justify-content: {{ justify }};">
     {%- if block.settings.show_secure -%}
-      <div class="modify-trust-item">
-        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M12 1 3 5v6c0 5 3.8 9.7 9 11 5.2-1.3 9-6 9-11V5l-9-4Zm-1 15-4-4 1.4-1.4L11 13.2l5.6-5.6L18 9l-7 7Z"/></svg>
+      <div class="modify-trust-item" style="display: inline-flex; align-items: center; gap: .5rem; font-size: .875rem;">
+        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" style="color: {{ block.settings.accent_color }}; flex-shrink: 0;"><path fill="currentColor" d="M12 1 3 5v6c0 5 3.8 9.7 9 11 5.2-1.3 9-6 9-11V5l-9-4Zm-1 15-4-4 1.4-1.4L11 13.2l5.6-5.6L18 9l-7 7Z"/></svg>
         <span>{{ block.settings.secure_text }}</span>
       </div>
     {%- endif -%}
 
     {%- if block.settings.show_guarantee -%}
-      <div class="modify-trust-item">
-        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M12 1 3 5v6c0 5 3.8 9.7 9 11 5.2-1.3 9-6 9-11V5l-9-4Zm0 6a2 2 0 1 1 0 4 2 2 0 0 1 0-4Zm0 11c-1.7 0-3.2-.8-4-2 .1-1.3 2.7-2 4-2s3.9.7 4 2c-.8 1.2-2.3 2-4 2Z"/></svg>
+      <div class="modify-trust-item" style="display: inline-flex; align-items: center; gap: .5rem; font-size: .875rem;">
+        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" style="color: {{ block.settings.accent_color }}; flex-shrink: 0;"><path fill="currentColor" d="M12 1 3 5v6c0 5 3.8 9.7 9 11 5.2-1.3 9-6 9-11V5l-9-4Zm0 6a2 2 0 1 1 0 4 2 2 0 0 1 0-4Zm0 11c-1.7 0-3.2-.8-4-2 .1-1.3 2.7-2 4-2s3.9.7 4 2c-.8 1.2-2.3 2-4 2Z"/></svg>
         <span>{{ block.settings.guarantee_text }}</span>
       </div>
     {%- endif -%}
 
     {%- if block.settings.show_returns -%}
-      <div class="modify-trust-item">
-        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M12 5V1L7 6l5 5V7a6 6 0 1 1-6 6H4a8 8 0 1 0 8-8Z"/></svg>
+      <div class="modify-trust-item" style="display: inline-flex; align-items: center; gap: .5rem; font-size: .875rem;">
+        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" style="color: {{ block.settings.accent_color }}; flex-shrink: 0;"><path fill="currentColor" d="M12 5V1L7 6l5 5V7a6 6 0 1 1-6 6H4a8 8 0 1 0 8-8Z"/></svg>
         <span>{{ block.settings.returns_text }}</span>
       </div>
     {%- endif -%}
   </div>
 </div>
-
-{% stylesheet %}
-.modify-trust-badges { margin: 1rem 0; }
-.modify-trust-heading { font-size: .8rem; text-transform: uppercase; letter-spacing: .05em; opacity: .6; margin: 0 0 .5rem; }
-.modify-trust-row { display: flex; flex-wrap: wrap; gap: 1rem; }
-.modify-align-center .modify-trust-row, .modify-align-center .modify-trust-heading { justify-content: center; text-align: center; }
-.modify-align-right .modify-trust-row { justify-content: flex-end; }
-.modify-trust-item { display: inline-flex; align-items: center; gap: .5rem; font-size: .875rem; }
-.modify-trust-item svg { color: var(--modify-accent, #16a34a); flex-shrink: 0; }
-{% endstylesheet %}
 
 {% schema %}
 {

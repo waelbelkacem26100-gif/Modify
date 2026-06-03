@@ -9,8 +9,8 @@
   endif
 -%}
 {%- if show -%}
-  <div class="modify-urgency" style="--modify-urgency: {{ block.settings.color }};" {{ block.shopify_attributes }}>
-    <span class="modify-urgency-dot"></span>
+  <div class="modify-urgency" style="display: inline-flex; align-items: center; gap: .5rem; margin: .75rem 0; padding: .5rem .85rem; border-radius: 8px; background: color-mix(in srgb, {{ block.settings.color }} 10%, transparent); font-size: .875rem; font-weight: 500; color: {{ block.settings.color }};" {{ block.shopify_attributes }}>
+    <span class="modify-urgency-dot" style="width: 8px; height: 8px; border-radius: 50%; background: {{ block.settings.color }}; flex-shrink: 0;"></span>
     <span class="modify-urgency-text">
       {%- if block.settings.mode == 'low_stock' -%}
         {{ block.settings.low_stock_text | replace: '[qty]', qty }}
@@ -20,12 +20,6 @@
     </span>
   </div>
 {%- endif -%}
-
-{% stylesheet %}
-.modify-urgency { display: inline-flex; align-items: center; gap: .5rem; margin: .75rem 0; padding: .5rem .85rem; border-radius: 8px; background: color-mix(in srgb, var(--modify-urgency, #ef4444) 10%, transparent); font-size: .875rem; font-weight: 500; color: var(--modify-urgency, #ef4444); }
-.modify-urgency-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--modify-urgency, #ef4444); animation: modify-pulse 1.4s ease-in-out infinite; }
-@keyframes modify-pulse { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: .4; transform: scale(.7); } }
-{% endstylesheet %}
 
 {% schema %}
 {
