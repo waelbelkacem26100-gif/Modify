@@ -177,103 +177,15 @@ export async function PATCH(request: NextRequest) {
 
   // ── Group A: apply via Products API (no Liquid change) ───────────────────
   if (riskGroup === 'a') {
-    const tokenPreview = store.access_token
-      ? `${store.access_token.slice(0, 6)}…${store.access_token.slice(-4)}`
-      : '(null)'
-    console.log('[Group A] shop:', store.shop_domain, '| token:', tokenPreview)
-
-    try {
-      const products = await getProducts(store.shop_domain, store.access_token, 50)
-      console.log('[Group A] GET products →', products.length, 'total |',
-        products.map((p) => `${p.id}:${p.title.slice(0, 20)}(desc:${!!p.body_html?.trim()})`).join(', '))
-
-      const productsWithoutDesc = products.filter((p) => !p.body_html?.trim())
-      console.log('[Group A] products without description:', productsWithoutDesc.length,
-        '| IDs:', productsWithoutDesc.map((p) => p.id).join(', '))
-
-      let updatedCount = 0
-      for (const product of productsWithoutDesc.slice(0, 10)) {
-        try {
-          const descResult = await generateProductDescription({
-            title: product.title,
-            product_type: product.product_type,
-            tags: product.tags,
-            variants: product.variants,
-            image_count: product.images.length,
-          })
-          const html = buildProductHtml(descResult)
-          console.log('[Group A] PUT /products/', product.id, product.title,
-            '| html length:', html.length)
-          await updateProductDescription(
-            store.shop_domain, store.access_token, product.id, html,
-            descResult.seo_title, descResult.meta_description
-          )
-          console.log('[Group A] ✓ updated product', product.id)
-          updatedCount++
-        } catch (perProductErr) {
-          console.error('[Group A] ✗ failed product', product.id, product.title, '→', String(perProductErr))
-          // Continue with remaining products rather than aborting the whole fix
-        }
-      }
-
-      console.log('[Group A] done —', updatedCount, '/', Math.min(productsWithoutDesc.length, 10), 'updated')
-
-      await logAction(supabase, store.id, 'product_descriptions_applied',
-        { updated: updatedCount }, 'success', fix_id)
-
-      await supabase.from('fixes').update({
-        status: 'applied',
-        verification_status: 'verified',
-      }).eq('id', fix_id)
-
-      return NextResponse.json({ success: true, group: 'a', updated: updatedCount })
-    } catch (e) {
-      console.error('[Group A] fatal error (GET products failed?):', e)
-      await logAction(supabase, store.id, 'product_fix_error', { error: String(e) }, 'failed', fix_id)
-      return NextResponse.json({ error: 'Erreur lors de la mise à jour des descriptions produit' }, { status: 502 })
-    }
+    return applyGroupA(store, supabase, fix_id)
   }
 
   console.log('[PATCH /fixes/apply] → taking GROUP B/C path (Liquid injection)')
 
-  // ── Fallback: null liquid fields = product description fix that slipped through ──
-  // (e.g. risk_group mismatch in DB — apply via Products API regardless)
+  // ── Fallback: null liquid fields = product description fix slipped through ──
   if (!typedFix.liquid_before || !typedFix.liquid_after) {
-    console.log('[Group A fallback] null liquid fields — routing to Products API')
-    try {
-      const products = await getProducts(store.shop_domain, store.access_token, 50)
-      console.log('[Group A fallback] GET products →', products.length, 'total')
-      const productsWithoutDesc = products.filter((p) => !p.body_html?.trim())
-      console.log('[Group A fallback] without description:', productsWithoutDesc.length,
-        '| IDs:', productsWithoutDesc.map((p) => p.id).join(', '))
-      let updatedCount = 0
-      for (const product of productsWithoutDesc.slice(0, 10)) {
-        try {
-          const descResult = await generateProductDescription({
-            title: product.title,
-            product_type: product.product_type,
-            tags: product.tags,
-            variants: product.variants,
-            image_count: product.images.length,
-          })
-          await updateProductDescription(
-            store.shop_domain, store.access_token, product.id, buildProductHtml(descResult),
-            descResult.seo_title, descResult.meta_description
-          )
-          console.log('[Group A fallback] ✓ updated product', product.id, product.title)
-          updatedCount++
-        } catch (perProductErr) {
-          console.error('[Group A fallback] ✗ failed product', product.id, '→', String(perProductErr))
-        }
-      }
-      await logAction(supabase, store.id, 'product_descriptions_applied',
-        { updated: updatedCount, via: 'fallback' }, 'success', fix_id)
-      await supabase.from('fixes').update({ status: 'applied', verification_status: 'verified' }).eq('id', fix_id)
-      return NextResponse.json({ success: true, group: 'a', updated: updatedCount })
-    } catch (e) {
-      console.error('[Group A fallback] fatal error:', e)
-      return NextResponse.json({ error: 'Erreur lors de la mise à jour des descriptions produit' }, { status: 502 })
-    }
+    console.log('[PATCH /fixes/apply] Fallback: null liquid fields — routing to Products API')
+    return applyGroupA(store, supabase, fix_id)
   }
 
   // ── Group B/C: require all Liquid fields ──────────────────────────────────
@@ -307,6 +219,12 @@ export async function PATCH(request: NextRequest) {
         error: "L'ancre d'injection est introuvable dans le fichier. Régénérez le correctif.",
         code: 'ANCHOR_NOT_FOUND',
       }, { status: 422 })
+    }
+    // B1 fix: idempotent — code was already present, skip upload
+    if (updatedCode === asset.value) {
+      console.log('[B/C] Idempotent — fix already applied, skipping upload')
+      await supabase.from('fixes').update({ status: 'applied', verification_status: 'verified' }).eq('id', fix_id)
+      return NextResponse.json({ success: true, group: riskGroup, note: 'already_applied' })
     }
 
     // ── Step 4: Snapshot to backup theme ──────────────────────────────────
@@ -375,7 +293,82 @@ export async function PATCH(request: NextRequest) {
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function applyGroupA(store: Store, supabase: any, fix_id: string): Promise<NextResponse> {
+  const tokenPreview = store.access_token
+    ? `${store.access_token.slice(0, 6)}…${store.access_token.slice(-4)}`
+    : '(null)'
+  console.log('[Group A] shop:', store.shop_domain, '| token:', tokenPreview)
+
+  try {
+    const products = await getProducts(store.shop_domain, store.access_token, 50)
+    console.log('[Group A] GET products →', products.length, 'total |',
+      products.map((p) => `${p.id}:${p.title.slice(0, 20)}(desc:${!!p.body_html?.trim()})`).join(', '))
+
+    const productsWithoutDesc = products.filter((p) => !p.body_html?.trim())
+    console.log('[Group A] without description:', productsWithoutDesc.length,
+      '| IDs:', productsWithoutDesc.map((p) => p.id).join(', '))
+
+    // All products already described — idempotent success
+    if (productsWithoutDesc.length === 0) {
+      await supabase.from('fixes').update({ status: 'applied', verification_status: 'verified' }).eq('id', fix_id)
+      return NextResponse.json({ success: true, group: 'a', updated: 0, note: 'all_already_described' })
+    }
+
+    let updatedCount = 0
+    for (const product of productsWithoutDesc.slice(0, 10)) {
+      try {
+        const descResult = await generateProductDescription({
+          title: product.title,
+          product_type: product.product_type,
+          tags: product.tags,
+          variants: product.variants,
+          image_count: product.images.length,
+        })
+        const html = buildProductHtml(descResult)
+        console.log('[Group A] PUT /products/', product.id, product.title, '| html length:', html.length)
+        await updateProductDescription(
+          store.shop_domain, store.access_token, product.id, html,
+          descResult.seo_title, descResult.meta_description
+        )
+        updatedCount++
+        console.log('[Group A] ✓ updated product', product.id)
+      } catch (perProductErr) {
+        console.error('[Group A] ✗ failed product', product.id, product.title, '→', String(perProductErr))
+      }
+    }
+
+    console.log('[Group A] done —', updatedCount, '/', Math.min(productsWithoutDesc.length, 10), 'updated')
+
+    // B2 fix: fail explicitly when every PUT failed
+    if (updatedCount === 0) {
+      await logAction(supabase, store.id, 'all_product_updates_failed',
+        { total: productsWithoutDesc.length }, 'failed', fix_id)
+      await supabase.from('fixes').update({ status: 'failed', verification_status: 'failed' }).eq('id', fix_id)
+      return NextResponse.json({
+        error: `Aucun produit mis à jour (${productsWithoutDesc.length} tentatives échouées). Vérifiez le scope write_products du token Shopify.`,
+        code: 'NO_PRODUCTS_UPDATED',
+      }, { status: 502 })
+    }
+
+    await logAction(supabase, store.id, 'product_descriptions_applied',
+      { updated: updatedCount, total: productsWithoutDesc.length }, 'success', fix_id)
+    await supabase.from('fixes').update({ status: 'applied', verification_status: 'verified' }).eq('id', fix_id)
+    return NextResponse.json({ success: true, group: 'a', updated: updatedCount })
+  } catch (e) {
+    console.error('[Group A] fatal error (GET products failed?):', e)
+    await logAction(supabase, store.id, 'product_fix_error', { error: String(e) }, 'failed', fix_id)
+    return NextResponse.json({ error: 'Erreur lors de la mise à jour des descriptions produit' }, { status: 502 })
+  }
+}
+
 function applyAnchorInjection(fileContent: string, anchor: string, code: string): string | null {
+  // B1 fix: idempotency — if the injected code is already present, skip
+  const trimmed = code.trim()
+  if (trimmed.length >= 20 && fileContent.includes(trimmed)) {
+    return fileContent  // already applied, no-op
+  }
+
   const idx = fileContent.indexOf(anchor)
   if (idx === -1) return null
   const lineEnd = fileContent.indexOf('\n', idx + anchor.length)
@@ -384,11 +377,12 @@ function applyAnchorInjection(fileContent: string, anchor: string, code: string)
 }
 
 function findRelevantFile(category: string, fileKeys: string[]): string | null {
+  // B5 fix: sync with generate/route.ts — add templates/product.liquid for theme,
+  // remove 'product' (always Group A, never reaches this code path)
   const patterns: Record<string, string[]> = {
-    theme: ['sections/main-product.liquid', 'sections/product-template.liquid'],
-    product: ['sections/main-product.liquid', 'sections/product-template.liquid'],
-    trust: ['sections/main-product.liquid', 'sections/footer.liquid'],
-    speed: ['layout/theme.liquid'],
+    theme:    ['sections/main-product.liquid', 'sections/product-template.liquid', 'templates/product.liquid'],
+    trust:    ['sections/main-product.liquid', 'sections/footer.liquid'],
+    speed:    ['layout/theme.liquid'],
     checkout: ['sections/cart-template.liquid', 'snippets/cart-drawer.liquid'],
   }
 
@@ -397,10 +391,9 @@ function findRelevantFile(category: string, fileKeys: string[]): string | null {
   }
 
   const fallbacks: Record<string, RegExp> = {
-    theme: /sections\/.*product/,
-    product: /sections\/.*product|templates\/product/,
-    trust: /footer|product/,
-    speed: /layout\/theme/,
+    theme:    /sections\/.*product/,
+    trust:    /footer|product/,
+    speed:    /layout\/theme/,
     checkout: /cart|checkout/,
   }
 

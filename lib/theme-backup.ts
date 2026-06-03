@@ -60,7 +60,11 @@ export function computeRiskGroup(category: string): 'a' | 'b' | 'c' {
   }
 }
 
-const DESCRIPTION_RE = /description/i
+// Matches titles that specifically flag missing/empty product descriptions.
+// Deliberately narrow to avoid misclassifying trust/speed issues that merely
+// mention "description" in passing (e.g. "Add trust badge after description").
+const PRODUCT_DESC_RE =
+  /\bproducts?\b.{0,30}\bdescriptions?\b|\bdescriptions?\b.{0,30}\b(missing|absent|lack|empty|manqu|inexistant)\b/i
 
 /**
  * Authoritative risk group for an issue or stored fix.
@@ -71,7 +75,7 @@ export function classifyRiskGroup(
   title: string,
   claudeRiskGroup?: string | null
 ): 'a' | 'b' | 'c' {
-  if (category === 'product' || DESCRIPTION_RE.test(title)) return 'a'
+  if (category === 'product' || PRODUCT_DESC_RE.test(title)) return 'a'
   if (claudeRiskGroup === 'a' || claudeRiskGroup === 'b' || claudeRiskGroup === 'c') {
     return claudeRiskGroup
   }
