@@ -705,3 +705,78 @@ export async function createArticle(
   const data = (await res.json()) as { article: ShopifyArticle }
   return data.article
 }
+
+// ─── Pricing & promos (variant price / compare-at) ──────────────────────────────
+
+export async function updateVariantPrice(
+  shopDomain: string,
+  accessToken: string,
+  variantId: number,
+  price: string,
+  compareAtPrice: string | null
+): Promise<void> {
+  const res = await fetch(
+    `https://${shopDomain}/admin/api/${SHOPIFY_API_VERSION}/variants/${variantId}.json`,
+    {
+      method: 'PUT',
+      headers: shopifyHeaders(accessToken),
+      body: JSON.stringify({ variant: { id: variantId, price, compare_at_price: compareAtPrice } }),
+    }
+  )
+  if (!res.ok) {
+    const err = await res.text()
+    throw new Error(`Shopify PUT variant ${variantId} failed ${res.status}: ${err.slice(0, 200)}`)
+  }
+}
+
+/** Product IDs that sold at least once since `sinceISO` (from order line items). */
+export async function getSoldProductIds(
+  shopDomain: string,
+  accessToken: string,
+  sinceISO: string
+): Promise<Set<number>> {
+  const sold = new Set<number>()
+  const res = await fetch(
+    `https://${shopDomain}/admin/api/${SHOPIFY_API_VERSION}/orders.json?status=any&created_at_min=${encodeURIComponent(sinceISO)}&limit=250&fields=line_items,created_at`,
+    { headers: shopifyHeaders(accessToken) }
+  )
+  if (!res.ok) return sold
+  const data = (await res.json()) as { orders?: { line_items?: { product_id?: number }[] }[] }
+  for (const o of data.orders ?? []) {
+    for (const li of o.line_items ?? []) {
+      if (li.product_id) sold.add(li.product_id)
+    }
+  }
+  return sold
+}
+
+// ─── Collections (cross-sell merchandising) ─────────────────────────────────────
+
+export interface ShopifyCollection { id: number; title: string; handle: string }
+
+export async function createCustomCollection(
+  shopDomain: string,
+  accessToken: string,
+  title: string,
+  productIds: number[]
+): Promise<ShopifyCollection> {
+  const res = await fetch(
+    `https://${shopDomain}/admin/api/${SHOPIFY_API_VERSION}/custom_collections.json`,
+    {
+      method: 'POST',
+      headers: shopifyHeaders(accessToken),
+      body: JSON.stringify({
+        custom_collection: {
+          title,
+          collects: productIds.map((id) => ({ product_id: id })),
+        },
+      }),
+    }
+  )
+  if (!res.ok) {
+    const err = await res.text()
+    throw new Error(`Shopify POST collection failed ${res.status}: ${err.slice(0, 200)}`)
+  }
+  const data = (await res.json()) as { custom_collection: ShopifyCollection }
+  return data.custom_collection
+}

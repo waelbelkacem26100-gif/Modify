@@ -15,6 +15,8 @@ import {
 } from 'lucide-react'
 import Button from '@/components/ui/Button'
 import ImageOptimizer from '@/components/dashboard/ImageOptimizer'
+import ConversionBooster from '@/components/dashboard/ConversionBooster'
+import { computeProductScore } from '@/lib/conversion-score'
 import type { ShopifyProduct } from '@/lib/shopify'
 import type { ProductDescriptionResult } from '@/lib/anthropic'
 
@@ -231,6 +233,9 @@ export default function ProductsContent() {
       {/* Automatic image compression (Sharp) */}
       <ImageOptimizer />
 
+      {/* Conversion booster — promos & cross-sell bundles */}
+      <ConversionBooster />
+
       {/* Search */}
       <div className="flex items-center gap-2.5 bg-surface border border-border rounded-xl px-3 py-2.5 mb-5">
         <Search className="w-4 h-4 text-text-muted flex-shrink-0" />
@@ -287,6 +292,10 @@ interface ProductCardProps {
 function ProductCard({ product, state, shopDomain, onGenerate, onApply, onToggle }: ProductCardProps) {
   const thumbnail = product.images?.[0]?.src
   const shopifyAdminUrl = `https://${shopDomain}/admin/products/${product.id}`
+  const conv = computeProductScore(product)
+  const convColor = conv.score >= 8 ? 'text-success bg-success/10 border-success/20'
+    : conv.score >= 5 ? 'text-warning bg-warning/10 border-warning/20'
+    : 'text-danger bg-danger/10 border-danger/20'
 
   const statusBadge = product.hasDescription || state.status === 'applied' ? (
     <span className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-success/10 border border-success/20 rounded-full text-xs text-success font-medium">
@@ -332,6 +341,12 @@ function ProductCard({ product, state, shopDomain, onGenerate, onApply, onToggle
           </div>
 
           <div className="flex items-center gap-2 flex-wrap mb-3">
+            <span
+              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold border ${convColor}`}
+              title={conv.reasons.length ? conv.reasons.join(' · ') : 'Fiche produit optimale'}
+            >
+              Conv. {conv.score}/10
+            </span>
             {statusBadge}
             {product.product_type && (
               <span className="text-xs text-text-muted bg-surface-2 px-2 py-0.5 rounded-full border border-border">

@@ -330,3 +330,57 @@ Règles :
 
   return JSON.parse(content.text) as BlogArticleResult
 }
+
+// ─── Bundle / cross-sell suggestions ────────────────────────────────────────────
+
+export interface BundleSuggestion {
+  title: string
+  product_titles: string[]
+  reason: string
+}
+
+export async function suggestBundles(
+  products: { title: string; product_type: string }[]
+): Promise<BundleSuggestion[]> {
+  const catalogue = products
+    .slice(0, 40)
+    .map((p) => `- ${p.title}${p.product_type ? ` (${p.product_type})` : ''}`)
+    .join('\n')
+
+  const message = await anthropic.messages.create({
+    model: 'claude-opus-4-8',
+    max_tokens: 2048,
+    messages: [
+      {
+        role: 'user',
+        content: `Tu es un expert merchandising e-commerce. Voici le catalogue d'une boutique :
+${catalogue}
+
+Propose 2 à 4 "packs" de produits complémentaires (achetés naturellement ensemble) pour augmenter le panier moyen.
+
+Retourne UNIQUEMENT un JSON valide :
+{
+  "bundles": [
+    {
+      "title": "Nom court et vendeur du pack",
+      "product_titles": ["Titre produit exact 1", "Titre produit exact 2"],
+      "reason": "Pourquoi ces produits vont ensemble (1 phrase)"
+    }
+  ]
+}
+
+Règles :
+- Utilise UNIQUEMENT des titres présents dans le catalogue ci-dessus, à l'identique
+- 2 à 3 produits par pack
+- Packs réellement complémentaires, pas aléatoires
+- Tout en français
+- Retourne UNIQUEMENT le JSON`,
+      },
+    ],
+  })
+
+  const content = message.content[0]
+  if (content.type !== 'text') throw new Error('Unexpected response type')
+  const parsed = JSON.parse(content.text) as { bundles: BundleSuggestion[] }
+  return parsed.bundles ?? []
+}
