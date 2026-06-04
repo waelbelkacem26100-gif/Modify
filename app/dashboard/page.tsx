@@ -7,6 +7,7 @@ import { isAdmin } from '@/lib/config'
 import StoreConnect from '@/components/dashboard/StoreConnect'
 import SubscribeButton from '@/components/dashboard/SubscribeButton'
 import EmailReportButton from '@/components/dashboard/EmailReportButton'
+import GlobalScoreCard from '@/components/dashboard/GlobalScoreCard'
 import MetricCard from '@/components/dashboard/MetricCard'
 import OnboardingProgress from '@/components/dashboard/OnboardingProgress'
 import { Euro, AlertTriangle, CheckCircle, TrendingUp, ArrowRight, ScanSearch, Zap } from 'lucide-react'
@@ -115,6 +116,9 @@ export default async function DashboardPage() {
           </div>
         )}
       </div>
+
+      {/* Global Modify Score + € evolution */}
+      <GlobalScoreCard />
 
       {/* Metrics */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">

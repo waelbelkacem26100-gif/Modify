@@ -4,6 +4,7 @@ import { createServiceRoleClient } from '@/lib/supabase-server'
 import { getThemes, getThemeAssets, getProducts } from '@/lib/shopify'
 import { auditStore } from '@/lib/anthropic'
 import { runPageSpeed, pageSpeedImpactEuros } from '@/lib/pagespeed'
+import { snapshotStoreScore } from '@/lib/store-score'
 import type { Store, Audit, AuditResult } from '@/types'
 
 export const maxDuration = 300
@@ -176,6 +177,14 @@ async function runAuditAsync(
       .from('audits')
       .update({ status: 'completed', results, total_impact_euros: totalImpact })
       .eq('id', auditId)
+
+    // Snapshot the global Modify Score so the evolution chart updates right
+    // after each scan (tolerant — never fails the audit).
+    try {
+      await snapshotStoreScore(store, supabase)
+    } catch (e) {
+      console.error('Score snapshot failed:', e)
+    }
   } catch (err) {
     console.error('Audit failed:', err)
     await supabase.from('audits').update({ status: 'failed' }).eq('id', auditId)
