@@ -8,6 +8,7 @@ import StoreConnect from '@/components/dashboard/StoreConnect'
 import SubscribeButton from '@/components/dashboard/SubscribeButton'
 import EmailReportButton from '@/components/dashboard/EmailReportButton'
 import GlobalScoreCard from '@/components/dashboard/GlobalScoreCard'
+import HealthCheck from '@/components/dashboard/HealthCheck'
 import MetricCard from '@/components/dashboard/MetricCard'
 import OnboardingProgress from '@/components/dashboard/OnboardingProgress'
 import { Euro, AlertTriangle, CheckCircle, TrendingUp, ArrowRight, ScanSearch, Zap } from 'lucide-react'
@@ -210,6 +211,11 @@ export default async function DashboardPage() {
           </Link>
         </div>
       )}
+
+      {/* Per-store diagnostics (collapsible) */}
+      <div className="mt-6">
+        <HealthCheck />
+      </div>
     </div>
   )
 }

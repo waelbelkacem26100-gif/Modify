@@ -159,22 +159,8 @@ export async function PATCH(request: NextRequest) {
 
   if (store.user_id !== userId) return new NextResponse('Forbidden', { status: 403 })
 
-  // ── Debug: log raw DB state before any classification ─────────────────────
-  console.log('[PATCH /fixes/apply] fix loaded from DB:', {
-    fix_id: typedFix.id,
-    risk_group_db: typedFix.risk_group,
-    type: typedFix.type,
-    title: typedFix.title,
-    file_path: typedFix.file_path,
-    theme_id: typedFix.theme_id,
-    liquid_before: typedFix.liquid_before?.slice(0, 120) ?? null,
-    liquid_after: typedFix.liquid_after?.slice(0, 120) ?? null,
-  })
-
   const riskGroup: RiskGroup = classifyRiskGroup(typedFix.type, typedFix.title, typedFix.risk_group)
-
-  console.log('[PATCH /fixes/apply] classifyRiskGroup result:', riskGroup,
-    '(db was:', typedFix.risk_group, ')')
+  console.log('[apply] fix', typedFix.id, '→ group', riskGroup, '(db:', typedFix.risk_group, ')')
 
   // Group C requires explicit confirmation
   if (riskGroup === 'c' && !confirm_high_risk) {
@@ -439,19 +425,10 @@ async function applyGroupA(
 // ── Group A · descriptions (existing behaviour — unchanged) ──────────────────
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function applyGroupADescriptions(store: Store, supabase: any, fix_id: string): Promise<NextResponse> {
-  const tokenPreview = store.access_token
-    ? `${store.access_token.slice(0, 6)}…${store.access_token.slice(-4)}`
-    : '(null)'
-  console.log('[Group A] shop:', store.shop_domain, '| token:', tokenPreview)
-
   try {
     const products = await getProducts(store.shop_domain, store.access_token, 50)
-    console.log('[Group A] GET products →', products.length, 'total |',
-      products.map((p) => `${p.id}:${p.title.slice(0, 20)}(desc:${!!p.body_html?.trim()})`).join(', '))
-
     const productsWithoutDesc = products.filter((p) => !p.body_html?.trim())
-    console.log('[Group A] without description:', productsWithoutDesc.length,
-      '| IDs:', productsWithoutDesc.map((p) => p.id).join(', '))
+    console.log('[Group A] descriptions —', productsWithoutDesc.length, 'of', products.length, 'need one')
 
     // All products already described — idempotent success
     if (productsWithoutDesc.length === 0) {
