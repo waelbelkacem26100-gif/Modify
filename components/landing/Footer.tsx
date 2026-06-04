@@ -16,10 +16,11 @@ export default function Footer() {
           © {new Date().getFullYear()} Modify. Tous droits réservés.
         </p>
 
-        <div className="flex items-center gap-6 text-sm text-text-muted">
-          <Link href="#" className="hover:text-text-secondary transition-colors">Confidentialité</Link>
-          <Link href="#" className="hover:text-text-secondary transition-colors">CGU</Link>
-          <Link href="mailto:support@modify.io" className="hover:text-text-secondary transition-colors">Contact</Link>
+        <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-text-muted">
+          <Link href="/privacy" className="hover:text-text-secondary transition-colors">Confidentialité</Link>
+          <Link href="/terms" className="hover:text-text-secondary transition-colors">CGU</Link>
+          <Link href="/legal" className="hover:text-text-secondary transition-colors">Mentions légales</Link>
+          <Link href="/contact" className="hover:text-text-secondary transition-colors">Contact</Link>
         </div>
       </div>
     </footer>
