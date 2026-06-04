@@ -2,15 +2,15 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, ScanSearch, Wand2, BarChart3, Package, Newspaper } from 'lucide-react'
+import { LayoutDashboard, ScanSearch, Wand2, Package, Newspaper, Compass } from 'lucide-react'
 
 const navItems = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Accueil' },
   { href: '/dashboard/audit', icon: ScanSearch, label: 'Audit' },
-  { href: '/dashboard/fixes', icon: Wand2, label: 'Correctifs' },
+  { href: '/dashboard/fixes', icon: Wand2, label: 'Fix' },
   { href: '/dashboard/products', icon: Package, label: 'Produits' },
   { href: '/dashboard/seo', icon: Newspaper, label: 'SEO' },
-  { href: '/dashboard/tracking', icon: BarChart3, label: 'Suivi' },
+  { href: '/dashboard/guides', icon: Compass, label: 'Guides' },
 ]
 
 export default function MobileNav() {

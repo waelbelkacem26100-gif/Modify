@@ -13,6 +13,7 @@ import {
   CreditCard,
   Package,
   Newspaper,
+  Compass,
   Home,
   LogOut,
 } from 'lucide-react'
@@ -23,6 +24,7 @@ const navItems = [
   { href: '/dashboard/fixes', icon: Wand2, label: 'Correctifs' },
   { href: '/dashboard/products', icon: Package, label: 'Produits' },
   { href: '/dashboard/seo', icon: Newspaper, label: 'Contenu SEO' },
+  { href: '/dashboard/guides', icon: Compass, label: 'Accompagnement' },
   { href: '/dashboard/tracking', icon: BarChart3, label: 'Suivi' },
 ]
 

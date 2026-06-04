@@ -384,3 +384,73 @@ Règles :
   const parsed = JSON.parse(content.text) as { bundles: BundleSuggestion[] }
   return parsed.bundles ?? []
 }
+
+// ─── Guided accompaniment (what Modify can't fully automate) ─────────────────────
+
+export type GuideType = 'photos' | 'theme_ux' | 'marketing' | 'products'
+
+export interface GuideStep { title: string; detail: string }
+export interface GeneratedGuide {
+  title: string
+  impact_euros: number
+  summary: string
+  steps: GuideStep[]
+}
+
+export interface GuideContext {
+  shopName: string
+  niche: string
+  themeName: string
+  productExamples: string[]
+  weakPhotoProducts: string[]
+  score: number
+  recoveredEuros: number
+}
+
+const GUIDE_PROMPTS: Record<GuideType, (c: GuideContext) => string> = {
+  photos: (c) => `Tu es directeur artistique e-commerce. La boutique "${c.shopName}" (niche : ${c.niche}) a des photos produit faibles sur : ${c.weakPhotoProducts.slice(0, 10).join(', ') || 'plusieurs produits'}.
+Génère un BRIEF PHOTO actionnable que le marchand peut exécuter avec un smartphone. Sois concret : prises de vue exactes, fond, lumière, angles, mise en scène, priorités.`,
+
+  theme_ux: (c) => `Tu es expert UX/CRO Shopify. Boutique "${c.shopName}" (niche : ${c.niche}, thème : ${c.themeName}).
+Détecte les problèmes UX courants de ce type de thème et donne pour CHAQUE problème le correctif EXACT à copier-coller (CSS ou réglage précis), avec où le coller dans l'éditeur de thème. Le marchand doit pouvoir appliquer sans réfléchir.`,
+
+  marketing: (c) => `Tu es stratège marketing e-commerce. Boutique "${c.shopName}" (niche : ${c.niche}). Score Modify actuel : ${c.score}/100, déjà €${c.recoveredEuros} récupérés. Produits : ${c.productExamples.slice(0, 6).join(', ')}.
+Génère un PLAN MARKETING de la semaine, concret et basé sur ces données : actions jour par jour (réseaux sociaux, email, promo, contenu), réalistes pour un solo-entrepreneur.`,
+
+  products: (c) => `Tu es analyste tendances e-commerce. Boutique "${c.shopName}" (niche : ${c.niche}). Catalogue actuel : ${c.productExamples.slice(0, 8).join(', ')}.
+Suggère de NOUVEAUX produits à ajouter, alignés sur les tendances de la niche et complémentaires au catalogue. Pour chacun : pourquoi il se vendrait, prix conseillé indicatif.`,
+}
+
+export async function generateGuide(type: GuideType, ctx: GuideContext): Promise<GeneratedGuide> {
+  const message = await anthropic.messages.create({
+    model: 'claude-opus-4-8',
+    max_tokens: 3072,
+    messages: [
+      {
+        role: 'user',
+        content: `${GUIDE_PROMPTS[type](ctx)}
+
+Retourne UNIQUEMENT un JSON valide avec cette structure exacte :
+{
+  "title": "Titre court de la mission",
+  "impact_euros": 350,
+  "summary": "1-2 phrases : le problème et le gain attendu",
+  "steps": [
+    { "title": "Étape 1 — titre court", "detail": "Instruction concrète et précise, prête à exécuter" },
+    { "title": "Étape 2 — ...", "detail": "..." }
+  ]
+}
+
+Règles :
+- Tout en français
+- 4 à 7 étapes, chacune réellement actionnable (pas de généralités)
+- impact_euros : estimation mensuelle réaliste du gain
+- Retourne UNIQUEMENT le JSON`,
+      },
+    ],
+  })
+
+  const content = message.content[0]
+  if (content.type !== 'text') throw new Error('Unexpected response type')
+  return JSON.parse(content.text) as GeneratedGuide
+}
