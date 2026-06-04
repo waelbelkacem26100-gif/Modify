@@ -74,6 +74,24 @@ export function validateHmac(query: Record<string, string>): boolean {
   }
 }
 
+/**
+ * Verifies a Shopify webhook signature: base64 HMAC-SHA256 of the RAW request
+ * body, keyed with the app's client secret, compared against the
+ * X-Shopify-Hmac-Sha256 header. Must be given the unparsed body.
+ */
+export function verifyWebhookHmac(rawBody: string, hmacHeader: string | null): boolean {
+  if (!hmacHeader) return false
+  const secret = process.env.SHOPIFY_CLIENT_SECRET
+  if (!secret) return false
+
+  const digest = crypto.createHmac('sha256', secret).update(rawBody, 'utf8').digest('base64')
+  try {
+    return crypto.timingSafeEqual(Buffer.from(digest), Buffer.from(hmacHeader))
+  } catch {
+    return false
+  }
+}
+
 export async function getShopInfo(shopDomain: string, accessToken: string) {
   const res = await fetch(
     `https://${shopDomain}/admin/api/${SHOPIFY_API_VERSION}/shop.json`,
