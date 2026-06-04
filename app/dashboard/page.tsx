@@ -6,6 +6,7 @@ import { getUserSubscription, hasActiveAccess } from '@/lib/subscription'
 import { isAdmin } from '@/lib/config'
 import StoreConnect from '@/components/dashboard/StoreConnect'
 import SubscribeButton from '@/components/dashboard/SubscribeButton'
+import EmailReportButton from '@/components/dashboard/EmailReportButton'
 import MetricCard from '@/components/dashboard/MetricCard'
 import OnboardingProgress from '@/components/dashboard/OnboardingProgress'
 import { Euro, AlertTriangle, CheckCircle, TrendingUp, ArrowRight, ScanSearch, Zap } from 'lucide-react'
@@ -90,14 +91,17 @@ export default async function DashboardPage() {
             </h1>
             <p className="text-text-secondary text-xs sm:text-sm truncate">{typedStore.shop_domain}</p>
           </div>
-          <Link
-            href="/dashboard/audit"
-            className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 bg-primary hover:bg-primary-dark text-white text-xs sm:text-sm font-medium rounded-xl transition-colors flex-shrink-0"
-          >
-            <ScanSearch className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-            <span className="hidden xs:inline">Lancer un scan</span>
-            <span className="xs:hidden">Scanner</span>
-          </Link>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <EmailReportButton />
+            <Link
+              href="/dashboard/audit"
+              className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 bg-primary hover:bg-primary-dark text-white text-xs sm:text-sm font-medium rounded-xl transition-colors"
+            >
+              <ScanSearch className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span className="hidden xs:inline">Lancer un scan</span>
+              <span className="xs:hidden">Scanner</span>
+            </Link>
+          </div>
         </div>
         {!isSubscribed && (
           <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 px-4 py-3 bg-primary/10 border border-primary/20 rounded-xl">
