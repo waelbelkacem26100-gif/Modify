@@ -3,7 +3,8 @@ import { auth } from '@clerk/nextjs/server'
 import { createServiceRoleClient } from '@/lib/supabase-server'
 import { getThemes, getThemeAssets, getProducts } from '@/lib/shopify'
 import { auditStore } from '@/lib/anthropic'
-import type { Store, Audit } from '@/types'
+import { runPageSpeed, pageSpeedImpactEuros } from '@/lib/pagespeed'
+import type { Store, Audit, AuditResult } from '@/types'
 
 export const maxDuration = 300
 
@@ -119,7 +120,56 @@ async function runAuditAsync(
       })),
     }
 
-    const results = await auditStore(storeData)
+    // Run the AI audit and the real PageSpeed measurement in parallel.
+    // PageSpeed is tolerant (returns null on failure) so it never blocks the audit.
+    const homepageUrl = `https://${store.shop_domain}`
+    const [results, pageSpeed] = await Promise.all([
+      auditStore(storeData),
+      runPageSpeed(homepageUrl, 'mobile'),
+    ])
+
+    // Persist the PageSpeed score for week-by-week tracking + add a real,
+    // measured "speed" item to the audit results (replaces Claude's guess).
+    if (pageSpeed) {
+      await supabase.from('pagespeed_scores').insert({
+        store_id: store.id,
+        audit_id: auditId,
+        strategy: pageSpeed.strategy,
+        tested_url: pageSpeed.url,
+        score: pageSpeed.score,
+        lcp_ms: pageSpeed.lcpMs,
+        cls: pageSpeed.cls,
+        tbt_ms: pageSpeed.tbtMs,
+        fcp_ms: pageSpeed.fcpMs,
+        speed_index_ms: pageSpeed.speedIndexMs,
+        tti_ms: pageSpeed.ttiMs,
+        opportunities: pageSpeed.opportunities,
+      })
+
+      // Drop any AI-guessed speed item — we have a measured one now
+      const nonSpeed = results.filter((r) => r.category !== 'speed')
+      const impact = pageSpeedImpactEuros(pageSpeed.score)
+      const topOpps = pageSpeed.opportunities.slice(0, 3).map((o) => o.title).join(' · ')
+      const measured: AuditResult = {
+        id: 'pagespeed-mobile',
+        category: 'speed',
+        title: `Score de vitesse mobile : ${pageSpeed.score}/100`,
+        description:
+          `Mesure réelle Google Lighthouse (mobile). LCP ${(pageSpeed.lcpMs / 1000).toFixed(1)}s, ` +
+          `CLS ${pageSpeed.cls}, TBT ${pageSpeed.tbtMs}ms.` +
+          (pageSpeed.score >= 90 ? ' Excellent — rien à corriger.' : ''),
+        impact_euros: impact,
+        priority: pageSpeed.score >= 90 ? 'low' : pageSpeed.score >= 50 ? 'medium' : 'high',
+        fix_available: false,
+        recommendation: topOpps
+          ? `Principales optimisations : ${topOpps}. La compression d'images Modify s'en charge automatiquement.`
+          : 'Vitesse déjà optimale.',
+        risk_group: 'a',
+      }
+      results.length = 0
+      results.push(measured, ...nonSpeed)
+    }
+
     const totalImpact = results.reduce((s, r) => s + r.impact_euros, 0)
 
     await supabase

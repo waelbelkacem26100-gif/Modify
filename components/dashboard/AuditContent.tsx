@@ -5,6 +5,7 @@ import { ScanSearch, AlertTriangle, TrendingDown, Zap, ChevronRight, RefreshCw }
 import Button from '@/components/ui/Button'
 import Badge from '@/components/ui/Badge'
 import FixPanel from '@/components/dashboard/FixPanel'
+import PageSpeedCard from '@/components/dashboard/PageSpeedCard'
 import type { Audit, AuditResult } from '@/types'
 
 const POLL_INTERVAL_MS = 3_000
@@ -177,6 +178,9 @@ export default function AuditPage() {
             </div>
           )}
         </div>
+
+        {/* Real measured page speed (Lighthouse) with week-by-week evolution */}
+        <PageSpeedCard />
 
         {/* Results */}
         {audit?.status === 'completed' && audit.results && (
