@@ -7,6 +7,10 @@
     {
       "path": "/api/cron/optimize-images",
       "schedule": "0 3 * * 1"
+    },
+    {
+      "path": "/api/cron/blog-articles",
+      "schedule": "0 4 * * 2"
     }
   ]
 }

@@ -592,3 +592,116 @@ export async function deleteProductImage(
     throw new Error(`Shopify DELETE image ${productId}/${imageId} failed ${res.status}: ${err.slice(0, 200)}`)
   }
 }
+
+// ─── Blog & articles (SEO content) ──────────────────────────────────────────────
+
+export interface ShopifyBlog {
+  id: number
+  handle: string
+  title: string
+}
+
+export interface ShopifyArticle {
+  id: number
+  blog_id: number
+  title: string
+  handle: string
+  published_at: string | null
+  created_at: string
+}
+
+export async function getBlogs(shopDomain: string, accessToken: string): Promise<ShopifyBlog[]> {
+  const res = await fetch(
+    `https://${shopDomain}/admin/api/${SHOPIFY_API_VERSION}/blogs.json`,
+    { headers: shopifyHeaders(accessToken) }
+  )
+  if (!res.ok) return []
+  const data = (await res.json()) as { blogs: ShopifyBlog[] }
+  return data.blogs ?? []
+}
+
+/** Returns the first blog, creating a default "Blog" one if none exists. */
+export async function getOrCreateBlog(shopDomain: string, accessToken: string): Promise<ShopifyBlog | null> {
+  const blogs = await getBlogs(shopDomain, accessToken)
+  if (blogs.length > 0) return blogs[0]
+
+  const res = await fetch(
+    `https://${shopDomain}/admin/api/${SHOPIFY_API_VERSION}/blogs.json`,
+    {
+      method: 'POST',
+      headers: shopifyHeaders(accessToken),
+      body: JSON.stringify({ blog: { title: 'Blog' } }),
+    }
+  )
+  if (!res.ok) return null
+  const data = (await res.json()) as { blog: ShopifyBlog }
+  return data.blog
+}
+
+export async function listArticles(
+  shopDomain: string,
+  accessToken: string,
+  blogId: number,
+  limit = 20
+): Promise<ShopifyArticle[]> {
+  const res = await fetch(
+    `https://${shopDomain}/admin/api/${SHOPIFY_API_VERSION}/blogs/${blogId}/articles.json?limit=${limit}&fields=id,blog_id,title,handle,published_at,created_at`,
+    { headers: shopifyHeaders(accessToken) }
+  )
+  if (!res.ok) return []
+  const data = (await res.json()) as { articles: ShopifyArticle[] }
+  return data.articles ?? []
+}
+
+export async function createArticle(
+  shopDomain: string,
+  accessToken: string,
+  blogId: number,
+  opts: {
+    title: string
+    bodyHtml: string
+    summaryHtml?: string
+    tags?: string
+    author?: string
+    published?: boolean
+    metaDescription?: string | null
+  }
+): Promise<ShopifyArticle> {
+  interface ArticlePayload {
+    title: string
+    body_html: string
+    summary_html?: string
+    tags?: string
+    author?: string
+    published: boolean
+    metafields?: Array<{ key: string; value: string; type: string; namespace: string }>
+  }
+  const article: ArticlePayload = {
+    title: opts.title,
+    body_html: opts.bodyHtml,
+    published: opts.published ?? true,
+  }
+  if (opts.summaryHtml) article.summary_html = opts.summaryHtml
+  if (opts.tags) article.tags = opts.tags
+  if (opts.author) article.author = opts.author
+  if (opts.metaDescription) {
+    article.metafields = [
+      { key: 'description_tag', value: opts.metaDescription, type: 'single_line_text_field', namespace: 'global' },
+    ]
+  }
+
+  const res = await fetch(
+    `https://${shopDomain}/admin/api/${SHOPIFY_API_VERSION}/blogs/${blogId}/articles.json`,
+    {
+      method: 'POST',
+      headers: shopifyHeaders(accessToken),
+      body: JSON.stringify({ article }),
+    }
+  )
+  if (!res.ok) {
+    const err = await res.text()
+    throw new Error(`Shopify POST article failed ${res.status}: ${err.slice(0, 200)}`)
+  }
+  const data = (await res.json()) as { article: ShopifyArticle }
+  return data.article
+}

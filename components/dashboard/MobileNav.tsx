@@ -2,13 +2,14 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, ScanSearch, Wand2, BarChart3, Package } from 'lucide-react'
+import { LayoutDashboard, ScanSearch, Wand2, BarChart3, Package, Newspaper } from 'lucide-react'
 
 const navItems = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Accueil' },
   { href: '/dashboard/audit', icon: ScanSearch, label: 'Audit' },
   { href: '/dashboard/fixes', icon: Wand2, label: 'Correctifs' },
   { href: '/dashboard/products', icon: Package, label: 'Produits' },
+  { href: '/dashboard/seo', icon: Newspaper, label: 'SEO' },
   { href: '/dashboard/tracking', icon: BarChart3, label: 'Suivi' },
 ]
 

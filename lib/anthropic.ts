@@ -270,3 +270,63 @@ export function buildProductHtml(result: ProductDescriptionResult): string {
   const bullets = result.bullet_points.map((bp) => `  <li>✓ ${bp}</li>`).join('\n')
   return `${result.description_html}\n\n<ul>\n${bullets}\n</ul>`
 }
+
+// ─── SEO blog articles ──────────────────────────────────────────────────────────
+
+export interface BlogArticleContext {
+  shopName: string
+  niche: string
+  productExamples: string[]
+  recentTitles: string[]
+}
+
+export interface BlogArticleResult {
+  title: string
+  body_html: string
+  summary: string
+  tags: string
+  meta_description: string
+}
+
+export async function generateBlogArticle(ctx: BlogArticleContext): Promise<BlogArticleResult> {
+  const message = await anthropic.messages.create({
+    model: 'claude-opus-4-8',
+    max_tokens: 4096,
+    messages: [
+      {
+        role: 'user',
+        content: `Tu es un expert SEO et copywriter e-commerce francophone. Tu écris des articles de blog qui attirent du trafic organique qualifié et qui poussent subtilement vers les produits d'une boutique.
+
+Boutique : ${ctx.shopName}
+Niche / thématique : ${ctx.niche}
+Exemples de produits : ${ctx.productExamples.slice(0, 8).join(', ') || 'Non spécifié'}
+
+Articles déjà publiés (NE PAS répéter ces sujets, choisis un angle frais) :
+${ctx.recentTitles.length ? ctx.recentTitles.map((t) => `- ${t}`).join('\n') : '- (aucun)'}
+
+Génère UN article de blog SEO complet, optimisé pour le référencement et la conversion.
+
+Retourne UNIQUEMENT un JSON valide avec cette structure exacte :
+{
+  "title": "Titre accrocheur et optimisé SEO (50-65 caractères, contient le mot-clé principal)",
+  "body_html": "<p>Introduction qui accroche...</p><h2>Sous-titre 1</h2><p>...</p><h2>Sous-titre 2</h2><p>...</p>... Article de 700-900 mots, structuré avec des balises h2/h3, listes <ul> si pertinent. Ton expert mais accessible. Intègre naturellement des mots-clés de la niche. Termine par un paragraphe qui invite à découvrir les produits de la boutique. HTML propre uniquement.",
+  "summary": "Extrait de 1-2 phrases pour la prévisualisation (max 160 caractères)",
+  "tags": "3 à 5 tags séparés par des virgules, en rapport avec la niche",
+  "meta_description": "Meta description SEO de 150-155 caractères max, incitative au clic"
+}
+
+Règles :
+- Tout en français
+- Article réellement utile : conseils concrets, pas de remplissage
+- body_html : 700 à 900 mots, HTML propre (h2, h3, p, ul/li uniquement)
+- Aucun cliché marketing générique
+- Retourne UNIQUEMENT le JSON, pas de markdown ni d'explication`,
+      },
+    ],
+  })
+
+  const content = message.content[0]
+  if (content.type !== 'text') throw new Error('Unexpected response type')
+
+  return JSON.parse(content.text) as BlogArticleResult
+}
