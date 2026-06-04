@@ -65,7 +65,6 @@ export async function GET() {
     ])
 
     const tplJson = productTpl?.value ?? ''
-    console.log('[DEBUG tplJson]', tplJson.slice(0, 500))
     const settJson = settingsData?.value ?? ''
 
     const blocks: Record<string, boolean> = {}
