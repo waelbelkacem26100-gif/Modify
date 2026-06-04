@@ -14,6 +14,7 @@ import {
   Zap,
 } from 'lucide-react'
 import Button from '@/components/ui/Button'
+import ImageOptimizer from '@/components/dashboard/ImageOptimizer'
 import type { ShopifyProduct } from '@/lib/shopify'
 import type { ProductDescriptionResult } from '@/lib/anthropic'
 
@@ -226,6 +227,9 @@ export default function ProductsContent() {
           </Button>
         )}
       </div>
+
+      {/* Automatic image compression (Sharp) */}
+      <ImageOptimizer />
 
       {/* Search */}
       <div className="flex items-center gap-2.5 bg-surface border border-border rounded-xl px-3 py-2.5 mb-5">

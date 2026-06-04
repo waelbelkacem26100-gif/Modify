@@ -517,3 +517,78 @@ export async function updateProductMetafields(
     throw new Error(`Shopify PUT metafields ${productId} failed: ${err}`)
   }
 }
+
+// ─── Product images (compression / re-upload) ───────────────────────────────────
+
+export interface ShopifyImage {
+  id: number
+  product_id: number
+  position: number
+  alt: string | null
+  width: number
+  height: number
+  src: string
+  variant_ids: number[]
+}
+
+export async function getProductImages(
+  shopDomain: string,
+  accessToken: string,
+  productId: number
+): Promise<ShopifyImage[]> {
+  const res = await fetch(
+    `https://${shopDomain}/admin/api/${SHOPIFY_API_VERSION}/products/${productId}/images.json`,
+    { headers: shopifyHeaders(accessToken) }
+  )
+  if (!res.ok) return []
+  const data = (await res.json()) as { images: ShopifyImage[] }
+  return data.images ?? []
+}
+
+/** Uploads a new product image from a base64 attachment, preserving alt /
+ * position / variant associations. Returns the created image. */
+export async function createProductImage(
+  shopDomain: string,
+  accessToken: string,
+  productId: number,
+  opts: { attachmentBase64: string; filename: string; alt?: string | null; position?: number; variantIds?: number[] }
+): Promise<ShopifyImage> {
+  const image: Record<string, unknown> = {
+    attachment: opts.attachmentBase64,
+    filename: opts.filename,
+  }
+  if (opts.alt != null) image.alt = opts.alt
+  if (opts.position != null) image.position = opts.position
+  if (opts.variantIds?.length) image.variant_ids = opts.variantIds
+
+  const res = await fetch(
+    `https://${shopDomain}/admin/api/${SHOPIFY_API_VERSION}/products/${productId}/images.json`,
+    {
+      method: 'POST',
+      headers: shopifyHeaders(accessToken),
+      body: JSON.stringify({ image }),
+    }
+  )
+  if (!res.ok) {
+    const err = await res.text()
+    throw new Error(`Shopify POST image for ${productId} failed ${res.status}: ${err.slice(0, 200)}`)
+  }
+  const data = (await res.json()) as { image: ShopifyImage }
+  return data.image
+}
+
+export async function deleteProductImage(
+  shopDomain: string,
+  accessToken: string,
+  productId: number,
+  imageId: number
+): Promise<void> {
+  const res = await fetch(
+    `https://${shopDomain}/admin/api/${SHOPIFY_API_VERSION}/products/${productId}/images/${imageId}.json`,
+    { method: 'DELETE', headers: shopifyHeaders(accessToken) }
+  )
+  if (!res.ok && res.status !== 404) {
+    const err = await res.text()
+    throw new Error(`Shopify DELETE image ${productId}/${imageId} failed ${res.status}: ${err.slice(0, 200)}`)
+  }
+}
