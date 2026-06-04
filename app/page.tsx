@@ -1,7 +1,10 @@
 import Navbar from '@/components/landing/Navbar'
 import Hero from '@/components/landing/Hero'
 import HowItWorks from '@/components/landing/HowItWorks'
+import Automation from '@/components/landing/Automation'
+import Results from '@/components/landing/Results'
 import Pricing from '@/components/landing/Pricing'
+import FinalCTA from '@/components/landing/FinalCTA'
 import Footer from '@/components/landing/Footer'
 
 export default function LandingPage() {
@@ -10,7 +13,10 @@ export default function LandingPage() {
       <Navbar />
       <Hero />
       <HowItWorks />
+      <Automation />
+      <Results />
       <Pricing />
+      <FinalCTA />
       <Footer />
     </main>
   )

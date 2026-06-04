@@ -26,8 +26,8 @@ export default function Hero() {
 
         {/* Subtitle */}
         <p className="text-base sm:text-lg md:text-xl text-text-secondary max-w-2xl mx-auto mb-8 sm:mb-10 leading-relaxed">
-          Connectez votre boutique Shopify. L&apos;IA détecte les fuites de conversion,
-          les corrige automatiquement, et vous montre combien vous gagnez.
+          Connectez votre boutique Shopify une fois. L&apos;IA audite, corrige et améliore votre site
+          chaque semaine — automatiquement — et vous montre combien vous récupérez, en euros.
         </p>
 
         {/* CTA */}

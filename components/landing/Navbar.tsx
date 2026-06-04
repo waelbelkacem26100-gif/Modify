@@ -25,6 +25,9 @@ export default function Navbar() {
           <Link href="#how-it-works" className="hover:text-text-primary transition-colors">
             Comment ça marche
           </Link>
+          <Link href="#features" className="hover:text-text-primary transition-colors">
+            Automatisation
+          </Link>
           <Link href="#pricing" className="hover:text-text-primary transition-colors">
             Tarifs
           </Link>
@@ -93,6 +96,13 @@ export default function Navbar() {
             className="block px-3 py-2.5 rounded-xl text-sm text-text-secondary hover:text-text-primary hover:bg-surface-2 transition-colors"
           >
             Comment ça marche
+          </Link>
+          <Link
+            href="#features"
+            onClick={() => setMobileOpen(false)}
+            className="block px-3 py-2.5 rounded-xl text-sm text-text-secondary hover:text-text-primary hover:bg-surface-2 transition-colors"
+          >
+            Automatisation
           </Link>
           <Link
             href="#pricing"
