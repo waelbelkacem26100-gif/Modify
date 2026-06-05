@@ -15,17 +15,17 @@ export default function LegalPage() {
     <LegalShell title="Mentions légales" updated={UPDATED}>
       <LegalSection heading="Éditeur du service">
         <p>
-          Le service Modify est édité par <strong>[Nom de la société ou de l&apos;entrepreneur — À COMPLÉTER]</strong>,
-          <br />[Forme juridique et capital social, le cas échéant — À COMPLÉTER],
-          <br />[Adresse du siège — À COMPLÉTER],
-          <br />[Numéro SIREN/SIRET ou RCS — À COMPLÉTER],
-          <br />[Numéro de TVA intracommunautaire, le cas échéant — À COMPLÉTER].
+          Le service Modify est édité par <strong>Wael Belkacem</strong>,
+          <br />Entrepreneur individuel (auto-entrepreneur),
+          <br />2 rue Etienne Dolet, 26100 Romans-sur-Isère, France,
+          <br />SIREN/SIRET : en cours d&apos;immatriculation,
+          <br />TVA : non applicable (franchise en base de TVA, art. 293 B du CGI).
         </p>
         <p>Contact : <Link href={`mailto:${CONTACT}`} className="text-primary hover:underline">{CONTACT}</Link></p>
       </LegalSection>
 
       <LegalSection heading="Directeur de la publication">
-        <p>[Nom du responsable de la publication — À COMPLÉTER].</p>
+        <p>Wael Belkacem.</p>
       </LegalSection>
 
       <LegalSection heading="Hébergement">
