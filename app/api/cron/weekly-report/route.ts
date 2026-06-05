@@ -4,6 +4,7 @@ import { createServiceRoleClient } from '@/lib/supabase-server'
 import { buildWeeklyReport } from '@/lib/weekly-report'
 import { sendWeeklyReport } from '@/lib/email'
 import { snapshotStoreScore } from '@/lib/store-score'
+import { isTokenExpired } from '@/lib/shopify-token'
 import { logAction } from '@/lib/audit-log'
 import type { Store } from '@/types'
 
@@ -40,6 +41,9 @@ export async function GET(request: NextRequest) {
   let sent = 0
   let skipped = 0
   for (const store of stores as Store[]) {
+    // Skip stores with an expired token — they need a reconnect first.
+    if (isTokenExpired(store)) { skipped++; continue }
+
     // Weekly score snapshot so the evolution chart always has a fresh point,
     // even for merchants who don't run manual scans.
     try { await snapshotStoreScore(store, supabase) } catch (e) { console.error('snapshot failed', String(e)) }

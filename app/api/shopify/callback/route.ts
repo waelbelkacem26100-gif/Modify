@@ -44,6 +44,8 @@ export async function GET(request: NextRequest) {
     // Store in Supabase
     const supabase = await createServiceRoleClient()
 
+    const tokenExpiresAt = expiresIn ? new Date(Date.now() + expiresIn * 1000).toISOString() : null
+
     const { error } = await supabase.from('stores').upsert(
       {
         user_id: userId,
@@ -51,6 +53,7 @@ export async function GET(request: NextRequest) {
         access_token: accessToken,
         shop_name: shopInfo.name ?? null,
         plan: shopInfo.plan_display_name ?? null,
+        token_expires_at: tokenExpiresAt,
       },
       { onConflict: 'shop_domain' }
     )

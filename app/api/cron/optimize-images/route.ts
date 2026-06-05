@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceRoleClient } from '@/lib/supabase-server'
 import { optimizeStoreImages } from '@/lib/image-optimizer'
+import { isTokenExpired } from '@/lib/shopify-token'
 import type { Store } from '@/types'
 
 export const maxDuration = 300
@@ -21,8 +22,12 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ stores: 0, error: error?.message })
   }
 
+  // Skip stores whose Shopify token has expired — they need a reconnect, which
+  // happens when the merchant next opens the dashboard (silent re-auth).
+  const active = (stores as Store[]).filter((s) => !isTokenExpired(s))
+
   const results = await Promise.allSettled(
-    (stores as Store[]).map(async (store) => {
+    active.map(async (store) => {
       // Smaller per-store cap on cron to stay within the time budget across many stores
       const summary = await optimizeStoreImages(store, supabase, 10)
       return { shop: store.shop_domain, ...summary }

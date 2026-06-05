@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceRoleClient } from '@/lib/supabase-server'
 import { getOrdersForDateRange } from '@/lib/shopify'
+import { isTokenExpired } from '@/lib/shopify-token'
 import type { Store } from '@/types'
 
 export const maxDuration = 300
@@ -37,8 +38,10 @@ export async function GET(request: NextRequest) {
   const dateMin = `${dateStr}T00:00:00Z`
   const dateMax = `${dateStr}T23:59:59Z`
 
+  const active = (stores as Store[]).filter((s) => !isTokenExpired(s))
+
   const results = await Promise.allSettled(
-    (stores as Store[]).map(async (store) => {
+    active.map(async (store) => {
       try {
         const orders = await getOrdersForDateRange(
           store.shop_domain,

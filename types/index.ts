@@ -7,6 +7,7 @@ export interface Store {
   plan: string | null
   backup_theme_id: string | null
   backup_created_at: string | null
+  token_expires_at: string | null
   created_at: string
 }
 
