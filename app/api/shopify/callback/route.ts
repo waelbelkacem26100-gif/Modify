@@ -29,11 +29,17 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // Exchange code for access token
-    const accessToken = await exchangeCodeForToken(shop, code)
+    // Exchange code for access token (now an expiring offline token)
+    const { accessToken, expiresIn } = await exchangeCodeForToken(shop, code)
+    console.log('[shopify oauth] token obtained for', shop, '| expires_in:', expiresIn ?? 'n/a')
 
-    // Get shop info
-    const shopInfo = await getShopInfo(shop, accessToken) as { name?: string; plan_display_name?: string }
+    // Shop info — tolerant: don't fail the whole install if this read hiccups
+    let shopInfo: { name?: string; plan_display_name?: string } = {}
+    try {
+      shopInfo = (await getShopInfo(shop, accessToken)) as { name?: string; plan_display_name?: string }
+    } catch (e) {
+      console.warn('[shopify oauth] getShopInfo failed (continuing):', String(e))
+    }
 
     // Store in Supabase
     const supabase = await createServiceRoleClient()
@@ -50,7 +56,7 @@ export async function GET(request: NextRequest) {
     )
 
     if (error) {
-      console.error('Supabase error:', error)
+      console.error('[shopify oauth] Supabase upsert error:', error)
       return new NextResponse('Failed to save store', { status: 500 })
     }
 
@@ -61,7 +67,9 @@ export async function GET(request: NextRequest) {
 
     return response
   } catch (err) {
-    console.error('OAuth callback error:', err)
-    return new NextResponse('OAuth flow failed', { status: 500 })
+    // Surface the real cause (token exchange / shop info) instead of a black box
+    const message = err instanceof Error ? err.message : 'unknown error'
+    console.error('[shopify oauth] callback failed:', message)
+    return new NextResponse(`OAuth flow failed — ${message}`, { status: 500 })
   }
 }

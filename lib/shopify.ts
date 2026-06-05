@@ -9,20 +9,19 @@ function shopifyHeaders(accessToken: string): HeadersInit {
   }
 }
 
-export function buildInstallUrl(shop: string, state: string): string {
-  const scopes = [
-    'read_themes',
-    'write_themes',
-    'read_products',
-    'write_products',
-    'read_content',
-    'write_content',
-    'read_analytics',
-    'read_orders',
-    'read_script_tags',
-    'write_script_tags',
-  ].join(',')
+// Must stay in sync with [access_scopes] in shopify.app.toml.
+export const SHOPIFY_SCOPES = [
+  'read_themes',
+  'write_themes',
+  'read_products',
+  'write_products',
+  'read_content',
+  'write_content',
+  'read_analytics',
+  'read_orders',
+].join(',')
 
+export function buildInstallUrl(shop: string, state: string): string {
   const redirectUri = encodeURIComponent(
     `${process.env.NEXT_PUBLIC_APP_URL}/api/shopify/callback`
   )
@@ -30,13 +29,19 @@ export function buildInstallUrl(shop: string, state: string): string {
   return (
     `https://${shop}/admin/oauth/authorize` +
     `?client_id=${process.env.SHOPIFY_CLIENT_ID}` +
-    `&scope=${scopes}` +
+    `&scope=${SHOPIFY_SCOPES}` +
     `&redirect_uri=${redirectUri}` +
     `&state=${state}`
   )
 }
 
-export async function exchangeCodeForToken(shop: string, code: string): Promise<string> {
+export interface TokenResult {
+  accessToken: string
+  // Shopify now issues EXPIRING offline tokens; null for legacy non-expiring.
+  expiresIn: number | null
+}
+
+export async function exchangeCodeForToken(shop: string, code: string): Promise<TokenResult> {
   const res = await fetch(`https://${shop}/admin/oauth/access_token`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -47,9 +52,15 @@ export async function exchangeCodeForToken(shop: string, code: string): Promise<
     }),
   })
 
-  const data = (await res.json()) as { access_token?: string }
-  if (!data.access_token) throw new Error('Failed to obtain access token')
-  return data.access_token
+  const text = await res.text()
+  let data: { access_token?: string; expires_in?: number; error?: string; error_description?: string } = {}
+  try { data = JSON.parse(text) } catch { /* non-JSON error body */ }
+
+  if (!res.ok || !data.access_token) {
+    const detail = data.error_description ?? data.error ?? text.slice(0, 300)
+    throw new Error(`Token exchange failed (HTTP ${res.status}): ${detail}`)
+  }
+  return { accessToken: data.access_token, expiresIn: data.expires_in ?? null }
 }
 
 export function validateHmac(query: Record<string, string>): boolean {
@@ -97,8 +108,12 @@ export async function getShopInfo(shopDomain: string, accessToken: string) {
     `https://${shopDomain}/admin/api/${SHOPIFY_API_VERSION}/shop.json`,
     { headers: shopifyHeaders(accessToken) }
   )
-  const data = (await res.json()) as { shop: Record<string, unknown> }
-  return data.shop
+  if (!res.ok) {
+    const body = await res.text()
+    throw new Error(`shop.json failed (HTTP ${res.status}): ${body.slice(0, 200)}`)
+  }
+  const data = (await res.json()) as { shop?: Record<string, unknown> }
+  return data.shop ?? {}
 }
 
 export async function getThemes(shopDomain: string, accessToken: string) {
