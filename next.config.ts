@@ -10,6 +10,20 @@ const nextConfig: NextConfig = {
       { protocol: 'https', hostname: '*.myshopify.com' },
     ],
   },
+  // Allow the embedded App Bridge surface to be framed by the Shopify admin.
+  async headers() {
+    return [
+      {
+        source: '/shopify',
+        headers: [
+          {
+            key: 'Content-Security-Policy',
+            value: 'frame-ancestors https://admin.shopify.com https://*.myshopify.com;',
+          },
+        ],
+      },
+    ]
+  },
 }
 
 export default nextConfig

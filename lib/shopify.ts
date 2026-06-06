@@ -96,6 +96,27 @@ export async function refreshAccessToken(shop: string, refreshToken: string): Pr
   return { ...result, refreshToken: result.refreshToken ?? refreshToken }
 }
 
+/**
+ * Token Exchange: trades a Shopify session token for an EXPIRING offline access
+ * token. This is the only way to obtain expiring tokens (the authorization-code
+ * grant only yields the now-rejected non-expiring ones).
+ */
+export async function exchangeSessionToken(shop: string, sessionToken: string): Promise<TokenResult> {
+  const res = await fetch(`https://${shop}/admin/oauth/access_token`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      client_id: process.env.SHOPIFY_CLIENT_ID,
+      client_secret: process.env.SHOPIFY_CLIENT_SECRET,
+      grant_type: 'urn:ietf:params:oauth:grant-type:token-exchange',
+      subject_token: sessionToken,
+      subject_token_type: 'urn:ietf:params:oauth:token-type:id_token',
+      requested_token_type: 'urn:shopify:params:oauth:token-type:offline-access-token',
+    }),
+  })
+  return parseTokenResponse(res.status, await res.text())
+}
+
 export function validateHmac(query: Record<string, string>): boolean {
   const { hmac, signature: _sig, ...params } = query
 
