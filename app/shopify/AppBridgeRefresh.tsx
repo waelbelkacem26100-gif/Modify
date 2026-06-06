@@ -61,13 +61,10 @@ export default function AppBridgeRefresh() {
         <h1 style={{ fontSize: 20, fontWeight: 700, margin: '0 0 8px' }}>Modify</h1>
         <p style={{ color, fontSize: 15, lineHeight: 1.5 }}>{message}</p>
         {status === 'ok' && (
-          <a
-            href="https://modify-coral.vercel.app/dashboard"
-            target="_top"
-            style={{ display: 'inline-block', marginTop: 16, background: '#18181b', color: '#fff', textDecoration: 'none', padding: '10px 22px', borderRadius: 10, fontSize: 14, fontWeight: 600 }}
-          >
-            Ouvrir le dashboard
-          </a>
+          <p style={{ color: '#71717a', fontSize: 13, marginTop: 16, lineHeight: 1.5 }}>
+            Modify audite, corrige et améliore votre boutique chaque semaine.
+            Vous recevrez un rapport par e-mail avec les revenus récupérés.
+          </p>
         )}
       </div>
     </div>
