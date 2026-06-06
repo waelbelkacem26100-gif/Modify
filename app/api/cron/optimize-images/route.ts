@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceRoleClient } from '@/lib/supabase-server'
 import { optimizeStoreImages } from '@/lib/image-optimizer'
-import { isTokenExpired } from '@/lib/shopify-token'
+import { isTokenExpired, getValidAccessToken } from '@/lib/shopify-token'
 import type { Store } from '@/types'
 
 export const maxDuration = 300
@@ -28,6 +28,7 @@ export async function GET(request: NextRequest) {
 
   const results = await Promise.allSettled(
     active.map(async (store) => {
+      await getValidAccessToken(store, supabase) // refresh token server-side if needed
       // Smaller per-store cap on cron to stay within the time budget across many stores
       const summary = await optimizeStoreImages(store, supabase, 10)
       return { shop: store.shop_domain, ...summary }

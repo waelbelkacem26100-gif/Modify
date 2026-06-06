@@ -30,8 +30,9 @@ export async function GET(request: NextRequest) {
 
   try {
     // Exchange code for access token (now an expiring offline token)
-    const { accessToken, expiresIn } = await exchangeCodeForToken(shop, code)
-    console.log('[shopify oauth] token obtained for', shop, '| expires_in:', expiresIn ?? 'n/a')
+    const { accessToken, expiresIn, refreshToken } = await exchangeCodeForToken(shop, code)
+    console.log('[shopify oauth] token obtained for', shop,
+      '| expires_in:', expiresIn ?? 'n/a', '| refresh_token:', refreshToken ? 'yes' : 'no')
 
     // Shop info — tolerant: don't fail the whole install if this read hiccups
     let shopInfo: { name?: string; plan_display_name?: string } = {}
@@ -54,6 +55,7 @@ export async function GET(request: NextRequest) {
         shop_name: shopInfo.name ?? null,
         plan: shopInfo.plan_display_name ?? null,
         token_expires_at: tokenExpiresAt,
+        refresh_token: refreshToken,
       },
       { onConflict: 'shop_domain' }
     )

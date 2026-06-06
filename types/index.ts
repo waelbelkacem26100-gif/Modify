@@ -8,6 +8,7 @@ export interface Store {
   backup_theme_id: string | null
   backup_created_at: string | null
   token_expires_at: string | null
+  refresh_token: string | null
   created_at: string
 }
 

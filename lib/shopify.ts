@@ -39,6 +39,31 @@ export interface TokenResult {
   accessToken: string
   // Shopify now issues EXPIRING offline tokens; null for legacy non-expiring.
   expiresIn: number | null
+  // Refresh token (only present with expiring offline tokens) — lets us mint a
+  // fresh access token server-side without any merchant interaction.
+  refreshToken: string | null
+}
+
+interface TokenResponse {
+  access_token?: string
+  expires_in?: number
+  refresh_token?: string
+  error?: string
+  error_description?: string
+}
+
+function parseTokenResponse(status: number, text: string): TokenResult {
+  let data: TokenResponse = {}
+  try { data = JSON.parse(text) } catch { /* non-JSON error body */ }
+  if (status >= 400 || !data.access_token) {
+    const detail = data.error_description ?? data.error ?? text.slice(0, 300)
+    throw new Error(`Token request failed (HTTP ${status}): ${detail}`)
+  }
+  return {
+    accessToken: data.access_token,
+    expiresIn: data.expires_in ?? null,
+    refreshToken: data.refresh_token ?? null,
+  }
 }
 
 export async function exchangeCodeForToken(shop: string, code: string): Promise<TokenResult> {
@@ -51,16 +76,24 @@ export async function exchangeCodeForToken(shop: string, code: string): Promise<
       code,
     }),
   })
+  return parseTokenResponse(res.status, await res.text())
+}
 
-  const text = await res.text()
-  let data: { access_token?: string; expires_in?: number; error?: string; error_description?: string } = {}
-  try { data = JSON.parse(text) } catch { /* non-JSON error body */ }
-
-  if (!res.ok || !data.access_token) {
-    const detail = data.error_description ?? data.error ?? text.slice(0, 300)
-    throw new Error(`Token exchange failed (HTTP ${res.status}): ${detail}`)
-  }
-  return { accessToken: data.access_token, expiresIn: data.expires_in ?? null }
+// Mints a fresh access token from a refresh token (no browser / merchant needed).
+export async function refreshAccessToken(shop: string, refreshToken: string): Promise<TokenResult> {
+  const res = await fetch(`https://${shop}/admin/oauth/access_token`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      client_id: process.env.SHOPIFY_CLIENT_ID,
+      client_secret: process.env.SHOPIFY_CLIENT_SECRET,
+      grant_type: 'refresh_token',
+      refresh_token: refreshToken,
+    }),
+  })
+  const result = parseTokenResponse(res.status, await res.text())
+  // Shopify may rotate the refresh token; keep the old one if it didn't.
+  return { ...result, refreshToken: result.refreshToken ?? refreshToken }
 }
 
 export function validateHmac(query: Record<string, string>): boolean {

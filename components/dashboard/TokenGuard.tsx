@@ -1,29 +1,20 @@
 'use client'
 
-import { useEffect } from 'react'
 import { AlertTriangle, RefreshCw } from 'lucide-react'
-import type { TokenStatus } from '@/lib/shopify-token'
 
 interface Props {
   shopDomain: string | null
-  status: TokenStatus
-  reauthKey: string // unique per token (its expiry) — resets the loop guard on refresh
+  needsReconnect: boolean
 }
 
-export default function TokenGuard({ shopDomain, status, reauthKey }: Props) {
-  // Proactive, automatic silent re-authorization while the token is still valid
-  // (Shopify won't prompt if the app is already installed with the same scopes).
-  useEffect(() => {
-    if (status !== 'expiring' || !shopDomain) return
-    const key = 'modify_reauth_attempt'
-    if (sessionStorage.getItem(key) === reauthKey) return // already tried for this token
-    sessionStorage.setItem(key, reauthKey)
-    window.location.href = `/api/shopify/install?shop=${encodeURIComponent(shopDomain)}`
-  }, [status, shopDomain, reauthKey])
+/**
+ * Banner shown ONLY when the token can't be refreshed server-side (expired +
+ * no refresh_token). Expiring tokens are refreshed automatically on the server
+ * (dashboard load + cron), so no banner or redirect loop occurs there.
+ */
+export default function TokenGuard({ shopDomain, needsReconnect }: Props) {
+  if (!needsReconnect || !shopDomain) return null
 
-  if (status !== 'expired' || !shopDomain) return null
-
-  // Token is dead — Shopify rejects it. One click re-authorises and refreshes it.
   const reconnectUrl = `/api/shopify/install?shop=${encodeURIComponent(shopDomain)}`
   return (
     <div className="sticky top-0 z-30 bg-warning/10 border-b border-warning/30 px-4 sm:px-6 py-3">

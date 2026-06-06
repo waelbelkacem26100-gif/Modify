@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceRoleClient } from '@/lib/supabase-server'
 import { generateAndPublishArticle } from '@/lib/blog-generator'
-import { isTokenExpired } from '@/lib/shopify-token'
+import { isTokenExpired, getValidAccessToken } from '@/lib/shopify-token'
 import type { Store } from '@/types'
 
 export const maxDuration = 300
@@ -26,6 +26,7 @@ export async function GET(request: NextRequest) {
 
   const results = await Promise.allSettled(
     active.map(async (store) => {
+      await getValidAccessToken(store, supabase)
       const r = await generateAndPublishArticle(store, supabase)
       return { shop: store.shop_domain, ...r }
     })

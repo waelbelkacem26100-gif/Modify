@@ -3,27 +3,30 @@ import { createServiceRoleClient } from '@/lib/supabase-server'
 import Sidebar from '@/components/dashboard/Sidebar'
 import MobileNav from '@/components/dashboard/MobileNav'
 import TokenGuard from '@/components/dashboard/TokenGuard'
-import { getTokenStatus, type TokenStatus } from '@/lib/shopify-token'
+import { getValidAccessToken, needsReconnect } from '@/lib/shopify-token'
+import type { Store } from '@/types'
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { userId } = await auth()
 
   let shopDomain: string | null = null
-  let tokenStatus: TokenStatus = 'valid'
-  let reauthKey = 'none'
+  let reconnect = false
   if (userId) {
     const supabase = await createServiceRoleClient()
-    const { data: store } = await supabase
+    const { data } = await supabase
       .from('stores')
-      .select('shop_domain, token_expires_at')
+      .select('*')
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
       .limit(1)
       .single()
-    if (store) {
+    if (data) {
+      const store = data as Store
       shopDomain = store.shop_domain
-      tokenStatus = getTokenStatus({ token_expires_at: store.token_expires_at })
-      reauthKey = store.token_expires_at ?? 'none'
+      // Proactively refresh the token server-side on dashboard load (no browser
+      // round-trip) so interactive features and crons keep working.
+      await getValidAccessToken(store, supabase)
+      reconnect = needsReconnect(store)
     }
   }
 
@@ -31,7 +34,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
     <div className="flex min-h-screen bg-background">
       <Sidebar shopDomain={shopDomain} />
       <main className="flex-1 overflow-y-auto pb-16 md:pb-0 min-w-0">
-        <TokenGuard shopDomain={shopDomain} status={tokenStatus} reauthKey={reauthKey} />
+        <TokenGuard shopDomain={shopDomain} needsReconnect={reconnect} />
         {children}
       </main>
       <MobileNav />

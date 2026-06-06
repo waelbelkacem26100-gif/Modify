@@ -4,7 +4,7 @@ import { createServiceRoleClient } from '@/lib/supabase-server'
 import { buildWeeklyReport } from '@/lib/weekly-report'
 import { sendWeeklyReport } from '@/lib/email'
 import { snapshotStoreScore } from '@/lib/store-score'
-import { isTokenExpired } from '@/lib/shopify-token'
+import { isTokenExpired, getValidAccessToken } from '@/lib/shopify-token'
 import { logAction } from '@/lib/audit-log'
 import type { Store } from '@/types'
 
@@ -41,8 +41,9 @@ export async function GET(request: NextRequest) {
   let sent = 0
   let skipped = 0
   for (const store of stores as Store[]) {
-    // Skip stores with an expired token — they need a reconnect first.
+    // Skip stores with a dead token that can't be refreshed.
     if (isTokenExpired(store)) { skipped++; continue }
+    await getValidAccessToken(store, supabase) // refresh server-side if expiring
 
     // Weekly score snapshot so the evolution chart always has a fresh point,
     // even for merchants who don't run manual scans.
