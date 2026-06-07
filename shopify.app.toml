@@ -1,25 +1,32 @@
-name = "Modify"
+# Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
+
 client_id = "036ad79f1507855e201e76b608681770"
+name = "Modify"
 application_url = "https://modify-coral.vercel.app/shopify"
 embedded = true
+
+[webhooks]
+api_version = "2026-04"
+
+  [[webhooks.subscriptions]]
+  uri = "https://modify-coral.vercel.app/api/webhooks/customers/data_request"
+  compliance_topics = [ "customers/data_request" ]
+
+  [[webhooks.subscriptions]]
+  uri = "https://modify-coral.vercel.app/api/webhooks/customers/redact"
+  compliance_topics = [ "customers/redact" ]
+
+  [[webhooks.subscriptions]]
+  uri = "https://modify-coral.vercel.app/api/webhooks/shop/redact"
+  compliance_topics = [ "shop/redact" ]
+
+[access_scopes]
+# Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
+scopes = "read_analytics,read_content,read_orders,read_products,read_themes,write_content,write_products,write_themes"
+use_legacy_install_flow = false
 
 [auth]
 redirect_urls = [
   "https://modify-coral.vercel.app/api/shopify/callback",
   "http://localhost:3000/api/shopify/callback"
 ]
-
-# Managed installation + Token Exchange (no manual OAuth needed for installs).
-# The app loads /shopify embedded in the admin; App Bridge issues a session
-# token that the backend exchanges for an EXPIRING offline access token.
-[access_scopes]
-scopes = "read_themes,write_themes,read_products,write_products,read_analytics,write_content,read_content,read_orders"
-use_legacy_install_flow = false
-
-[webhooks]
-api_version = "2026-04"
-
-  [webhooks.privacy_compliance]
-  customer_data_request_url = "https://modify-coral.vercel.app/api/webhooks/customers/data_request"
-  customer_deletion_url = "https://modify-coral.vercel.app/api/webhooks/customers/redact"
-  shop_deletion_url = "https://modify-coral.vercel.app/api/webhooks/shop/redact"
