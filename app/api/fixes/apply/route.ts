@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { createServiceRoleClient } from '@/lib/supabase-server'
+import { getValidAccessToken } from '@/lib/shopify-token'
 import {
   getThemes,
   getThemeAssets,
@@ -72,6 +73,7 @@ export async function POST(request: NextRequest) {
   if (auditTyped.stores.user_id !== userId) return new NextResponse('Forbidden', { status: 403 })
 
   const store = auditTyped.stores
+  await getValidAccessToken(store, supabase)
   const results: AuditResult[] = auditTyped.results ?? []
 
   if (results.length === 0) return NextResponse.json({ error: 'No audit results' }, { status: 400 })
@@ -158,6 +160,7 @@ export async function PATCH(request: NextRequest) {
   const store = typedFix.audits.stores
 
   if (store.user_id !== userId) return new NextResponse('Forbidden', { status: 403 })
+  await getValidAccessToken(store, supabase)
 
   const riskGroup: RiskGroup = classifyRiskGroup(typedFix.type, typedFix.title, typedFix.risk_group)
   console.log('[apply] fix', typedFix.id, '→ group', riskGroup, '(db:', typedFix.risk_group, ')')

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { createServiceRoleClient } from '@/lib/supabase-server'
+import { getValidAccessToken } from '@/lib/shopify-token'
 import { updateProductDescription } from '@/lib/shopify'
 import type { Store } from '@/types'
 
@@ -32,6 +33,7 @@ export async function POST(request: NextRequest) {
   if (!store) return NextResponse.json({ error: 'No store connected' }, { status: 404 })
 
   const typedStore = store as Store
+  await getValidAccessToken(typedStore, supabase)
 
   await updateProductDescription(
     typedStore.shop_domain,

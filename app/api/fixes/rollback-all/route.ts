@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { createServiceRoleClient } from '@/lib/supabase-server'
+import { getValidAccessToken } from '@/lib/shopify-token'
 import { getThemes, updateThemeAsset } from '@/lib/shopify'
 import { logAction } from '@/lib/audit-log'
 import type { Fix, Audit, Store } from '@/types'
@@ -18,6 +19,7 @@ export async function POST() {
   if (!store) return NextResponse.json({ error: 'No store connected' }, { status: 404 })
 
   const typedStore = store as Store
+  await getValidAccessToken(typedStore, supabase)
 
   // Get all applied fixes for this store, oldest first
   const { data: audits } = await supabase

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { createServiceRoleClient } from '@/lib/supabase-server'
+import { getValidAccessToken } from '@/lib/shopify-token'
 import { getThemes, getThemeAsset } from '@/lib/shopify'
 import type { Store } from '@/types'
 
@@ -74,6 +75,8 @@ export async function GET() {
 
   if (!storeRow) return NextResponse.json({ connected: false, blocks: {} })
   const store = storeRow as Store
+  // Refresh the expiring offline token server-side if it's near/past expiry.
+  await getValidAccessToken(store, supabase)
 
   try {
     const themes = await getThemes(store.shop_domain, store.access_token)

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { createServiceRoleClient } from '@/lib/supabase-server'
+import { getValidAccessToken } from '@/lib/shopify-token'
 import { getThemes, getProductsDetailed } from '@/lib/shopify'
 import { generateGuide, type GuideType, type GuideContext } from '@/lib/anthropic'
 import type { Store } from '@/types'
@@ -13,7 +14,10 @@ async function getStore(supabase: Awaited<ReturnType<typeof createServiceRoleCli
   const { data } = await supabase
     .from('stores').select('*').eq('user_id', userId)
     .order('created_at', { ascending: false }).limit(1).single()
-  return (data as Store) ?? null
+  const store = (data as Store) ?? null
+  // Refresh the expiring offline token server-side before any Shopify call.
+  if (store) await getValidAccessToken(store, supabase)
+  return store
 }
 
 // GET: list this store's guides

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { createServiceRoleClient } from '@/lib/supabase-server'
+import { getValidAccessToken } from '@/lib/shopify-token'
 import { getProductsDetailed } from '@/lib/shopify'
 import type { Store } from '@/types'
 
@@ -21,6 +22,7 @@ export async function GET() {
   if (!store) return NextResponse.json({ products: [], shopDomain: null })
 
   const typedStore = store as Store
+  await getValidAccessToken(typedStore, supabase)
 
   const products = await getProductsDetailed(typedStore.shop_domain, typedStore.access_token)
 

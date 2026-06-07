@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { createServiceRoleClient } from '@/lib/supabase-server'
+import { getValidAccessToken } from '@/lib/shopify-token'
 import { getThemes, getThemeAssets, getThemeAsset } from '@/lib/shopify'
 import { generateFix } from '@/lib/anthropic'
 import { classifyRiskGroup } from '@/lib/theme-backup'
@@ -61,6 +62,7 @@ export async function POST(request: NextRequest) {
   }
 
   const store = typedAudit.stores
+  await getValidAccessToken(store, supabase)
 
   // Check if a fix already exists — but clean up stale Group A fixes with liquid data
   const { data: existing } = await supabase

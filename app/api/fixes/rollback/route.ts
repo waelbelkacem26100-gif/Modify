@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { createServiceRoleClient } from '@/lib/supabase-server'
+import { getValidAccessToken } from '@/lib/shopify-token'
 import { getThemes, getThemeAsset, updateThemeAsset } from '@/lib/shopify'
 import { logAction } from '@/lib/audit-log'
 import type { Fix, Audit, Store } from '@/types'
@@ -21,6 +22,7 @@ export async function POST(request: NextRequest) {
 
   const typedFix = fix as Fix & { audits: Audit & { stores: Store } }
   const store = typedFix.audits.stores
+  await getValidAccessToken(store, supabase)
 
   if (store.user_id !== userId) return new NextResponse('Forbidden', { status: 403 })
 

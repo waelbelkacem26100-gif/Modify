@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { createServiceRoleClient } from '@/lib/supabase-server'
+import { getValidAccessToken } from '@/lib/shopify-token'
 import { getThemes, getThemeAssets, getProducts } from '@/lib/shopify'
 import { auditStore } from '@/lib/anthropic'
 import { runPageSpeed, pageSpeedImpactEuros } from '@/lib/pagespeed'
@@ -73,6 +74,8 @@ export async function POST() {
   }
 
   const typedStore = store as Store
+  // Refresh the expiring offline token before the background audit uses it.
+  await getValidAccessToken(typedStore, supabase)
 
   const { data: audit, error: createError } = await supabase
     .from('audits')
