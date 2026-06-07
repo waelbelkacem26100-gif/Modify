@@ -34,6 +34,7 @@ export async function POST(request: NextRequest) {
       refresh_token: refreshToken,
     }
 
+    let storeId = existing?.id ?? null
     if (existing) {
       // Keep the store's existing owner (e.g. a Clerk account) — only refresh the token.
       await supabase.from('stores').update(tokenFields).eq('id', existing.id)
@@ -44,17 +45,42 @@ export async function POST(request: NextRequest) {
         const info = (await getShopInfo(shop, accessToken)) as { name?: string }
         shopName = info.name ?? null
       } catch { /* tolerant */ }
-      await supabase.from('stores').insert({
+      const { data: created } = await supabase.from('stores').insert({
         user_id: `shopify:${shop}`, // sentinel owner for App Store installs
         shop_domain: shop,
         shop_name: shopName,
         ...tokenFields,
+      }).select('id').single()
+      storeId = created?.id ?? null
+    }
+
+    const isExpiring = Boolean(expiresIn && refreshToken)
+    // Diagnostic written to audit_logs (readable from the DB) — shows exactly
+    // what Shopify's token exchange returned for this app.
+    if (storeId) {
+      await supabase.from('audit_logs').insert({
+        store_id: storeId,
+        action: 'token_exchange',
+        details: {
+          token_prefix: accessToken.slice(0, 8),
+          expires_in: expiresIn ?? null,
+          has_refresh_token: Boolean(refreshToken),
+          is_expiring: isExpiring,
+          created: !existing,
+        },
+        status: isExpiring ? 'success' : 'warning',
       })
     }
 
     console.log('[token-exchange] ok', shop, '| created:', !existing,
       '| expires_in:', expiresIn ?? 'n/a', '| refresh:', refreshToken ? 'yes' : 'no')
-    return NextResponse.json({ success: true, created: !existing, expires_in: expiresIn })
+    return NextResponse.json({
+      success: true,
+      created: !existing,
+      expires_in: expiresIn,
+      is_expiring: isExpiring,
+      token_prefix: accessToken.slice(0, 6),
+    })
   } catch (e) {
     console.error('[token-exchange] failed for', shop, String(e))
     return NextResponse.json({ error: 'Token exchange failed', detail: String(e).slice(0, 200) }, { status: 502 })

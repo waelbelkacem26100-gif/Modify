@@ -35,11 +35,15 @@ export default function AppBridgeRefresh() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ session_token: token }),
         })
-        const data = await res.json().catch(() => ({})) as { error?: string }
+        const data = await res.json().catch(() => ({})) as { error?: string; is_expiring?: boolean }
         if (cancelled) return
-        if (res.ok) {
+        if (res.ok && data.is_expiring) {
           setStatus('ok')
           setMessage('Connexion sécurisée établie. Modify entretient votre boutique en pilote automatique.')
+        } else if (res.ok) {
+          // Exchange succeeded but Shopify returned a NON-expiring token — surface it.
+          setStatus('error')
+          setMessage('Token reçu mais non-expirant (refusé par l\'API Shopify). Réinstallez l\'app depuis l\'admin pour obtenir un token expirant.')
         } else {
           setStatus('error')
           setMessage(data.error ?? 'Échec de la connexion.')
