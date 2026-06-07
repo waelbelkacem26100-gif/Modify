@@ -1,0 +1,25 @@
+# Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
+
+client_id = "02b87d489f93a69ab8da3a938370522f"
+name = "Modify 2"
+application_url = "https://modify-coral.vercel.app/shopify"
+embedded = true
+
+[auth]
+redirect_urls = [
+  "https://modify-coral.vercel.app/api/shopify/callback",
+  "http://localhost:3000/api/shopify/callback"
+]
+
+# Managed installation + Token Exchange (expiring offline tokens by default).
+[access_scopes]
+scopes = "read_themes,write_themes,read_products,write_products,read_analytics,write_content,read_content,read_orders"
+use_legacy_install_flow = false
+
+[webhooks]
+api_version = "2026-04"
+
+  [webhooks.privacy_compliance]
+  customer_data_request_url = "https://modify-coral.vercel.app/api/webhooks/customers/data_request"
+  customer_deletion_url = "https://modify-coral.vercel.app/api/webhooks/customers/redact"
+  shop_deletion_url = "https://modify-coral.vercel.app/api/webhooks/shop/redact"
