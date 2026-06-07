@@ -1,6 +1,5 @@
 import type { Metadata } from 'next'
 import { Syne, DM_Sans } from 'next/font/google'
-import { ClerkProvider } from '@clerk/nextjs'
 import './globals.css'
 
 const syne = Syne({
@@ -30,12 +29,10 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <ClerkProvider>
-      <html lang="fr" className={`${syne.variable} ${dmSans.variable}`}>
-        <body className="bg-background text-text-primary font-sans antialiased">
-          {children}
-        </body>
-      </html>
-    </ClerkProvider>
+    <html lang="fr" className={`${syne.variable} ${dmSans.variable}`}>
+      <body className="bg-background text-text-primary font-sans antialiased">
+        {children}
+      </body>
+    </html>
   )
 }
