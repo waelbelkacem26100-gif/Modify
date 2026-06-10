@@ -10,6 +10,15 @@ import { SHOPIFY_API_VERSION, getThemeAsset, updateThemeAsset } from './shopify'
 const THEME_EXTENSION_UUID =
   process.env.SHOPIFY_THEME_EXTENSION_UUID || '237da49c-8579-d5c6-e17c-53e6224177c7093e0338'
 
+/**
+ * App handle used in the block type URI (`shopify://apps/<handle>/...`). This is
+ * the app's storefront/theme handle, which can DIFFER from the Admin API's
+ * `currentAppInstallation.app.handle` (e.g. that returned "modify-test" while the
+ * theme editor wrote "modify-2"). When set, this override wins over the API
+ * lookup; otherwise we fall back to the live handle.
+ */
+const APP_HANDLE_OVERRIDE = process.env.SHOPIFY_APP_HANDLE || null
+
 export interface AppBlockSpec {
   /** Block handle = file name under extensions/modify-blocks/blocks/ */
   handle: string
@@ -90,7 +99,7 @@ export async function enableProductAppBlock(
   themeId: string,
   spec: AppBlockSpec
 ): Promise<EnableResult> {
-  const appHandle = await getAppHandle(shop, accessToken)
+  const appHandle = APP_HANDLE_OVERRIDE || (await getAppHandle(shop, accessToken))
   if (!appHandle) return { status: 'error', reason: 'app handle introuvable (currentAppInstallation)' }
   const type = `shopify://apps/${appHandle}/blocks/${spec.handle}/${THEME_EXTENSION_UUID}`
   const marker = `/blocks/${spec.handle}/`
