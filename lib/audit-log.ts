@@ -17,6 +17,7 @@ export async function logAction(
       store_id: storeId,
       fix_id: fixId ?? null,
       action,
+      action_type: action, // NOT NULL column in audit_logs — mirror `action`
       details: details ?? null,
       status,
     })

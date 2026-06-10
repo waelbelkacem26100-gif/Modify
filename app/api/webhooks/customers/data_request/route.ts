@@ -20,6 +20,7 @@ export async function POST(request: NextRequest) {
   await supabase.from('audit_logs').insert({
     store_id: store?.id ?? null,
     action: 'gdpr_customers_data_request',
+    action_type: 'gdpr_customers_data_request', // NOT NULL column — mirror `action`
     details: {
       shop_domain: shop,
       customer_id: payload.customer?.id ?? null,

@@ -16,7 +16,7 @@ import {
   updateProductMetafields,
 } from '@/lib/shopify'
 import { generateFix, generateProductDescription, buildProductHtml, extractRealAnchors } from '@/lib/anthropic'
-import { duplicateTheme, ThemeWriteForbiddenError } from '@/lib/shopify'
+import { duplicateTheme, ThemeWriteForbiddenError, ThemeBlocksIncompatibleError } from '@/lib/shopify'
 
 const THEME_WRITE_FORBIDDEN_MSG =
   "Shopify bloque l'écriture de fichiers thème via l'API (une exemption Shopify est requise, le scope write_themes ne suffit plus). Les correctifs Groupe B/C ne peuvent pas être appliqués automatiquement — voir Theme App Extensions."
@@ -394,6 +394,19 @@ export async function PATCH(request: NextRequest) {
         { status: e.status, detail: e.detail }, 'failed', fix_id)
       await supabase.from('fixes').update({ status: 'failed', verification_status: 'failed' }).eq('id', fix_id)
       return NextResponse.json({ error: THEME_WRITE_FORBIDDEN_MSG, code: 'THEME_WRITE_FORBIDDEN' }, { status: 403 })
+    }
+    if (e instanceof ThemeBlocksIncompatibleError) {
+      // The section uses theme blocks the REST Assets API can't write (Horizon
+      // footer etc.). The active theme was never modified. Tell the merchant the
+      // real cause instead of a generic "communication error".
+      console.error('[B/C] theme-blocks incompatible:', e.message)
+      await logAction(supabase, store.id, 'theme_blocks_incompatible',
+        { status: e.status, detail: e.detail, file: typedFix.file_path }, 'failed', fix_id)
+      await supabase.from('fixes').update({ status: 'failed', verification_status: 'failed' }).eq('id', fix_id)
+      return NextResponse.json({
+        error: `Ce thème utilise des blocs de thème (theme blocks) : Shopify n'autorise pas la modification de ${typedFix.file_path} via l'API. Le thème n'a pas été touché. Appliquez ce correctif depuis l'éditeur de thème Shopify, ou via une Theme App Extension.`,
+        code: 'THEME_BLOCKS_INCOMPATIBLE',
+      }, { status: 422 })
     }
     console.error('Apply fix error:', e)
     await logAction(supabase, store.id, 'apply_error',

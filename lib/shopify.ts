@@ -231,6 +231,27 @@ export class ThemeWriteForbiddenError extends Error {
   }
 }
 
+/**
+ * Thrown when Shopify rejects a section asset write (HTTP 422) because the file
+ * uses the new THEME BLOCKS architecture: its {% schema %} `presets` reference
+ * block types (e.g. "group", "email-signup") defined under /blocks/. The REST
+ * Assets API re-validates the schema in isolation and can't resolve those theme
+ * blocks, so it rejects the write as "undefined block type" — even for a
+ * byte-identical re-upload. Themes like Horizon cannot have such sections edited
+ * via the REST Assets API at all. This is distinct from a permissions problem.
+ */
+export class ThemeBlocksIncompatibleError extends Error {
+  constructor(public status: number, public detail: string) {
+    super(`THEME_BLOCKS_INCOMPATIBLE (${status}): ${detail}`)
+    this.name = 'ThemeBlocksIncompatibleError'
+  }
+}
+
+// Signature of the theme-blocks validation rejection in Shopify's 422 body.
+function isThemeBlocksRejection(body: string): boolean {
+  return /undefined block type|invalid block type|Invalid preset/i.test(body)
+}
+
 export async function updateThemeAsset(
   shopDomain: string,
   accessToken: string,
@@ -252,6 +273,12 @@ export async function updateThemeAsset(
     // REST endpoint / missing theme-files exemption), not a transient error.
     if (res.status === 404 || res.status === 403) {
       throw new ThemeWriteForbiddenError(res.status, body.slice(0, 200))
+    }
+    // 422 with a block/preset validation message = the section uses theme blocks
+    // the REST Assets API can't resolve (e.g. Horizon's footer). Unwriteable by
+    // design — surface it specifically instead of as a generic failure.
+    if (res.status === 422 && isThemeBlocksRejection(body)) {
+      throw new ThemeBlocksIncompatibleError(res.status, body.slice(0, 300))
     }
     throw new Error(`Shopify PUT asset ${key} failed ${res.status}: ${body.slice(0, 200)}`)
   }

@@ -65,6 +65,7 @@ export async function POST(request: NextRequest) {
       await supabase.from('audit_logs').insert({
         store_id: storeId,
         action: 'token_exchange',
+        action_type: 'token_exchange', // NOT NULL column — mirror `action`
         details: {
           token_prefix: accessToken.slice(0, 8),
           expires_in: expiresIn ?? null,
