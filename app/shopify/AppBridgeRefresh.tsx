@@ -13,6 +13,12 @@ declare global {
 export default function AppBridgeRefresh() {
   const [status, setStatus] = useState<'working' | 'ok' | 'error'>('working')
   const [message, setMessage] = useState('Connexion à votre boutique Shopify…')
+  // Standalone dashboard URL. The dashboard is Clerk-protected and CANNOT run
+  // inside the Shopify admin iframe (Clerk's handshake + third-party cookies
+  // break there — that's why middleware excludes /shopify). So we break OUT of
+  // the iframe to the top-level window. Kept in state to also render a manual
+  // fallback link if the automatic breakout is blocked.
+  const [dashboardUrl, setDashboardUrl] = useState<string | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -42,7 +48,22 @@ export default function AppBridgeRefresh() {
           // non-expiring by design — that is the correct, expected outcome and
           // exactly what the autopilot needs. No `expires_in`/`refresh_token` to wait for.
           setStatus('ok')
-          setMessage('Connexion sécurisée établie. Modify entretient votre boutique en pilote automatique.')
+          setMessage('Connexion sécurisée établie. Redirection vers votre tableau de bord…')
+
+          // Break out of the Shopify admin iframe to the standalone dashboard.
+          // `window.open(url, '_top')` is the Shopify-sanctioned way to do a
+          // top-level navigation from an embedded app. A brief pause lets the
+          // success message render first.
+          const url = `${window.location.origin}/dashboard`
+          setDashboardUrl(url)
+          setTimeout(() => {
+            if (cancelled) return
+            try {
+              window.open(url, '_top')
+            } catch {
+              window.top!.location.href = url
+            }
+          }, 1200)
         } else {
           setStatus('error')
           setMessage(data.error ?? 'Échec de la connexion.')
@@ -64,10 +85,23 @@ export default function AppBridgeRefresh() {
         <h1 style={{ fontSize: 20, fontWeight: 700, margin: '0 0 8px' }}>Modify</h1>
         <p style={{ color, fontSize: 15, lineHeight: 1.5 }}>{message}</p>
         {status === 'ok' && (
-          <p style={{ color: '#71717a', fontSize: 13, marginTop: 16, lineHeight: 1.5 }}>
-            Modify audite, corrige et améliore votre boutique chaque semaine.
-            Vous recevrez un rapport par e-mail avec les revenus récupérés.
-          </p>
+          <>
+            {dashboardUrl && (
+              <p style={{ marginTop: 20 }}>
+                <a
+                  href={dashboardUrl}
+                  target="_top"
+                  style={{ display: 'inline-block', background: '#FF5C35', color: '#fff', fontWeight: 600, fontSize: 14, textDecoration: 'none', padding: '10px 20px', borderRadius: 8 }}
+                >
+                  Ouvrir le tableau de bord Modify
+                </a>
+              </p>
+            )}
+            <p style={{ color: '#71717a', fontSize: 13, marginTop: 16, lineHeight: 1.5 }}>
+              Modify audite, corrige et améliore votre boutique chaque semaine.
+              Vous recevrez un rapport par e-mail avec les revenus récupérés.
+            </p>
+          </>
         )}
       </div>
     </div>
