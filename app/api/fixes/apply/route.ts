@@ -17,6 +17,7 @@ import {
 } from '@/lib/shopify'
 import { generateFix, generateProductDescription, buildProductHtml, extractRealAnchors } from '@/lib/anthropic'
 import { duplicateTheme, ThemeWriteForbiddenError, ThemeBlocksIncompatibleError } from '@/lib/shopify'
+import { appBlockForFix, enableProductAppBlock } from '@/lib/shopify-app-blocks'
 
 const THEME_WRITE_FORBIDDEN_MSG =
   "Shopify bloque l'écriture de fichiers thème via l'API (une exemption Shopify est requise, le scope write_themes ne suffit plus). Les correctifs Groupe B/C ne peuvent pas être appliqués automatiquement — voir Theme App Extensions."
@@ -208,6 +209,33 @@ export async function PATCH(request: NextRequest) {
     const backupThemeId = await getOrCreateSessionBackup(store, supabase)
     await logAction(supabase, store.id, 'session_backup_ready',
       { backup_theme_id: backupThemeId }, 'success', fix_id)
+
+    // ── Step 1c: App-block path (Group B) ──────────────────────────────────
+    // For trust-badges / social-proof / urgency, ENABLE the matching app block
+    // in templates/product.json instead of injecting Liquid into a section file.
+    // Required on theme-blocks themes (Horizon), where section writes are
+    // rejected (422). Falls through to Liquid injection if the block can't be
+    // enabled (e.g. classic theme where the extension isn't available).
+    const appBlock = riskGroup === 'b' ? appBlockForFix(typedFix) : null
+    if (appBlock) {
+      const r = await enableProductAppBlock(
+        store.shop_domain, store.access_token, activeThemeId, appBlock
+      )
+      if (r.status === 'applied' || r.status === 'already') {
+        await logAction(supabase, store.id, 'app_block_enabled',
+          { block: appBlock.handle, theme_id: activeThemeId, note: r.status }, 'success', fix_id)
+        await supabase.from('fixes').update({
+          status: 'applied', verification_status: 'verified', theme_id: activeThemeId,
+        }).eq('id', fix_id)
+        return NextResponse.json({ success: true, group: 'b', method: 'app_block', block: appBlock.handle, note: r.status })
+      } else {
+        // Couldn't enable the app block — record why, then fall through to the
+        // existing Liquid-injection path (best effort on classic themes).
+        console.log('[B] app block not enabled:', appBlock.handle, '-', r.reason, '→ Liquid fallback')
+        await logAction(supabase, store.id, 'app_block_unavailable',
+          { block: appBlock.handle, reason: r.reason }, 'warning', fix_id)
+      }
+    }
 
     // ── Step 2: Read current file from active theme ────────────────────────
     const asset = await getThemeAsset(
