@@ -2,8 +2,9 @@ import { auth } from '@clerk/nextjs/server'
 import { redirect } from 'next/navigation'
 import { getUserSubscription } from '@/lib/subscription'
 import ManageSubscriptionButton from '@/components/dashboard/ManageSubscriptionButton'
-import SubscribeButton from '@/components/dashboard/SubscribeButton'
-import { CreditCard, Calendar, CheckCircle, AlertTriangle, XCircle, Clock } from 'lucide-react'
+import SubscribeGate from '@/components/dashboard/SubscribeGate'
+import { Calendar, CheckCircle, AlertTriangle, XCircle, Clock } from 'lucide-react'
+import { planById } from '@/lib/pricing'
 import type { Subscription } from '@/lib/subscription'
 
 const statusConfig: Record<
@@ -69,28 +70,19 @@ export default async function SubscriptionPage() {
 
   if (!subscription) {
     return (
-      <div className="p-8 max-w-2xl">
-        <div className="mb-8">
+      <div className="p-4 sm:p-8">
+        <div className="mb-2 max-w-2xl mx-auto">
           <h1 className="font-syne font-bold text-2xl text-text-primary mb-1">Mon abonnement</h1>
-          <p className="text-text-secondary text-sm">Gérez votre abonnement Modify.</p>
+          <p className="text-text-secondary text-sm">Choisissez le plan qui vous convient.</p>
         </div>
-
-        <div className="bg-surface border border-border rounded-2xl p-8 text-center">
-          <CreditCard className="w-10 h-10 text-text-muted mx-auto mb-3" />
-          <h3 className="font-syne font-semibold text-text-primary mb-2">
-            Aucun abonnement actif
-          </h3>
-          <p className="text-text-secondary text-sm mb-6">
-            Commencez votre essai gratuit de 14 jours pour accéder à toutes les fonctionnalités.
-          </p>
-          <SubscribeButton />
-        </div>
+        <SubscribeGate />
       </div>
     )
   }
 
   const config = statusConfig[subscription.status] ?? statusConfig.canceled
   const StatusIcon = config.icon
+  const currentPlan = planById(subscription.plan)
 
   const periodEnd = subscription.current_period_end
     ? new Date(subscription.current_period_end).toLocaleDateString('fr-FR', {
@@ -132,7 +124,7 @@ export default async function SubscriptionPage() {
 
           <div className="text-right">
             <p className="text-text-muted text-xs font-medium uppercase tracking-wide mb-1">Plan</p>
-            <p className="font-syne font-bold text-text-primary">49€ / mois</p>
+            <p className="font-syne font-bold text-text-primary">{currentPlan.name} · {currentPlan.priceEur}€ / mois</p>
           </div>
         </div>
       </div>
@@ -171,14 +163,17 @@ export default async function SubscriptionPage() {
         {isActive ? (
           <ManageSubscriptionButton />
         ) : (
-          <div className="space-y-3">
-            <p className="text-text-secondary text-sm">
-              Votre abonnement est inactif. Réabonnez-vous pour retrouver l&apos;accès.
-            </p>
-            <SubscribeButton />
-          </div>
+          <p className="text-text-secondary text-sm">
+            Votre abonnement est inactif. Choisissez un plan ci-dessous pour retrouver l’accès.
+          </p>
         )}
       </div>
+
+      {!isActive && (
+        <div className="mt-4">
+          <SubscribeGate />
+        </div>
+      )}
     </div>
   )
 }

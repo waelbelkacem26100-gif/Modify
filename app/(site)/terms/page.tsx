@@ -34,8 +34,8 @@ export default function TermsPage() {
 
       <LegalSection heading="4. Essai gratuit, abonnement et facturation">
         <LegalList items={[
-          'Le service est proposé avec un essai gratuit de 14 jours, sans carte bancaire requise pour démarrer.',
-          'À l\'issue de l\'essai, l\'abonnement est de 49 €/mois, facturé via Stripe.',
+          'Une offre gratuite est disponible (accès limité). Les offres payantes Starter (9 €/mois) et Pro (29 €/mois) incluent un essai gratuit de 14 jours, sans carte bancaire requise pour démarrer.',
+          'À l\'issue de l\'essai, l\'abonnement payant choisi (9 €/mois ou 29 €/mois) est facturé via Stripe.',
           'L\'abonnement est sans engagement et résiliable à tout moment ; il reste actif jusqu\'à la fin de la période en cours.',
           'Les prix peuvent évoluer ; tout changement vous sera notifié à l\'avance.',
         ]} />

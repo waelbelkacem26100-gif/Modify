@@ -28,6 +28,7 @@ export async function POST(request: NextRequest) {
       if (!userId || !session.subscription) break
 
       const sub = await stripe.subscriptions.retrieve(session.subscription as string)
+      const plan = session.metadata?.plan ?? sub.metadata?.plan ?? 'starter'
 
       await supabase.from('subscriptions').upsert(
         {
@@ -41,6 +42,10 @@ export async function POST(request: NextRequest) {
         },
         { onConflict: 'user_id' }
       )
+      // Best-effort: record the tier separately so a missing `plan` column
+      // (pre-migration) never blocks the critical subscription write.
+      const { error: planErr } = await supabase.from('subscriptions').update({ plan }).eq('user_id', userId)
+      if (planErr) console.warn('[stripe webhook] plan not persisted:', planErr.message)
       break
     }
 
@@ -58,6 +63,10 @@ export async function POST(request: NextRequest) {
           updated_at: new Date().toISOString(),
         })
         .eq('stripe_subscription_id', sub.id)
+      if (sub.metadata?.plan) {
+        const { error: planErr } = await supabase.from('subscriptions').update({ plan: sub.metadata.plan }).eq('stripe_subscription_id', sub.id)
+        if (planErr) console.warn('[stripe webhook] plan not persisted:', planErr.message)
+      }
       break
     }
 

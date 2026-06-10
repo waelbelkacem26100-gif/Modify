@@ -144,8 +144,13 @@ export async function POST(request: NextRequest) {
 // ─── PATCH: apply a specific fix with full safety system ─────────────────────
 
 export async function PATCH(request: NextRequest) {
-  const { userId } = await auth()
-  if (!userId) return new NextResponse('Unauthorized', { status: 401 })
+  // Two callers: the merchant (Clerk) or Modify itself (weekly cron / 1-click
+  // approval) via a shared internal secret. The internal path skips Clerk and
+  // the ownership check so it can apply fixes on the merchant's behalf.
+  const internal = request.headers.get('x-modify-internal')
+  const isInternal = Boolean(process.env.CRON_SECRET) && internal === process.env.CRON_SECRET
+  const { userId } = isInternal ? { userId: null } : await auth()
+  if (!isInternal && !userId) return new NextResponse('Unauthorized', { status: 401 })
 
   const body = await request.json() as { fix_id: string; confirm_high_risk?: boolean }
   const { fix_id, confirm_high_risk = false } = body
@@ -160,7 +165,7 @@ export async function PATCH(request: NextRequest) {
   const typedFix = fix as Fix & { audits: Audit & { stores: Store } }
   const store = typedFix.audits.stores
 
-  if (store.user_id !== userId) return new NextResponse('Forbidden', { status: 403 })
+  if (!isInternal && store.user_id !== userId) return new NextResponse('Forbidden', { status: 403 })
   await getValidAccessToken(store, supabase)
 
   const riskGroup: RiskGroup = classifyRiskGroup(typedFix.type, typedFix.title, typedFix.risk_group)

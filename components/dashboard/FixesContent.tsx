@@ -35,14 +35,20 @@ export default function FixesContent() {
 
   useEffect(() => { fetchFixes() }, [fetchFixes])
 
-  // Persisted store mode (auto vs weekly approval)
+  // Persisted store mode (auto vs weekly approval) — server-backed.
   useEffect(() => {
-    const saved = localStorage.getItem('modify_mode') as StoreMode | null
-    if (saved === 'auto' || saved === 'approval') setMode(saved)
+    fetch('/api/store/mode')
+      .then((r) => r.ok ? r.json() : null)
+      .then((d: { mode?: StoreMode } | null) => { if (d?.mode === 'auto' || d?.mode === 'approval') setMode(d.mode) })
+      .catch(() => {})
   }, [])
   function changeMode(m: StoreMode) {
-    setMode(m)
-    localStorage.setItem('modify_mode', m)
+    setMode(m) // optimistic
+    fetch('/api/store/mode', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mode: m }),
+    }).catch(() => {})
   }
 
   function showConfirmation(title: string) {

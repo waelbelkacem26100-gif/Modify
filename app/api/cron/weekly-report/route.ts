@@ -2,10 +2,13 @@ import { NextRequest, NextResponse } from 'next/server'
 import { clerkClient } from '@clerk/nextjs/server'
 import { createServiceRoleClient } from '@/lib/supabase-server'
 import { buildWeeklyReport } from '@/lib/weekly-report'
-import { sendWeeklyReport } from '@/lib/email'
+import { sendWeeklyReport, sendApprovalEmail } from '@/lib/email'
 import { snapshotStoreScore } from '@/lib/store-score'
 import { isTokenExpired, getValidAccessToken } from '@/lib/shopify-token'
 import { logAction } from '@/lib/audit-log'
+import { readStoreMode } from '@/lib/store-mode'
+import { applyPendingFixesForStore, getPendingFixes } from '@/lib/apply-pending'
+import { signApprovalToken } from '@/lib/approval-token'
 import type { Store } from '@/types'
 
 export const maxDuration = 300
@@ -52,6 +55,35 @@ export async function GET(request: NextRequest) {
     const email = await emailForUser(store.user_id)
     if (!email) { skipped++; continue }
     try {
+      const mode = readStoreMode(store)
+      const shopName = store.shop_name ?? store.shop_domain
+      const dashboardUrl = `${process.env.NEXT_PUBLIC_APP_URL}/dashboard`
+
+      if (mode === 'approval') {
+        // Approval mode: email the pending list with a 1-click approve link.
+        const pending = await getPendingFixes(store, supabase)
+        if (pending.length > 0) {
+          const token = signApprovalToken(store.id)
+          const approveUrl = `${process.env.NEXT_PUBLIC_APP_URL}/api/fixes/approve?token=${encodeURIComponent(token ?? '')}`
+          const totalEuros = pending.reduce((s, f) => s + f.impact_euros, 0)
+          const ok = await sendApprovalEmail(email, {
+            shopName,
+            fixes: pending.map((f) => ({ title: f.title, impact_euros: f.impact_euros })),
+            totalEuros, approveUrl, dashboardUrl,
+          })
+          if (ok) { sent++; await logAction(supabase, store.id, 'approval_email_sent', { email, pending: pending.length }, 'success') }
+          else skipped++
+          continue
+        }
+        // Nothing to approve → fall through to the regular weekly recap.
+      } else {
+        // Auto mode: apply everything before sending the recap.
+        const r = await applyPendingFixesForStore(store, supabase)
+        if (r.applied || r.failed) {
+          await logAction(supabase, store.id, 'auto_fixes_applied', { applied: r.applied, failed: r.failed }, r.failed ? 'warning' : 'success')
+        }
+      }
+
       const report = await buildWeeklyReport(store, supabase)
       const ok = await sendWeeklyReport(email, report)
       if (ok) {

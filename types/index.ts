@@ -5,6 +5,9 @@ export interface Store {
   access_token: string
   shop_name: string | null
   plan: string | null
+  // Automation mode: 'auto' applies improvements automatically, 'approval' emails
+  // the merchant each Monday for a 1-click approval. May be null pre-migration.
+  mode: 'auto' | 'approval' | null
   backup_theme_id: string | null
   backup_created_at: string | null
   token_expires_at: string | null
