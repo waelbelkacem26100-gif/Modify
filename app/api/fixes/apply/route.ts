@@ -258,12 +258,17 @@ export async function PATCH(request: NextRequest) {
     }
 
     if (updatedCode === null) {
-      await logAction(supabase, store.id, 'anchor_not_found',
-        { file: typedFix.file_path, group: riskGroup, tried: typedFix.liquid_before }, 'failed', fix_id)
-      return NextResponse.json({
-        error: `Aucune ancre valide trouvée dans ${typedFix.file_path}. Ancre tentée : "${typedFix.liquid_before}". Régénérez le correctif.`,
-        code: 'ANCHOR_NOT_FOUND',
-      }, { status: 422 })
+      // Last resort: some section files expose NO product/tag anchor and forbid
+      // schema anchors — e.g. Horizon's sections/footer.liquid. Inject
+      // structurally: just before the {% schema %} block (safe end-of-body
+      // position), or before the file's last line if there's no schema at all.
+      // This always yields a valid placement, so Group B/C fixes still apply.
+      const structural = injectBeforeSchemaOrEnd(fileContent, typedFix.liquid_after)
+      updatedCode = structural
+      usedAnchor = '(structural: before {% schema %} / end of file)'
+      console.log('[B/C] Structural fallback injection for', typedFix.file_path)
+      await logAction(supabase, store.id, 'anchor_structural_fallback',
+        { file: typedFix.file_path, stale: typedFix.liquid_before }, 'warning', fix_id)
     }
 
     // Idempotency — injected code already present, nothing to write
@@ -682,6 +687,35 @@ function applyAnchorInjection(fileContent: string, anchor: string, code: string)
   const lineEnd = fileContent.indexOf('\n', idx + anchor.length)
   const insertAt = lineEnd === -1 ? fileContent.length : lineEnd + 1
   return fileContent.slice(0, insertAt) + code + '\n' + fileContent.slice(insertAt)
+}
+
+/**
+ * Structural fallback used when a section file has no usable product/tag anchor
+ * (e.g. Horizon's sections/footer.liquid). Places `code` at the end of the
+ * rendered section body:
+ *   1. immediately BEFORE the {% schema %} opening tag — never inside the JSON
+ *      schema block (that would corrupt it), and
+ *   2. if there is no schema block at all, before the file's last non-empty line.
+ * Returns fileContent unchanged when the code is already present (idempotent).
+ */
+function injectBeforeSchemaOrEnd(fileContent: string, code: string): string {
+  const trimmed = code.trim()
+  if (trimmed.length >= 20 && fileContent.includes(trimmed)) return fileContent
+
+  // Opening schema tag only — `{%- schema -%}` / `{% schema %}`, not endschema.
+  const schemaOpen = /\{%-?\s*schema\s*-?%\}/.exec(fileContent)
+  if (schemaOpen) {
+    let lineStart = fileContent.lastIndexOf('\n', schemaOpen.index)
+    lineStart = lineStart === -1 ? 0 : lineStart + 1
+    return fileContent.slice(0, lineStart) + code + '\n' + fileContent.slice(lineStart)
+  }
+
+  // No schema block — inject just before the last non-empty line.
+  const lines = fileContent.split('\n')
+  let i = lines.length - 1
+  while (i > 0 && lines[i].trim() === '') i--
+  lines.splice(i, 0, code)
+  return lines.join('\n')
 }
 
 function findRelevantFile(category: string, fileKeys: string[]): string | null {
