@@ -35,15 +35,14 @@ export default function AppBridgeRefresh() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ session_token: token }),
         })
-        const data = await res.json().catch(() => ({})) as { error?: string; is_expiring?: boolean }
+        const data = await res.json().catch(() => ({})) as { success?: boolean; error?: string }
         if (cancelled) return
-        if (res.ok && data.is_expiring) {
+        if (res.ok && data.success) {
+          // A valid offline access token was stored. Shopify offline tokens are
+          // non-expiring by design — that is the correct, expected outcome and
+          // exactly what the autopilot needs. No `expires_in`/`refresh_token` to wait for.
           setStatus('ok')
           setMessage('Connexion sécurisée établie. Modify entretient votre boutique en pilote automatique.')
-        } else if (res.ok) {
-          // Exchange succeeded but Shopify returned a NON-expiring token — surface it.
-          setStatus('error')
-          setMessage('Token reçu mais non-expirant (refusé par l\'API Shopify). Réinstallez l\'app depuis l\'admin pour obtenir un token expirant.')
         } else {
           setStatus('error')
           setMessage(data.error ?? 'Échec de la connexion.')

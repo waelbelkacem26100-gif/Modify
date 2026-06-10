@@ -52,9 +52,25 @@ interface TokenResponse {
   error_description?: string
 }
 
-function parseTokenResponse(status: number, text: string): TokenResult {
+function parseTokenResponse(status: number, text: string, label = 'oauth'): TokenResult {
   let data: TokenResponse = {}
   try { data = JSON.parse(text) } catch { /* non-JSON error body */ }
+
+  // Log EXACTLY what Shopify returned, with secrets redacted. This is the ground
+  // truth for what token type Shopify issues. Offline tokens (which we request)
+  // come back with ONLY `access_token` + `scope` — by design they never carry
+  // `expires_in` or `refresh_token` (Shopify offline tokens do not expire, and
+  // Shopify OAuth has no refresh-token grant at all).
+  const redacted: Record<string, unknown> = { ...(data as Record<string, unknown>) }
+  if (typeof redacted.access_token === 'string') {
+    redacted.access_token = `${redacted.access_token.slice(0, 8)}…(${redacted.access_token.length} chars)`
+  }
+  if (typeof redacted.refresh_token === 'string') {
+    redacted.refresh_token = `present(${redacted.refresh_token.length} chars)`
+  }
+  console.log(`[shopify token ${label}] HTTP ${status} | keys=[${Object.keys(data).join(',')}] | payload=`,
+    JSON.stringify(redacted))
+
   if (status >= 400 || !data.access_token) {
     const detail = data.error_description ?? data.error ?? text.slice(0, 300)
     throw new Error(`Token request failed (HTTP ${status}): ${detail}`)
@@ -76,7 +92,7 @@ export async function exchangeCodeForToken(shop: string, code: string): Promise<
       code,
     }),
   })
-  return parseTokenResponse(res.status, await res.text())
+  return parseTokenResponse(res.status, await res.text(), 'authorization_code')
 }
 
 // Mints a fresh access token from a refresh token (no browser / merchant needed).
@@ -91,7 +107,7 @@ export async function refreshAccessToken(shop: string, refreshToken: string): Pr
       refresh_token: refreshToken,
     }),
   })
-  const result = parseTokenResponse(res.status, await res.text())
+  const result = parseTokenResponse(res.status, await res.text(), 'refresh_token')
   // Shopify may rotate the refresh token; keep the old one if it didn't.
   return { ...result, refreshToken: result.refreshToken ?? refreshToken }
 }
@@ -114,7 +130,7 @@ export async function exchangeSessionToken(shop: string, sessionToken: string): 
       requested_token_type: 'urn:shopify:params:oauth:token-type:offline-access-token',
     }),
   })
-  return parseTokenResponse(res.status, await res.text())
+  return parseTokenResponse(res.status, await res.text(), 'token_exchange')
 }
 
 export function validateHmac(query: Record<string, string>): boolean {

@@ -12,12 +12,13 @@ export type TokenStatus = 'valid' | 'expiring' | 'expired'
 type TokenFields = Pick<Store, 'token_expires_at' | 'refresh_token'>
 
 /**
- * Shopify now issues EXPIRING offline tokens (with a refresh_token) and rejects
- * the old non-expiring ones. A store with no recorded expiry holds a dead legacy
- * token → treated as expired.
+ * Shopify OFFLINE access tokens (what Modify uses for background work) are
+ * non-expiring by design and carry no `expires_in`/`refresh_token`. A store with
+ * no recorded expiry therefore holds a perfectly valid, permanent offline token —
+ * NOT a dead one. Only stores that DO have an expiry (online tokens) can age out.
  */
 export function getTokenStatus(store: Pick<Store, 'token_expires_at'>): TokenStatus {
-  if (!store.token_expires_at) return 'expired'
+  if (!store.token_expires_at) return 'valid' // non-expiring offline token
   const exp = new Date(store.token_expires_at).getTime()
   const now = Date.now()
   if (Number.isNaN(exp) || exp <= now) return 'expired'

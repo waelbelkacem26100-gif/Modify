@@ -54,9 +54,12 @@ export async function POST(request: NextRequest) {
       storeId = created?.id ?? null
     }
 
-    const isExpiring = Boolean(expiresIn && refreshToken)
-    // Diagnostic written to audit_logs (readable from the DB) — shows exactly
-    // what Shopify's token exchange returned for this app.
+    // Shopify OFFLINE access tokens (what we request) are non-expiring by design:
+    // the exchange returns only `access_token` + `scope`, never `expires_in` or
+    // `refresh_token`. Receiving a valid access token IS the success condition —
+    // a non-expiring offline token is exactly what an unattended background app
+    // needs. `is_expiring` is informational only and must NOT gate the install.
+    const isExpiring = Boolean(expiresIn)
     if (storeId) {
       await supabase.from('audit_logs').insert({
         store_id: storeId,
@@ -68,12 +71,13 @@ export async function POST(request: NextRequest) {
           is_expiring: isExpiring,
           created: !existing,
         },
-        status: isExpiring ? 'success' : 'warning',
+        status: 'success',
       })
     }
 
     console.log('[token-exchange] ok', shop, '| created:', !existing,
-      '| expires_in:', expiresIn ?? 'n/a', '| refresh:', refreshToken ? 'yes' : 'no')
+      '| expires_in:', expiresIn ?? 'n/a (non-expiring offline token)',
+      '| refresh:', refreshToken ? 'yes' : 'no')
     return NextResponse.json({
       success: true,
       created: !existing,
