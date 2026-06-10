@@ -20,51 +20,53 @@ export interface StoreDataForAudit {
 export async function auditStore(storeData: StoreDataForAudit): Promise<AuditResult[]> {
   const message = await anthropic.messages.create({
     model: 'claude-opus-4-8',
-    max_tokens: 4096,
+    max_tokens: 16000,
     messages: [
       {
         role: 'user',
-        content: `You are a Shopify conversion rate optimization expert. Analyze this store and identify conversion issues.
+        content: `Tu es l'auditeur de conversion e-commerce le plus rigoureux au monde pour Shopify. Tu réalises un AUDIT PREMIUM APPROFONDI : tu passes en revue PLUS DE 100 POINTS de contrôle de conversion, puis tu listes CHAQUE problème réel détecté.
 
-Store domain: ${storeData.shopDomain}
-Theme: ${storeData.themeName}
-Total products: ${storeData.productCount}
+Boutique : ${storeData.shopDomain}
+Thème : ${storeData.themeName}
+Nombre de produits : ${storeData.productCount}
 
-Theme files available:
-${storeData.themeFiles.slice(0, 30).join('\n')}
+Fichiers du thème disponibles :
+${storeData.themeFiles.slice(0, 40).join('\n')}
 
-Sample products analysis:
+Analyse d'un échantillon de produits :
 ${JSON.stringify(storeData.sampleProducts, null, 2)}
 
-Return a JSON array of 6-10 conversion issues. Each issue must follow this exact structure:
+═══ RÉFÉRENTIEL D'AUDIT (100+ points à évaluer) ═══
+Passe en revue ces familles. Pour CHAQUE point réellement problématique, crée une entrée.
+
+1. RÉASSURANCE & CONFIANCE (catégorie "trust") : badges paiement sécurisé, garantie satisfait/remboursé, politique de retour visible, avis clients & notes, témoignages, nombre de ventes/clients, labels qualité, moyens de paiement affichés, mentions légales, page "à propos", coordonnées de contact, réponse aux objections.
+2. FICHES PRODUIT (catégorie "product") : descriptions absentes/trop courtes/peu vendeuses, bénéfices vs caractéristiques, nombre et qualité des photos, photos lifestyle, vidéo, zoom, texte alternatif des images (SEO), titres optimisés, variantes claires, guide des tailles, stock affiché, prix barré/promo, livraison estimée, FAQ produit, cross-sell/upsell, produits complémentaires, métadonnées SEO (titre/description Google).
+3. URGENCE & RARETÉ (catégorie "trust" ou "product") : stock limité, compte à rebours, offre limitée, "X personnes regardent", ventes récentes.
+4. APPARENCE & NAVIGATION (catégorie "theme") : clarté du menu, barre de recherche, fil d'ariane, page d'accueil orientée conversion, bannière de valeur, collections mises en avant, cohérence visuelle, lisibilité mobile, boutons d'appel à l'action visibles et clairs, pied de page utile, popup newsletter, bannière livraison gratuite.
+5. TUNNEL D'ACHAT & PANIER (catégorie "checkout") : bouton ajout au panier visible, mini-panier/drawer, paiement express (Shop Pay, Apple/Google Pay), frais de livraison annoncés tôt, code promo, panier abandonné, étapes trop nombreuses, réassurance au checkout.
+6. RÉFÉRENCEMENT & CONTENU (catégorie "product" ou "theme") : balises titres, descriptions Google, blog/articles, maillage interne, vitesse perçue.
+
+═══ FORMAT DE SORTIE ═══
+Renvoie UNIQUEMENT un tableau JSON valide (aucun markdown). Vise un audit COMPLET : liste TOUS les problèmes réels trouvés (en général 18 à 35 entrées pour une vraie boutique). Chaque entrée :
 {
-  "id": "unique-kebab-case-id",
+  "id": "identifiant-unique-en-minuscules",
   "category": "theme|product|trust|speed|checkout",
-  "title": "Short issue title",
-  "description": "2-3 sentence detailed description of the problem",
+  "title": "Titre court et simple, en français (PAS de jargon technique)",
+  "description": "1 à 2 phrases en français simple : le problème et pourquoi il fait perdre des ventes. AUCUN terme technique (pas de LCP, CLS, Liquid, API, etc.).",
   "impact_euros": 450,
   "priority": "high|medium|low",
   "fix_available": true,
-  "recommendation": "Specific actionable recommendation",
+  "recommendation": "Action concrète en français simple",
   "risk_group": "a|b|c"
 }
 
-risk_group must be:
-  "a" = only needs Products API or metafields — NO Liquid file change (e.g. missing description, missing meta SEO)
-  "b" = modifies non-critical Liquid sections — trust badge, breadcrumb, urgency indicator, CTA styling
-  "c" = HIGH RISK — modifies navigation, checkout flow, main layout, homepage structure
-
-Focus on:
-- Missing trust signals (reviews, guarantees, security badges)
-- Poor product page UX (missing/weak descriptions, insufficient images, no urgency)
-- Checkout friction (missing express checkout, too many steps)
-- Mobile optimization issues
-- Missing social proof
-- No upsell/cross-sell
-- Abandoned cart recovery gaps
-- Poor CTA placement or copy
-
-Estimate realistic monthly revenue impact in euros. Return ONLY valid JSON array, no markdown.`,
+RÈGLES :
+- N'écris JAMAIS de jargon technique dans title/description/recommendation (interdits : LCP, CLS, TBT, Liquid, API, metafield, JSON-LD…). Parle business et bénéfice client.
+- "category" = l'une des 5 valeurs exactes (theme, product, trust, speed, checkout).
+- "impact_euros" = estimation mensuelle réaliste du manque à gagner (entier), proportionnée à la taille de la boutique.
+- "priority" : "high" = gros impact direct sur les ventes ; "medium" = impact notable ; "low" = amélioration de confort.
+- risk_group : "a" = API produits/SEO uniquement (description, texte alternatif, métadonnées) ; "b" = bloc ajouté à une page (badges, avis, urgence, cross-sell) ; "c" = RISQUE ÉLEVÉ (navigation, checkout, structure d'accueil).
+- N'invente pas de faux problèmes : si un point est correct, ne le liste pas. Mais sois exhaustif sur les points réellement faibles.`,
       },
     ],
   })
@@ -72,7 +74,9 @@ Estimate realistic monthly revenue impact in euros. Return ONLY valid JSON array
   const content = message.content[0]
   if (content.type !== 'text') throw new Error('Unexpected response type')
 
-  return JSON.parse(content.text) as AuditResult[]
+  // Tolerate occasional markdown fences around the JSON array.
+  const raw = content.text.trim().replace(/^```(?:json)?/i, '').replace(/```$/, '').trim()
+  return JSON.parse(raw) as AuditResult[]
 }
 
 export async function generateFix(

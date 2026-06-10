@@ -115,7 +115,7 @@ async function runAuditAsync(
       themeName: mainTheme?.name ?? 'Unknown',
       themeFiles: assets.map((a) => a.key),
       productCount: products.length,
-      sampleProducts: products.slice(0, 5).map((p) => ({
+      sampleProducts: products.slice(0, 8).map((p) => ({
         title: p.title,
         hasDescription: Boolean(p.body_html && p.body_html.length > 50),
         imageCount: p.images?.length ?? 0,
@@ -153,21 +153,23 @@ async function runAuditAsync(
       // Drop any AI-guessed speed item — we have a measured one now
       const nonSpeed = results.filter((r) => r.category !== 'speed')
       const impact = pageSpeedImpactEuros(pageSpeed.score)
-      const topOpps = pageSpeed.opportunities.slice(0, 3).map((o) => o.title).join(' · ')
       const measured: AuditResult = {
         id: 'pagespeed-mobile',
         category: 'speed',
-        title: `Score de vitesse mobile : ${pageSpeed.score}/100`,
+        title: `Vitesse mobile : ${pageSpeed.score}/100`,
         description:
-          `Mesure réelle Google Lighthouse (mobile). LCP ${(pageSpeed.lcpMs / 1000).toFixed(1)}s, ` +
-          `CLS ${pageSpeed.cls}, TBT ${pageSpeed.tbtMs}ms.` +
-          (pageSpeed.score >= 90 ? ' Excellent — rien à corriger.' : ''),
+          pageSpeed.score >= 90
+            ? 'Vos pages se chargent rapidement sur mobile — rien à corriger.'
+            : pageSpeed.score >= 50
+              ? 'Vos pages mettent un peu trop de temps à s’afficher sur mobile : certains visiteurs partent avant l’achat.'
+              : 'Vos pages sont lentes sur mobile : beaucoup de visiteurs abandonnent avant même de voir vos produits.',
         impact_euros: impact,
         priority: pageSpeed.score >= 90 ? 'low' : pageSpeed.score >= 50 ? 'medium' : 'high',
         fix_available: false,
-        recommendation: topOpps
-          ? `Principales optimisations : ${topOpps}. La compression d'images Modify s'en charge automatiquement.`
-          : 'Vitesse déjà optimale.',
+        recommendation:
+          pageSpeed.score >= 90
+            ? 'Vitesse déjà optimale.'
+            : 'Modify allège automatiquement vos images chaque semaine pour accélérer vos pages.',
         risk_group: 'a',
       }
       results.length = 0
