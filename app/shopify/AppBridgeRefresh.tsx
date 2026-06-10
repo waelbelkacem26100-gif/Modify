@@ -41,7 +41,7 @@ export default function AppBridgeRefresh() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ session_token: token }),
         })
-        const data = await res.json().catch(() => ({})) as { success?: boolean; error?: string }
+        const data = await res.json().catch(() => ({})) as { success?: boolean; error?: string; claim_token?: string | null }
         if (cancelled) return
         if (res.ok && data.success) {
           // A valid offline access token was stored. Shopify offline tokens are
@@ -54,7 +54,12 @@ export default function AppBridgeRefresh() {
           // `window.open(url, '_top')` is the Shopify-sanctioned way to do a
           // top-level navigation from an embedded app. A brief pause lets the
           // success message render first.
-          const url = `${window.location.origin}/dashboard`
+          // When we have a signed claim token, go through /api/shopify/claim so
+          // the Clerk user signing in claims this shop's sentinel store; that
+          // route then redirects on to /dashboard.
+          const url = data.claim_token
+            ? `${window.location.origin}/api/shopify/claim?token=${encodeURIComponent(data.claim_token)}`
+            : `${window.location.origin}/dashboard`
           setDashboardUrl(url)
           setTimeout(() => {
             if (cancelled) return

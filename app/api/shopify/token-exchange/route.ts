@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceRoleClient } from '@/lib/supabase-server'
 import { verifyShopifySessionToken } from '@/lib/shopify-session'
+import { signShopClaim } from '@/lib/shopify-claim'
 import { exchangeSessionToken, getShopInfo } from '@/lib/shopify'
 
 export const runtime = 'nodejs'
@@ -78,12 +79,19 @@ export async function POST(request: NextRequest) {
     console.log('[token-exchange] ok', shop, '| created:', !existing,
       '| expires_in:', expiresIn ?? 'n/a (non-expiring offline token)',
       '| refresh:', refreshToken ? 'yes' : 'no')
+    // Signed proof of shop ownership (we just verified the session token for
+    // `shop`). The embedded surface forwards this to /api/shopify/claim so the
+    // Clerk user signing in can claim a sentinel store without a trustable shop
+    // param. Null only if the signing secret is missing (then no auto-claim).
+    const claimToken = signShopClaim(shop)
+
     return NextResponse.json({
       success: true,
       created: !existing,
       expires_in: expiresIn,
       is_expiring: isExpiring,
       token_prefix: accessToken.slice(0, 6),
+      claim_token: claimToken,
     })
   } catch (e) {
     console.error('[token-exchange] failed for', shop, String(e))
