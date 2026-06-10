@@ -3,16 +3,15 @@ import { redirect } from 'next/navigation'
 import { getUserSubscription, hasActiveAccess } from '@/lib/subscription'
 import { isAdmin } from '@/lib/config'
 import AuditContent from '@/components/dashboard/AuditContent'
-import SubscribeGate from '@/components/dashboard/SubscribeGate'
 
 export default async function AuditPage() {
   const { userId } = await auth()
   if (!userId) redirect('/sign-in')
 
-  if (isAdmin(userId)) return <AuditContent />
-
+  // Freemium: everyone can run an analysis and see the first problems; the rest
+  // are blurred behind a CTA for non-subscribers (handled inside AuditContent).
   const subscription = await getUserSubscription(userId)
-  if (!hasActiveAccess(subscription)) return <SubscribeGate />
+  const isSubscribed = isAdmin(userId) || hasActiveAccess(subscription)
 
-  return <AuditContent />
+  return <AuditContent isSubscribed={isSubscribed} />
 }

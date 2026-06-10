@@ -20,10 +20,10 @@ interface BlockDef {
 }
 
 const BLOCKS: BlockDef[] = [
-  { handle: 'trust-badges', label: 'Modify Trust Badges', desc: 'Badges de confiance sous le bouton d’achat', kind: 'block' },
-  { handle: 'social-proof', label: 'Modify Social Proof', desc: 'Étoiles + nombre d’avis clients', kind: 'block' },
-  { handle: 'urgency', label: 'Modify Urgency', desc: 'Indicateur de stock faible / urgence', kind: 'block' },
-  { handle: 'json-ld', label: 'Modify JSON-LD', desc: 'Données structurées SEO (app embed global)', kind: 'embed' },
+  { handle: 'trust-badges', label: 'Badges de confiance', desc: 'Paiement sécurisé, garantie et retours sous le bouton d’achat', kind: 'block' },
+  { handle: 'social-proof', label: 'Avis clients', desc: 'Étoiles et nombre d’avis sur vos pages produit', kind: 'block' },
+  { handle: 'urgency', label: 'Stock limité', desc: 'Message d’urgence pour inciter à l’achat', kind: 'block' },
+  { handle: 'json-ld', label: 'Visibilité sur Google', desc: 'Aide votre boutique à mieux apparaître dans les recherches Google', kind: 'embed' },
 ]
 
 export default function ActivationCard() {

@@ -1,33 +1,18 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { ScanSearch, AlertTriangle, TrendingDown, Zap, ChevronRight, RefreshCw } from 'lucide-react'
+import { ScanSearch, RefreshCw, Lock, Sparkles } from 'lucide-react'
 import Button from '@/components/ui/Button'
-import Badge from '@/components/ui/Badge'
 import FixPanel from '@/components/dashboard/FixPanel'
-import PageSpeedCard from '@/components/dashboard/PageSpeedCard'
+import SubscribeButton from '@/components/dashboard/SubscribeButton'
+import { categoryPresentation, priorityPresentation } from '@/lib/fix-presentation'
 import type { Audit, AuditResult } from '@/types'
 
 const POLL_INTERVAL_MS = 3_000
 const POLL_TIMEOUT_MS = 120_000
+const FREE_LIMIT = 3 // problems visible without a subscription
 
-const categoryLabels: Record<string, string> = {
-  theme: 'Thème',
-  product: 'Produits',
-  trust: 'Trust signals',
-  speed: 'Vitesse',
-  checkout: 'Checkout',
-}
-
-const categoryIcons: Record<string, typeof ScanSearch> = {
-  theme: ScanSearch,
-  product: TrendingDown,
-  trust: AlertTriangle,
-  speed: Zap,
-  checkout: ChevronRight,
-}
-
-export default function AuditPage() {
+export default function AuditPage({ isSubscribed }: { isSubscribed: boolean }) {
   const [audit, setAudit] = useState<Audit | null>(null)
   const [loading, setLoading] = useState(false)
   const [generatingFixes, setGeneratingFixes] = useState(false)
@@ -50,41 +35,25 @@ export default function AuditPage() {
 
   useEffect(() => {
     if (!polling) return
-
     const interval = setInterval(async () => {
-      // Timeout after POLL_TIMEOUT_MS
       if (pollStartRef.current && Date.now() - pollStartRef.current > POLL_TIMEOUT_MS) {
-        setPolling(false)
-        setLoading(false)
-        setTimedOut(true)
-        return
+        setPolling(false); setLoading(false); setTimedOut(true); return
       }
-
       const res = await fetch('/api/audit/start')
       if (!res.ok) return
-
       const data = await res.json() as { audit: Audit; timedOut?: boolean }
-
       if (data.audit?.status === 'completed') {
-        setAudit(data.audit)
-        setPolling(false)
-        setLoading(false)
-        setTimedOut(false)
+        setAudit(data.audit); setPolling(false); setLoading(false); setTimedOut(false)
       } else if (data.audit?.status === 'failed') {
-        setAudit(data.audit)
-        setPolling(false)
-        setLoading(false)
+        setAudit(data.audit); setPolling(false); setLoading(false)
         if (data.timedOut) setTimedOut(true)
       }
     }, POLL_INTERVAL_MS)
-
     return () => clearInterval(interval)
   }, [polling])
 
   async function startAudit() {
-    setLoading(true)
-    setError('')
-    setTimedOut(false)
+    setLoading(true); setError(''); setTimedOut(false)
     try {
       const res = await fetch('/api/audit/start', { method: 'POST' })
       const data = await res.json() as { audit?: Audit; error?: string }
@@ -115,40 +84,36 @@ export default function AuditPage() {
     }
   }
 
-  const totalImpact = audit?.results?.reduce((s, r) => s + r.impact_euros, 0) ?? 0
+  const results = audit?.results ? [...audit.results].sort((a, b) => b.impact_euros - a.impact_euros) : []
+  const totalLost = results.reduce((s, r) => s + r.impact_euros, 0)
 
   return (
     <>
-      <div className="p-4 sm:p-8 max-w-4xl">
+      <div className="p-4 sm:p-8 max-w-3xl">
         <div className="mb-6 sm:mb-8">
-          <h1 className="font-syne font-bold text-2xl text-text-primary mb-1">Audit IA</h1>
+          <h1 className="font-syne font-bold text-2xl text-text-primary mb-1">Analyse de votre boutique</h1>
           <p className="text-text-secondary text-sm">
-            Analyse complète de votre boutique pour détecter les fuites de conversion.
+            Modify détecte ce qui vous fait perdre des ventes — et combien ça vous coûte chaque mois.
           </p>
         </div>
 
         {/* Launch */}
         <div className="bg-surface border border-border rounded-2xl p-6 mb-6">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-4 flex-wrap">
             <div>
-              <h2 className="font-syne font-semibold text-text-primary mb-1">Scanner la boutique</h2>
-              <p className="text-text-secondary text-sm">
-                L&apos;IA analyse 50+ points de friction en moins de 2 minutes.
-              </p>
+              <h2 className="font-syne font-semibold text-text-primary mb-1">Analyser ma boutique</h2>
+              <p className="text-text-secondary text-sm">Résultats en moins de 2 minutes.</p>
             </div>
             <Button onClick={startAudit} loading={loading} size="md">
               <ScanSearch className="w-4 h-4" />
-              {loading
-                ? audit?.status === 'running' ? 'Analyse en cours…' : 'Démarrage…'
-                : 'Lancer le scan'}
+              {loading ? (audit?.status === 'running' ? 'Analyse en cours…' : 'Démarrage…') : 'Lancer l’analyse'}
             </Button>
           </div>
 
           {loading && audit?.status === 'running' && (
             <div className="mt-4">
               <div className="flex justify-between text-xs text-text-muted mb-2">
-                <span>Analyse IA en cours…</span>
-                <span>max 2 min</span>
+                <span>Analyse en cours…</span><span>max 2 min</span>
               </div>
               <div className="h-1.5 bg-surface-2 rounded-full overflow-hidden">
                 <div className="h-full bg-primary rounded-full animate-pulse w-3/5" />
@@ -156,123 +121,109 @@ export default function AuditPage() {
             </div>
           )}
 
-          {/* Timeout message */}
           {timedOut && (
             <div className="mt-4 flex items-center justify-between p-4 bg-warning/10 border border-warning/20 rounded-xl">
-              <p className="text-warning text-sm">
-                Le scan a pris trop de temps. Relancez pour réessayer.
-              </p>
-              <button
-                onClick={startAudit}
-                className="flex items-center gap-1.5 text-xs text-warning hover:text-warning/80 font-medium transition-colors"
-              >
-                <RefreshCw className="w-3.5 h-3.5" />
-                Relancer
+              <p className="text-warning text-sm">L’analyse a pris trop de temps. Réessayez.</p>
+              <button onClick={startAudit} className="flex items-center gap-1.5 text-xs text-warning hover:text-warning/80 font-medium">
+                <RefreshCw className="w-3.5 h-3.5" /> Relancer
               </button>
             </div>
           )}
 
           {error && (
-            <div className="mt-4 p-3 bg-danger/10 border border-danger/20 rounded-xl text-danger text-sm">
-              {error}
-            </div>
+            <div className="mt-4 p-3 bg-danger/10 border border-danger/20 rounded-xl text-danger text-sm">{error}</div>
           )}
         </div>
 
-        {/* Real measured page speed (Lighthouse) with week-by-week evolution */}
-        <PageSpeedCard />
-
         {/* Results */}
-        {audit?.status === 'completed' && audit.results && (
+        {audit?.status === 'completed' && results.length > 0 && (
           <>
-            <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-6">
-              <div className="bg-surface border border-border rounded-xl p-3 sm:p-4 text-center">
-                <p className="text-text-muted text-[10px] sm:text-xs mb-1">Problèmes</p>
-                <p className="font-syne font-bold text-xl sm:text-2xl text-warning">{audit.results.length}</p>
-              </div>
-              <div className="bg-surface border border-border rounded-xl p-3 sm:p-4 text-center">
-                <p className="text-text-muted text-[10px] sm:text-xs mb-1">Impact</p>
-                <p className="font-syne font-bold text-xl sm:text-2xl text-primary">
-                  €{totalImpact.toLocaleString('fr-FR')}
-                </p>
-                <p className="text-text-muted text-xs">/mois</p>
-              </div>
-              <div className="bg-surface border border-border rounded-xl p-3 sm:p-4 text-center">
-                <p className="text-text-muted text-[10px] sm:text-xs mb-1">Correctifs</p>
-                <p className="font-syne font-bold text-xl sm:text-2xl text-success">
-                  {audit.results.filter((r) => r.fix_available).length}
-                </p>
-              </div>
+            {/* Headline: total lost per month */}
+            <div className="bg-danger/5 border border-danger/20 rounded-2xl p-5 mb-6 text-center">
+              <p className="text-text-secondary text-sm mb-1">Votre boutique perd environ</p>
+              <p className="font-syne font-bold text-3xl sm:text-4xl text-danger">
+                €{totalLost.toLocaleString('fr-FR')}<span className="text-lg text-text-muted font-medium"> / mois</span>
+              </p>
+              <p className="text-text-muted text-xs mt-1">{results.length} problèmes détectés — Modify peut les corriger</p>
             </div>
 
             <div className="space-y-3 mb-6">
-              {audit.results
-                .sort((a, b) => b.impact_euros - a.impact_euros)
-                .map((issue: AuditResult) => {
-                  const Icon = categoryIcons[issue.category] ?? ScanSearch
-                  const isApplied = appliedIds.has(issue.id)
-                  return (
-                    <div
-                      key={issue.id}
-                      className="bg-surface border border-border rounded-2xl p-5 hover:border-zinc-600 transition-colors"
-                    >
-                      <div className="flex items-start gap-4">
-                        <div className="w-9 h-9 bg-surface-2 border border-border rounded-xl flex items-center justify-center flex-shrink-0">
-                          <Icon className="w-4 h-4 text-text-secondary" />
-                        </div>
+              {results.map((issue, idx) => {
+                const cat = categoryPresentation(issue.category)
+                const prio = priorityPresentation(issue.priority)
+                const locked = !isSubscribed && idx >= FREE_LIMIT
+                const isApplied = appliedIds.has(issue.id)
+
+                return (
+                  <div key={issue.id} className="relative">
+                    <div className={`bg-surface border border-border rounded-2xl p-5 ${locked ? 'blur-sm select-none pointer-events-none' : ''}`}>
+                      <div className="flex items-start gap-3">
+                        <span className="text-2xl leading-none mt-0.5">{cat.emoji}</span>
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-start justify-between gap-3 mb-1.5">
-                            <h3 className="font-medium text-text-primary text-sm">{issue.title}</h3>
-                            <div className="flex items-center gap-2 flex-shrink-0">
-                              <Badge variant={issue.priority}>{issue.priority}</Badge>
-                              <span className="text-warning text-sm font-semibold whitespace-nowrap">
-                                €{issue.impact_euros}/mois
-                              </span>
-                            </div>
-                          </div>
-                          <p className="text-text-secondary text-xs leading-relaxed mb-2">
-                            {issue.description}
-                          </p>
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-xs px-2 py-0.5 bg-surface-2 border border-border rounded-full text-text-muted">
-                              {categoryLabels[issue.category] ?? issue.category}
+                          <div className="flex items-start justify-between gap-3 mb-1">
+                            <h3 className="font-semibold text-text-primary text-sm sm:text-base">{issue.title}</h3>
+                            <span className="text-danger font-bold text-sm whitespace-nowrap">
+                              €{issue.impact_euros}<span className="text-text-muted font-medium">/mois perdus</span>
                             </span>
-                            {issue.fix_available && (
-                              isApplied ? (
-                                <span className="text-xs px-2 py-0.5 bg-success/10 border border-success/20 rounded-full text-success">
-                                  ✓ Appliqué
-                                </span>
-                              ) : (
-                                <button
-                                  onClick={() => setSelectedIssue(issue)}
-                                  className="text-xs px-2 py-0.5 bg-primary/10 border border-primary/30 rounded-full text-primary hover:bg-primary/20 hover:border-primary/50 transition-colors cursor-pointer"
-                                >
-                                  Voir le correctif →
-                                </button>
-                              )
-                            )}
                           </div>
-                          <p className="text-text-muted text-xs mt-2 italic">
-                            💡 {issue.recommendation}
-                          </p>
+                          <div className="flex items-center gap-1.5 mb-2">
+                            <span className="text-xs">{prio.emoji}</span>
+                            <span className={`text-xs font-medium ${prio.cls}`}>{prio.label}</span>
+                            <span className="text-text-muted text-xs">· {cat.label}</span>
+                          </div>
+                          <p className="text-text-secondary text-sm leading-relaxed line-clamp-2">{issue.description}</p>
+                          {issue.fix_available && !locked && (
+                            isApplied ? (
+                              <span className="inline-block mt-3 text-xs px-2.5 py-1 bg-success/10 border border-success/20 rounded-full text-success">
+                                ✅ Corrigé
+                              </span>
+                            ) : (
+                              <button
+                                onClick={() => setSelectedIssue(issue)}
+                                className="mt-3 text-xs px-3 py-1.5 bg-primary/10 border border-primary/30 rounded-full text-primary hover:bg-primary/20 transition-colors font-medium"
+                              >
+                                Corriger ce problème →
+                              </button>
+                            )
+                          )}
                         </div>
                       </div>
                     </div>
-                  )
-                })}
+
+                    {/* Unlock CTA over the first blurred card */}
+                    {locked && idx === FREE_LIMIT && (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="bg-surface border border-primary/30 rounded-2xl p-5 text-center shadow-xl max-w-xs">
+                          <Lock className="w-6 h-6 text-primary mx-auto mb-2" />
+                          <p className="text-text-primary font-semibold text-sm mb-1">
+                            {results.length - FREE_LIMIT} autres problèmes détectés
+                          </p>
+                          <p className="text-text-secondary text-xs mb-4">
+                            Débloquez tous les problèmes et leurs correctifs.
+                          </p>
+                          <SubscribeButton />
+                          <p className="text-text-muted text-[11px] mt-2">Voir tous les problèmes — 9€/mois</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
             </div>
 
-            <Button onClick={generateAllFixes} loading={generatingFixes} size="lg">
-              <Zap className="w-4 h-4" />
-              Générer tous les correctifs
-            </Button>
+            {isSubscribed && (
+              <Button onClick={generateAllFixes} loading={generatingFixes} size="lg">
+                <Sparkles className="w-4 h-4" />
+                Corriger tous les problèmes
+              </Button>
+            )}
           </>
         )}
 
         {audit?.status === 'failed' && !timedOut && (
           <div className="bg-danger/10 border border-danger/20 rounded-2xl p-6 text-center">
-            <p className="text-danger font-medium mb-1">Le scan a échoué</p>
-            <p className="text-text-secondary text-sm">Vérifiez la connexion Shopify et réessayez.</p>
+            <p className="text-danger font-medium mb-1">L’analyse a échoué</p>
+            <p className="text-text-secondary text-sm">Vérifiez la connexion à votre boutique et réessayez.</p>
           </div>
         )}
       </div>
@@ -281,9 +232,7 @@ export default function AuditPage() {
         issue={selectedIssue}
         auditId={audit?.id ?? ''}
         onClose={() => setSelectedIssue(null)}
-        onApplied={() => {
-          if (selectedIssue) setAppliedIds((prev) => new Set([...prev, selectedIssue.id]))
-        }}
+        onApplied={() => { if (selectedIssue) setAppliedIds((prev) => new Set([...prev, selectedIssue.id])) }}
       />
     </>
   )
