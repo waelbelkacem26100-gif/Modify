@@ -20,14 +20,16 @@ import {
   LogOut,
 } from 'lucide-react'
 
+// `hidden` entries are intentionally kept (pages + code stay intact) but not
+// shown in the nav — Modify is refocused on its core value. Flip to re-enable.
 const navItems = [
   { href: '/dashboard', icon: LayoutDashboard, label: "Vue d'ensemble" },
   { href: '/dashboard/agent', icon: Bot, label: 'Assistant' },
   { href: '/dashboard/audit', icon: ScanSearch, label: 'Audit IA' },
   { href: '/dashboard/fixes', icon: Wand2, label: 'Correctifs' },
-  { href: '/dashboard/winning-products', icon: TrendingUp, label: 'Produits gagnants' },
-  { href: '/dashboard/products', icon: Package, label: 'Produits' },
-  { href: '/dashboard/seo', icon: Newspaper, label: 'Contenu SEO' },
+  { href: '/dashboard/winning-products', icon: TrendingUp, label: 'Produits gagnants', hidden: true },
+  { href: '/dashboard/products', icon: Package, label: 'Produits', hidden: true },
+  { href: '/dashboard/seo', icon: Newspaper, label: 'Contenu SEO', hidden: true },
   { href: '/dashboard/guides', icon: Compass, label: 'Accompagnement' },
   { href: '/dashboard/suivi', icon: BarChart3, label: 'Suivi & ROI' },
 ]
@@ -87,7 +89,7 @@ export default function Sidebar({ shopDomain }: Props) {
 
       {/* Nav */}
       <nav className="flex-1 px-3 py-3 space-y-1">
-        {navItems.map((item) => {
+        {navItems.filter((item) => !item.hidden).map((item) => {
           const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href))
           return (
             <Link

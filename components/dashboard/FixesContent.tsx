@@ -150,11 +150,23 @@ export default function FixesContent() {
       )}
 
       {/* Header */}
-      <div className="mb-6">
-        <h1 className="font-syne font-bold text-xl sm:text-2xl text-text-primary mb-1">Vos correctifs</h1>
-        <p className="text-text-secondary text-sm">
-          Chaque correctif augmente vos ventes. Une sauvegarde est créée avant toute modification.
-        </p>
+      <div className="mb-6 flex items-start justify-between gap-3 flex-wrap">
+        <div>
+          <h1 className="font-syne font-bold text-xl sm:text-2xl text-text-primary mb-1">Vos correctifs</h1>
+          <p className="text-text-secondary text-sm">
+            Chaque correctif augmente vos ventes. Une sauvegarde est créée avant toute modification.
+          </p>
+        </div>
+        {shopDomain && (
+          <a
+            href={`https://${shopDomain}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-surface border border-border hover:border-primary/40 hover:bg-primary/5 text-text-primary text-sm font-medium rounded-xl transition-colors flex-shrink-0"
+          >
+            <Eye className="w-4 h-4" /> Visualiser ma boutique
+          </a>
+        )}
       </div>
 
       {/* Mode toggle */}
@@ -266,8 +278,9 @@ export default function FixesContent() {
                       {whatChanged(fix)}
                     </p>
 
-                    {/* Before / after for applied fixes */}
-                    {applied && (() => {
+                    {/* Before / after — shown side by side on each fix (preview
+                        before applying, captured result after). */}
+                    {(applied || fix.status === 'pending') && (() => {
                       const ba = beforeAfter(fix)
                       return (
                         <div className="mt-3 grid sm:grid-cols-2 gap-2">
@@ -276,7 +289,7 @@ export default function FixesContent() {
                             <p className="text-text-secondary text-xs leading-snug">{ba.before}</p>
                           </div>
                           <div className="bg-success/5 border border-success/15 rounded-lg p-2.5">
-                            <p className="text-success text-[11px] font-semibold uppercase tracking-wide mb-0.5">Après</p>
+                            <p className="text-success text-[11px] font-semibold uppercase tracking-wide mb-0.5">{applied ? 'Après' : 'Après (aperçu)'}</p>
                             <p className="text-text-secondary text-xs leading-snug">{ba.after}</p>
                           </div>
                         </div>

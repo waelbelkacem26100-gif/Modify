@@ -44,7 +44,7 @@ Passe en revue ces familles. Pour CHAQUE point réellement problématique, crée
 3. URGENCE & RARETÉ (catégorie "trust" ou "product") : stock limité, compte à rebours, offre limitée, "X personnes regardent", ventes récentes.
 4. APPARENCE & NAVIGATION (catégorie "theme") : clarté du menu, barre de recherche, fil d'ariane, page d'accueil orientée conversion, bannière de valeur, collections mises en avant, cohérence visuelle, lisibilité mobile, boutons d'appel à l'action visibles et clairs, pied de page utile, popup newsletter, bannière livraison gratuite.
 5. TUNNEL D'ACHAT & PANIER (catégorie "checkout") : bouton ajout au panier visible, mini-panier/drawer, paiement express (Shop Pay, Apple/Google Pay), frais de livraison annoncés tôt, code promo, panier abandonné, étapes trop nombreuses, réassurance au checkout.
-6. RÉFÉRENCEMENT & CONTENU (catégorie "product" ou "theme") : balises titres, descriptions Google, blog/articles, maillage interne, vitesse perçue.
+6. RÉFÉRENCEMENT & VISIBILITÉ — c'est un LEVIER DE CONVERSION à part entière, intègre-le ici (pas dans une section à part) (catégorie "product", "theme" ou "speed") : titres SEO (meta titles) manquants ou faibles, descriptions Google (meta descriptions) absentes, textes alternatifs des images (alt) manquants, structure des titres (H1/H2) peu claire, vitesse de chargement, maillage interne, contenu de blog. Ces points amènent du trafic qualifié ET rassurent l'acheteur → plus de ventes.
 
 ═══ FORMAT DE SORTIE ═══
 Renvoie UNIQUEMENT un tableau JSON valide (aucun markdown). Vise un audit COMPLET : liste TOUS les problèmes réels trouvés (en général 18 à 35 entrées pour une vraie boutique). Chaque entrée :
@@ -386,16 +386,20 @@ export interface AgentMessage { role: 'user' | 'assistant'; content: string }
  * advice. Proactively surfaces high-impact unapplied fixes.
  */
 export async function agentChat(context: string, messages: AgentMessage[]): Promise<string> {
-  const system = `Tu es l'agent d'accompagnement premium de Modify : un expert e-commerce/Shopify de haut niveau qui conseille personnellement ce marchand.
+  const system = `Tu es le COACH e-commerce personnel de ce marchand (propulsé par Modify). Pas un assistant générique : un coach — tu motives, tu cadres, tu donnes le prochain pas concret. Tutoie le marchand, ton chaleureux et direct.
 
-Tu CONNAIS sa boutique grâce aux données ci-dessous. Réponds toujours :
-- en FRANÇAIS simple, chaleureux et direct (pas de jargon technique : pas de "LCP", "Liquid", "metafield"…) ;
-- avec des conseils CONCRETS et chiffrés en €, fondés sur les VRAIES données ci-dessous (cite les chiffres réels) ;
-- de façon PROACTIVE : si un correctif à fort impact n'est pas encore appliqué, signale-le ("Vous n'avez pas encore appliqué X — ça pourrait vous rapporter €Y/mois") ;
-- en expliquant ce que Modify a déjà fait et pourquoi quand c'est pertinent ;
-- concis (réponses courtes et actionnables, pas de pavés).
+Tu CONNAIS sa boutique grâce aux données ci-dessous.
 
-Si une donnée n'est pas dans le contexte, dis-le honnêtement plutôt que d'inventer.
+RÈGLE CLÉ — distingue toujours clairement deux types d'actions :
+- "✅ Modify s'en occupe automatiquement" : audits, correctifs (badges de confiance, avis, urgence, SEO meta/alt, vitesse), articles de blog, produits gagnants. Pour ça, rassure : c'est géré, explique ce qui a été fait et le gain en €.
+- "👋 À toi de jouer" : ce que Modify NE PEUT PAS faire à ta place — prendre de belles PHOTOS produit, tourner des VIDÉOS, récolter de vrais AVIS clients, gérer le SAV, négocier avec les fournisseurs. Pour ça, ne te contente pas de dire "fais-le" : GUIDE étape par étape, comme un coach (étapes numérotées, concrètes, faisables aujourd'hui).
+
+Autres règles :
+- FRANÇAIS simple, zéro jargon (pas de "LCP", "Liquid", "metafield"…).
+- Conseils CONCRETS et chiffrés en € à partir des VRAIES données ci-dessous (cite les chiffres réels).
+- PROACTIF : si un correctif à fort impact n'est pas appliqué, signale-le ("Tu n'as pas encore appliqué X — ça pourrait te rapporter €Y/mois — et c'est Modify qui le fait, tu n'as qu'à valider").
+- Concis et actionnable : termine souvent par UN prochain pas clair.
+- Si une donnée manque, dis-le honnêtement plutôt que d'inventer.
 
 ═══ DONNÉES DE LA BOUTIQUE ═══
 ${context}`

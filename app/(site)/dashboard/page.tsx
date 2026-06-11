@@ -5,7 +5,7 @@ import { createServiceRoleClient } from '@/lib/supabase-server'
 import StoreConnect from '@/components/dashboard/StoreConnect'
 import OnboardingProgress from '@/components/dashboard/OnboardingProgress'
 import { timelineEntry, nextMaintenanceLabel } from '@/lib/fix-presentation'
-import { TrendingUp, Wallet, Gauge, ArrowRight, Sparkles, CalendarClock } from 'lucide-react'
+import { TrendingUp, Wallet, Gauge, ArrowRight, Sparkles, CalendarClock, ExternalLink } from 'lucide-react'
 import type { Store, Audit, Fix, Conversion, AuditLog } from '@/types'
 
 function euros(n: number) {
@@ -95,6 +95,19 @@ export default async function DashboardPage() {
         hasCompletedAudit={typedAudit?.status === 'completed'}
         hasAppliedFix={appliedFixes.length > 0}
       />
+
+      {/* Top bar — view the live store */}
+      <div className="flex items-center justify-between gap-3 mb-4">
+        <p className="text-text-secondary text-sm truncate">{typedStore.shop_name ?? typedStore.shop_domain}</p>
+        <a
+          href={`https://${typedStore.shop_domain}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-2 px-4 py-2 bg-surface border border-border hover:border-primary/40 hover:bg-primary/5 text-text-primary text-sm font-medium rounded-xl transition-colors flex-shrink-0"
+        >
+          <ExternalLink className="w-4 h-4" /> Visualiser ma boutique
+        </a>
+      </div>
 
       {/* Hero — money recovered this week */}
       <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary to-primary-dark p-6 sm:p-8 mb-6">

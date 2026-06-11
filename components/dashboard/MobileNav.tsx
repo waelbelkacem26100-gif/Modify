@@ -2,14 +2,15 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, ScanSearch, Wand2, Package, Newspaper, Compass } from 'lucide-react'
+import { LayoutDashboard, ScanSearch, Wand2, Bot, BarChart3, Compass } from 'lucide-react'
 
+// Refocused nav: Produits / Contenu SEO are hidden (pages kept intact).
 const navItems = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Accueil' },
+  { href: '/dashboard/agent', icon: Bot, label: 'Assistant' },
   { href: '/dashboard/audit', icon: ScanSearch, label: 'Audit' },
   { href: '/dashboard/fixes', icon: Wand2, label: 'Fix' },
-  { href: '/dashboard/products', icon: Package, label: 'Produits' },
-  { href: '/dashboard/seo', icon: Newspaper, label: 'SEO' },
+  { href: '/dashboard/suivi', icon: BarChart3, label: 'Suivi' },
   { href: '/dashboard/guides', icon: Compass, label: 'Guides' },
 ]
 
