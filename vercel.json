@@ -2,7 +2,7 @@
   "crons": [
     {
       "path": "/api/cron/generate-images",
-      "schedule": "* * * * *"
+      "schedule": "0 5 * * *"
     },
     {
       "path": "/api/cron/sync-conversions",
