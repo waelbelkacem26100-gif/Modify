@@ -28,7 +28,11 @@ function buildPrompts(p: ShopifyProduct): { white: string; lifestyle: string; de
   }
 }
 
-/** Generates one image via OpenAI DALL·E 3, returned as base64 + exact error. */
+/**
+ * Generates one image via OpenAI's image API, returned as base64 + exact error.
+ * Uses gpt-image-1 (OpenAI's current image model): dall-e-3 is not available on
+ * project keys, and gpt-image-1 always returns b64_json (no response_format).
+ */
 async function dalle3(prompt: string): Promise<{ b64: string | null; error?: string }> {
   const key = process.env.OPENAI_API_KEY
   if (!key) { console.warn('[image-gen] OPENAI_API_KEY not set — skipping'); return { b64: null, error: 'OPENAI_API_KEY absente côté serveur' } }
@@ -36,7 +40,7 @@ async function dalle3(prompt: string): Promise<{ b64: string | null; error?: str
     const res = await fetch('https://api.openai.com/v1/images/generations', {
       method: 'POST',
       headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: 'dall-e-3', prompt, n: 1, size: '1024x1024', quality: 'standard', response_format: 'b64_json' }),
+      body: JSON.stringify({ model: 'gpt-image-1', prompt, n: 1, size: '1024x1024', quality: 'medium' }),
     })
     if (!res.ok) {
       const body = (await res.text()).slice(0, 300)
@@ -53,9 +57,9 @@ async function dalle3(prompt: string): Promise<{ b64: string | null; error?: str
 }
 
 /**
- * For a product with too few photos: generates a lifestyle + a white-background
- * photo with DALL·E 3 and uploads them to the Shopify product. Returns the
- * before image and the resulting gallery for the before/after view.
+ * For a product with too few photos: generates 3 photos (white background,
+ * lifestyle, detail) with gpt-image-1 and uploads them to the Shopify product.
+ * Returns the before image and the resulting gallery for the before/after view.
  */
 export async function generateProductImages(store: Store, supabase: SupabaseClient, fixId: string): Promise<ImageGenResult> {
   if (!process.env.OPENAI_API_KEY) return { ok: false, reason: 'no_openai_key' }
@@ -67,26 +71,28 @@ export async function generateProductImages(store: Store, supabase: SupabaseClie
 
   const before = target.images?.[0]?.src ?? null
   const prompts = buildPrompts(target)
-  const newSrcs: string[] = []
-  let firstError: string | undefined // exact cause of the first failure, for diagnostics
 
   // 3 photos par produit : fond blanc, situation réelle (lifestyle), détail.
-  for (const [kind, prompt] of [['white', prompts.white], ['lifestyle', prompts.lifestyle], ['detail', prompts.detail]] as const) {
+  // Générées + uploadées en PARALLÈLE pour rester sous la limite de durée Vercel.
+  const kinds = [['white', prompts.white], ['lifestyle', prompts.lifestyle], ['detail', prompts.detail]] as const
+  const results = await Promise.all(kinds.map(async ([kind, prompt]): Promise<{ src?: string; error?: string }> => {
     const { b64, error } = await dalle3(prompt)
-    if (!b64) { if (!firstError && error) firstError = error; continue }
+    if (!b64) return { error: error ?? 'OpenAI: image vide' }
     try {
       const img = await createProductImage(store.shop_domain, store.access_token, target.id, {
         attachmentBase64: b64,
         filename: `modify-${kind}-${Date.now()}.png`,
         alt: target.title,
       })
-      if (img?.src) newSrcs.push(img.src)
-      else if (!firstError) firstError = 'Shopify: image uploadée sans URL renvoyée'
+      return img?.src ? { src: img.src } : { error: 'Shopify: image uploadée sans URL renvoyée' }
     } catch (e) {
       console.error('[image-gen] upload failed', String(e))
-      if (!firstError) firstError = `Upload Shopify échoué: ${String(e)}`
+      return { error: `Upload Shopify échoué: ${String(e)}` }
     }
-  }
+  }))
+
+  const newSrcs = results.map((r) => r.src).filter((s): s is string => Boolean(s))
+  const firstError = results.find((r) => r.error)?.error // exact cause, for diagnostics
 
   // Honnêteté : on ne marque "appliqué" QUE si de vraies images sont sur Shopify.
   if (newSrcs.length === 0) return { ok: false, productTitle: target.title, before, reason: 'generation_failed', detail: firstError }
