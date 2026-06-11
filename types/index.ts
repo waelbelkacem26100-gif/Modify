@@ -66,6 +66,19 @@ export interface AuditLog {
   created_at: string
 }
 
+export interface WinningProduct {
+  id: string
+  store_id: string
+  name: string
+  why: string
+  recommended_price_eur: number
+  margin_pct: number | null
+  score: 'fire' | 'good' | 'watch'
+  category: string | null
+  sources: string[] | null
+  created_at: string
+}
+
 export interface Conversion {
   id: string
   store_id: string
