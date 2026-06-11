@@ -67,6 +67,85 @@ export function renderWeeklyReportHtml(d: WeeklyReportData): string {
 </body></html>`
 }
 
+// ─── Monthly report (1st of each month) ─────────────────────────────────────────
+
+export interface MonthlyReportData {
+  shopName: string
+  monthRecovered: number
+  totalRecovered: number
+  fixesApplied: number
+  appliedList: { title: string; impact_euros: number }[]
+  articles: number
+  winningProducts: number
+  scoreNow: number
+  scoreDelta: number | null
+  pendingList: { title: string; impact_euros: number }[]
+  dashboardUrl: string
+}
+
+export function renderMonthlyReportHtml(d: MonthlyReportData): string {
+  const li = (label: string, value: string) => `<tr>
+    <td style="padding:10px 0;border-bottom:1px solid #ececec;color:#52525b;font-size:14px;">${label}</td>
+    <td style="padding:10px 0;border-bottom:1px solid #ececec;color:#18181b;font-size:14px;font-weight:600;text-align:right;">${value}</td></tr>`
+  const score = d.scoreDelta != null ? `${d.scoreNow}/100 (${d.scoreDelta >= 0 ? '+' : ''}${d.scoreDelta})` : `${d.scoreNow}/100`
+  const fixesRows = d.appliedList.length
+    ? d.appliedList.map((f) => `<tr><td style="padding:8px 0;border-bottom:1px solid #f1f1f1;color:#18181b;font-size:13px;">✅ ${f.title}</td><td style="padding:8px 0;border-bottom:1px solid #f1f1f1;color:#16a34a;font-size:13px;font-weight:600;text-align:right;white-space:nowrap;">+€${f.impact_euros}/mois</td></tr>`).join('')
+    : `<tr><td style="padding:8px 0;color:#52525b;font-size:13px;">Aucun nouveau correctif ce mois-ci.</td><td></td></tr>`
+  const pendingRows = d.pendingList.length
+    ? d.pendingList.map((f) => `<tr><td style="padding:8px 0;border-bottom:1px solid #f1f1f1;color:#18181b;font-size:13px;">⏳ ${f.title}</td><td style="padding:8px 0;border-bottom:1px solid #f1f1f1;color:#FF5C35;font-size:13px;font-weight:600;text-align:right;white-space:nowrap;">€${f.impact_euros}/mois</td></tr>`).join('')
+    : ''
+
+  return `<!DOCTYPE html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;background:#f4f4f5;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f5;padding:24px 0;"><tr><td align="center">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#fff;border-radius:16px;overflow:hidden;border:1px solid #e4e4e7;">
+      <tr><td style="background:#FF5C35;padding:28px 32px;">
+        <p style="margin:0;color:#fff;font-size:13px;opacity:.85;">Bilan du mois · ${d.shopName}</p>
+        <h1 style="margin:6px 0 0;color:#fff;font-size:22px;font-weight:800;">Ce mois-ci, Modify a récupéré</h1>
+        <p style="margin:8px 0 0;color:#fff;font-size:40px;font-weight:800;">€${d.monthRecovered.toLocaleString('fr-FR')}</p>
+      </td></tr>
+      <tr><td style="padding:24px 32px;">
+        <p style="margin:0 0 8px;color:#18181b;font-size:15px;font-weight:700;">Ce que Modify a fait</p>
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:18px;">${fixesRows}</table>
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+          ${li('Total récupéré depuis le début', `€${d.totalRecovered.toLocaleString('fr-FR')}/mois`)}
+          ${li('Articles de blog publiés ce mois', String(d.articles))}
+          ${li('Produits gagnants suggérés', String(d.winningProducts))}
+          ${li('Score de votre boutique', score)}
+        </table>
+        ${pendingRows ? `<p style="margin:22px 0 8px;color:#18181b;font-size:15px;font-weight:700;">Ce qui reste à gagner</p>
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0">${pendingRows}</table>` : ''}
+        <div style="text-align:center;margin-top:28px;">
+          <a href="${d.dashboardUrl}" style="display:inline-block;background:#18181b;color:#fff;text-decoration:none;font-size:14px;font-weight:600;padding:12px 28px;border-radius:10px;">Voir mon suivi complet</a>
+        </div>
+        <p style="margin:24px 0 0;color:#a1a1aa;font-size:12px;text-align:center;line-height:1.5;">Modify entretient votre boutique automatiquement.<br>Vous n'avez rien à faire.</p>
+      </td></tr>
+    </table>
+  </td></tr></table>
+</body></html>`
+}
+
+/** Sends the monthly report. Returns false on any failure (never throws). */
+export async function sendMonthlyReport(to: string, data: MonthlyReportData): Promise<boolean> {
+  const key = process.env.RESEND_API_KEY
+  if (!key) { console.warn('[email] RESEND_API_KEY not set — skipping monthly send'); return false }
+  try {
+    const resend = new Resend(key)
+    const { error } = await resend.emails.send({
+      from: FROM,
+      to,
+      subject: `📊 ${data.shopName} — votre bilan du mois (€${data.monthRecovered.toLocaleString('fr-FR')} récupérés)`,
+      html: renderMonthlyReportHtml(data),
+    })
+    if (error) { console.error('[email] Resend error:', error); return false }
+    return true
+  } catch (e) {
+    console.error('[email] monthly send threw:', e)
+    return false
+  }
+}
+
 // ─── Weekly approval email (merchants in "approval" mode) ───────────────────────
 
 export interface ApprovalEmailData {

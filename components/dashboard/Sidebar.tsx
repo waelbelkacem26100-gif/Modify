@@ -29,7 +29,7 @@ const navItems = [
   { href: '/dashboard/products', icon: Package, label: 'Produits' },
   { href: '/dashboard/seo', icon: Newspaper, label: 'Contenu SEO' },
   { href: '/dashboard/guides', icon: Compass, label: 'Accompagnement' },
-  { href: '/dashboard/tracking', icon: BarChart3, label: 'Suivi' },
+  { href: '/dashboard/suivi', icon: BarChart3, label: 'Suivi & ROI' },
 ]
 
 interface Props {
