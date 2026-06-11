@@ -19,7 +19,6 @@ export default function FixesContent() {
   const [applying, setApplying] = useState<string | null>(null)
   const [capturing, setCapturing] = useState<string | null>(null)
   const [generatingImg, setGeneratingImg] = useState<string | null>(null)
-  const [genProgress, setGenProgress] = useState<Record<string, { processed: number; total: number; current?: string; cost: number; waitS?: number }>>({})
   const [rolling, setRolling] = useState<string | null>(null)
   const [promoting, setPromoting] = useState<string | null>(null)
   const [applyErrors, setApplyErrors] = useState<Record<string, string>>({})
@@ -38,6 +37,15 @@ export default function FixesContent() {
   }, [])
 
   useEffect(() => { fetchFixes() }, [fetchFixes])
+
+  // While a server-side image job runs (fix.status === 'generating'), auto-poll
+  // so the UI refreshes itself and flips to "Appliqué" when the cron finishes —
+  // even after a page reload or if the tab was closed and reopened.
+  useEffect(() => {
+    if (!fixes.some((f) => f.status === 'generating')) return
+    const t = setInterval(fetchFixes, 8000)
+    return () => clearInterval(t)
+  }, [fixes, fetchFixes])
 
   // Persisted store mode (auto vs weekly approval) — server-backed.
   useEffect(() => {
@@ -114,45 +122,24 @@ export default function FixesContent() {
     for (const f of pending) await applyFix(f)
   }
 
-  // Generates 3 IA photos for EVERY product with < 3 images. The server processes
-  // ONE product per call (gpt-image-1 caps at 5 images/min); we poll until `done`
-  // with a 15s pause between products, showing a live progress bar + countdown.
-  // No client timeout: each call returns on its own.
+  // Starts a SERVER-SIDE job: flips the fix to 'generating' and returns at once.
+  // A 1/min Vercel cron generates 3 IA photos per product (one product per run,
+  // respecting gpt-image-1's 5 images/min limit) and uploads them to Shopify.
+  // The job keeps running even if this tab is closed — the UI just polls status.
   async function generateImages(fix: Fix) {
     setGeneratingImg(fix.id)
     setApplyErrors((prev) => ({ ...prev, [fix.id]: '' }))
-    setGenProgress((prev) => ({ ...prev, [fix.id]: { processed: 0, total: 0, cost: 0 } }))
-    let cost = 0
     try {
-      for (let i = 0; i < 100; i++) { // hard safety cap on products
-        const res = await fetch('/api/fixes/generate-images', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ fix_id: fix.id }),
-        })
-        const d = await res.json() as {
-          error?: string; done?: boolean; total?: number; processed?: number
-          current?: string; costUsdThisBatch?: number
-        }
-        if (!res.ok) {
-          setApplyErrors((prev) => ({ ...prev, [fix.id]: d.error ?? 'La génération a échoué.' }))
-          break
-        }
-        cost += d.costUsdThisBatch ?? 0
-        const processed = d.processed ?? 0
-        const total = d.total ?? 0
-        setGenProgress((prev) => ({ ...prev, [fix.id]: { processed, total, current: d.current, cost } }))
-        if (d.done) { showConfirmation(fix.title); await fetchFixes(); break }
-
-        // Pause 15s between products (rate limit) with a visible countdown.
-        for (let s = 15; s > 0; s--) {
-          setGenProgress((prev) => ({ ...prev, [fix.id]: { processed, total, current: d.current, cost, waitS: s } }))
-          await new Promise((r) => setTimeout(r, 1000))
-        }
-      }
+      const res = await fetch('/api/fixes/generate-images', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fix_id: fix.id }),
+      })
+      const d = await res.json() as { error?: string }
+      if (!res.ok) setApplyErrors((prev) => ({ ...prev, [fix.id]: d.error ?? 'Impossible de lancer la génération.' }))
+      else await fetchFixes() // status is now 'generating' → auto-polling kicks in
     } finally {
       setGeneratingImg(null)
-      setGenProgress((prev) => { const n = { ...prev }; delete n[fix.id]; return n })
     }
   }
 
@@ -328,8 +315,9 @@ export default function FixesContent() {
                       </span>
                       {/* Guide fixes are never "applied" — Modify can't do them itself. */}
                       {cap !== 'guide' && (
-                        <Badge variant={fix.status as 'applied' | 'pending' | 'rolled_back' | 'failed' | 'preview'}>
+                        <Badge variant={(fix.status === 'generating' ? 'pending' : fix.status) as 'applied' | 'pending' | 'rolled_back' | 'failed' | 'preview'}>
                           {applied ? 'Appliqué' :
+                           fix.status === 'generating' ? '⏳ Génération en cours' :
                            fix.status === 'rolled_back' ? 'Annulé' :
                            fix.status === 'failed' ? 'À réessayer' :
                            fix.status === 'preview' ? 'En attente de votre validation' : 'À venir'}
@@ -419,34 +407,20 @@ export default function FixesContent() {
                       </p>
                     )}
 
-                    {/* Live progress bar while generating photos for ALL products */}
-                    {generatingImg === fix.id && genProgress[fix.id] && (() => {
-                      const p = genProgress[fix.id]
-                      const pct = p.total ? Math.round((p.processed / p.total) * 100) : 0
-                      const next = p.total ? Math.min(p.processed + 1, p.total) : 0
-                      const label = !p.total
-                        ? 'Préparation…'
-                        : p.waitS != null
-                        ? `Produit ${next}/${p.total} — prochaine photo dans ${p.waitS}s…`
-                        : `Produit ${next}/${p.total} — génération en cours…`
-                      return (
-                        <div className="mt-3">
-                          <div className="flex items-center justify-between text-xs text-text-secondary mb-1.5">
-                            <span className="inline-flex items-center gap-1.5 min-w-0">
-                              <span className="w-3 h-3 border-2 border-primary border-t-transparent rounded-full animate-spin flex-shrink-0" />
-                              <span className="truncate">{label}</span>
-                            </span>
-                            <span className="flex-shrink-0 font-medium">{pct}%</span>
-                          </div>
-                          <div className="h-2 bg-surface-2 rounded-full overflow-hidden">
-                            <div className="h-full bg-primary rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
-                          </div>
-                          <p className="text-text-muted text-[11px] mt-1">
-                            1 produit à la fois (limite IA : 5 images/min){p.cost > 0 ? ` · ≈ $${p.cost.toFixed(2)}` : ''}
+                    {/* Server-side image job running — status only; auto-refreshes. */}
+                    {fix.status === 'generating' && (
+                      <div className="mt-3 flex items-start gap-2.5 bg-primary/5 border border-primary/15 rounded-lg p-3">
+                        <span className="w-4 h-4 mt-0.5 border-2 border-primary border-t-transparent rounded-full animate-spin flex-shrink-0" />
+                        <div className="min-w-0">
+                          <p className="text-text-primary text-xs font-medium">Génération en cours…</p>
+                          <p className="text-text-secondary text-[11px] leading-snug mt-0.5">
+                            Modify crée 3 photos IA par produit et les ajoute à votre boutique. Ça continue
+                            même si vous fermez cette page — revenez quand vous voulez, la page se met à jour
+                            toute seule.
                           </p>
                         </div>
-                      )
-                    })()}
+                      </div>
+                    )}
 
                     {/* Inline confirmation + link to the REAL live result — only
                         for fixes Modify actually performs (never for guide fixes). */}
@@ -482,10 +456,9 @@ export default function FixesContent() {
                         Voir le guide →
                       </a>
                     )}
-                    {/* 🎨 Generate: produce real photos with DALL·E 3. Shown until
-                        real images exist on Shopify — even if the row was wrongly
-                        marked 'applied' by an earlier generic apply (no photos). */}
-                    {cap === 'generate' && !applied && fix.status !== 'preview' && (
+                    {/* 🎨 Generate: launch the server-side photo job. Shown only when
+                        pending (hidden while 'generating' and once applied). */}
+                    {cap === 'generate' && fix.status === 'pending' && (
                       <Button size="sm" onClick={() => generateImages(fix)} loading={generatingImg === fix.id}>
                         <Sparkles className="w-3.5 h-3.5" /> Générer les photos
                       </Button>

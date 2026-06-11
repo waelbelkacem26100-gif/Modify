@@ -93,5 +93,5 @@ export interface Conversion {
 export type RiskGroup = 'a' | 'b' | 'c'
 export type PriorityLevel = 'high' | 'medium' | 'low'
 export type AuditStatus = 'pending' | 'running' | 'completed' | 'failed'
-export type FixStatus = 'pending' | 'applied' | 'rolled_back' | 'failed' | 'preview'
+export type FixStatus = 'pending' | 'applied' | 'rolled_back' | 'failed' | 'preview' | 'generating'
 export type IssueCategory = 'theme' | 'product' | 'trust' | 'speed' | 'checkout'
