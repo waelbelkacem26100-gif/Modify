@@ -21,17 +21,19 @@ export async function GET(request: NextRequest) {
     const res = await fetch('https://api.openai.com/v1/images/generations', {
       method: 'POST',
       headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: 'dall-e-3', prompt: 'A simple red apple on a white background, product photo', n: 1, size: '1024x1024', quality: 'standard', response_format: 'b64_json' }),
+      body: JSON.stringify({ model: 'dall-e-3', prompt: 'A simple red apple on a white background, product photo', n: 1, size: '1024x1024', quality: 'standard' }),
     })
     const text = await res.text()
-    let b64len = 0
-    try { const j = JSON.parse(text); b64len = j?.data?.[0]?.b64_json?.length ?? 0 } catch { /* keep raw */ }
+    let b64len = 0, url = ''
+    try { const j = JSON.parse(text); b64len = j?.data?.[0]?.b64_json?.length ?? 0; url = j?.data?.[0]?.url ?? '' } catch { /* keep raw */ }
     return NextResponse.json({
-      ok: res.ok && b64len > 0,
+      ok: res.ok && (b64len > 0 || !!url),
       status: res.status,
       keyShape,
       b64len,
-      body: b64len > 0 ? '(image returned — OK)' : text.slice(0, 600),
+      returns: url ? 'url' : b64len > 0 ? 'b64_json' : 'none',
+      url: url ? url.slice(0, 80) + '…' : '',
+      body: (b64len > 0 || url) ? '(image returned — OK)' : text.slice(0, 600),
     })
   } catch (e) {
     return NextResponse.json({ ok: false, where: 'fetch', keyShape, error: String(e) })
