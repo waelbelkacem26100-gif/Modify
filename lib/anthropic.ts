@@ -375,6 +375,41 @@ Retourne UNIQUEMENT un JSON : [{"question":"...","answer":"..."}, ...] (exacteme
   }
 }
 
+// ─── Accompaniment agent (premium chatbot) ──────────────────────────────────────
+
+export interface AgentMessage { role: 'user' | 'assistant'; content: string }
+
+/**
+ * Premium accompaniment agent: a senior e-commerce advisor that knows everything
+ * about the merchant's store (audits, fixes, products, revenue, SEO…) via the
+ * `context` snapshot, and answers in simple French with concrete, data-grounded
+ * advice. Proactively surfaces high-impact unapplied fixes.
+ */
+export async function agentChat(context: string, messages: AgentMessage[]): Promise<string> {
+  const system = `Tu es l'agent d'accompagnement premium de Modify : un expert e-commerce/Shopify de haut niveau qui conseille personnellement ce marchand.
+
+Tu CONNAIS sa boutique grâce aux données ci-dessous. Réponds toujours :
+- en FRANÇAIS simple, chaleureux et direct (pas de jargon technique : pas de "LCP", "Liquid", "metafield"…) ;
+- avec des conseils CONCRETS et chiffrés en €, fondés sur les VRAIES données ci-dessous (cite les chiffres réels) ;
+- de façon PROACTIVE : si un correctif à fort impact n'est pas encore appliqué, signale-le ("Vous n'avez pas encore appliqué X — ça pourrait vous rapporter €Y/mois") ;
+- en expliquant ce que Modify a déjà fait et pourquoi quand c'est pertinent ;
+- concis (réponses courtes et actionnables, pas de pavés).
+
+Si une donnée n'est pas dans le contexte, dis-le honnêtement plutôt que d'inventer.
+
+═══ DONNÉES DE LA BOUTIQUE ═══
+${context}`
+
+  const res = await anthropic.messages.create({
+    model: 'claude-opus-4-8',
+    max_tokens: 1200,
+    system,
+    messages: messages.map((m) => ({ role: m.role, content: m.content })),
+  })
+  const block = res.content[0]
+  return block && block.type === 'text' ? block.text : ''
+}
+
 // ─── Bundle / cross-sell suggestions ────────────────────────────────────────────
 
 export interface BundleSuggestion {

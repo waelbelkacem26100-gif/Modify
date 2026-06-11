@@ -15,12 +15,14 @@ import {
   TrendingUp,
   Newspaper,
   Compass,
+  Bot,
   Home,
   LogOut,
 } from 'lucide-react'
 
 const navItems = [
   { href: '/dashboard', icon: LayoutDashboard, label: "Vue d'ensemble" },
+  { href: '/dashboard/agent', icon: Bot, label: 'Assistant' },
   { href: '/dashboard/audit', icon: ScanSearch, label: 'Audit IA' },
   { href: '/dashboard/fixes', icon: Wand2, label: 'Correctifs' },
   { href: '/dashboard/winning-products', icon: TrendingUp, label: 'Produits gagnants' },
