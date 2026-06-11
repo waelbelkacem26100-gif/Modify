@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
     const res = await fetch('https://api.openai.com/v1/images/generations', {
       method: 'POST',
       headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: 'dall-e-3', prompt: 'A simple red apple on a white background, product photo', n: 1, size: '1024x1024', quality: 'standard' }),
+      body: JSON.stringify({ model: 'gpt-image-1', prompt: 'A simple red apple on a white background, product photo', n: 1, size: '1024x1024', quality: 'medium' }),
     })
     const text = await res.text()
     let b64len = 0, url = ''
