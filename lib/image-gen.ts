@@ -12,6 +12,7 @@ export interface ImageGenResult {
   after?: string[]         // resulting gallery (existing + generated), up to 3
   generated?: number
   reason?: string
+  detail?: string          // exact DALL·E / Shopify error, surfaced for diagnostics
 }
 
 /** Builds three relevant DALL·E 3 prompts from the product's own data. */
@@ -27,21 +28,27 @@ function buildPrompts(p: ShopifyProduct): { white: string; lifestyle: string; de
   }
 }
 
-/** Generates one image via OpenAI DALL·E 3, returned as base64 (no key → null). */
-async function dalle3(prompt: string): Promise<string | null> {
+/** Generates one image via OpenAI DALL·E 3, returned as base64 + exact error. */
+async function dalle3(prompt: string): Promise<{ b64: string | null; error?: string }> {
   const key = process.env.OPENAI_API_KEY
-  if (!key) { console.warn('[image-gen] OPENAI_API_KEY not set — skipping'); return null }
+  if (!key) { console.warn('[image-gen] OPENAI_API_KEY not set — skipping'); return { b64: null, error: 'OPENAI_API_KEY absente côté serveur' } }
   try {
     const res = await fetch('https://api.openai.com/v1/images/generations', {
       method: 'POST',
       headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ model: 'dall-e-3', prompt, n: 1, size: '1024x1024', quality: 'standard', response_format: 'b64_json' }),
     })
-    if (!res.ok) { console.error('[image-gen] DALL·E error', res.status, (await res.text()).slice(0, 200)); return null }
+    if (!res.ok) {
+      const body = (await res.text()).slice(0, 300)
+      console.error('[image-gen] DALL·E error', res.status, body)
+      return { b64: null, error: `OpenAI ${res.status}: ${body}` }
+    }
     const data = await res.json() as { data?: { b64_json?: string }[] }
-    return data.data?.[0]?.b64_json ?? null
+    const b64 = data.data?.[0]?.b64_json ?? null
+    return { b64, error: b64 ? undefined : 'OpenAI: réponse sans image (b64_json vide)' }
   } catch (e) {
-    console.error('[image-gen] DALL·E threw', String(e)); return null
+    console.error('[image-gen] DALL·E threw', String(e))
+    return { b64: null, error: `OpenAI exception: ${String(e)}` }
   }
 }
 
@@ -61,11 +68,12 @@ export async function generateProductImages(store: Store, supabase: SupabaseClie
   const before = target.images?.[0]?.src ?? null
   const prompts = buildPrompts(target)
   const newSrcs: string[] = []
+  let firstError: string | undefined // exact cause of the first failure, for diagnostics
 
   // 3 photos par produit : fond blanc, situation réelle (lifestyle), détail.
   for (const [kind, prompt] of [['white', prompts.white], ['lifestyle', prompts.lifestyle], ['detail', prompts.detail]] as const) {
-    const b64 = await dalle3(prompt)
-    if (!b64) continue
+    const { b64, error } = await dalle3(prompt)
+    if (!b64) { if (!firstError && error) firstError = error; continue }
     try {
       const img = await createProductImage(store.shop_domain, store.access_token, target.id, {
         attachmentBase64: b64,
@@ -73,13 +81,15 @@ export async function generateProductImages(store: Store, supabase: SupabaseClie
         alt: target.title,
       })
       if (img?.src) newSrcs.push(img.src)
+      else if (!firstError) firstError = 'Shopify: image uploadée sans URL renvoyée'
     } catch (e) {
       console.error('[image-gen] upload failed', String(e))
+      if (!firstError) firstError = `Upload Shopify échoué: ${String(e)}`
     }
   }
 
   // Honnêteté : on ne marque "appliqué" QUE si de vraies images sont sur Shopify.
-  if (newSrcs.length === 0) return { ok: false, productTitle: target.title, before, reason: 'generation_failed' }
+  if (newSrcs.length === 0) return { ok: false, productTitle: target.title, before, reason: 'generation_failed', detail: firstError }
 
   const after = newSrcs.slice(0, 3) // les photos réellement générées et uploadées
   // Persist the before/after for the UI (reusing the screenshot columns: text URLs).

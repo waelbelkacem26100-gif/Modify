@@ -199,8 +199,10 @@ export async function PATCH(request: NextRequest) {
         ? "La génération d'images n'est pas encore activée (clé OpenAI manquante)."
         : result.reason === 'no_product'
         ? 'Aucun produit à enrichir sur cette boutique.'
+        : result.detail
+        ? `La génération des photos a échoué — aucune image ajoutée : ${result.detail}`
         : 'La génération des photos a échoué — aucune image ajoutée. Réessayez.'
-      return NextResponse.json({ error: msg, code: 'IMAGE_GEN_FAILED' }, { status: 502 })
+      return NextResponse.json({ error: msg, code: 'IMAGE_GEN_FAILED', detail: result.detail }, { status: 502 })
     }
     return NextResponse.json({
       success: true, group: 'generate', method: 'dalle3',

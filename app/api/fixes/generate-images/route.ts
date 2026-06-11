@@ -32,8 +32,10 @@ export async function POST(request: NextRequest) {
     if (!result.ok) {
       const msg = result.reason === 'no_openai_key'
         ? 'La génération d’images n’est pas encore activée (clé manquante).'
+        : result.detail
+        ? `La génération des photos a échoué : ${result.detail}`
         : 'La génération des photos a échoué. Réessayez.'
-      return NextResponse.json({ error: msg }, { status: 502 })
+      return NextResponse.json({ error: msg, detail: result.detail }, { status: 502 })
     }
     return NextResponse.json({ success: true, ...result })
   } catch (e) {
