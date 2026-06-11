@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
 
   try {
     await getValidAccessToken(store, supabase)
-    const result = await generateProductImagesBatch(store, supabase, body.fix_id, 3)
+    const result = await generateProductImagesBatch(store, supabase, body.fix_id, 1)
     if (!result.ok) {
       const msg = result.reason === 'no_openai_key'
         ? 'La génération d’images n’est pas encore activée (clé manquante).'

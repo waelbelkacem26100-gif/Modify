@@ -12,6 +12,8 @@ const MODIFY_TAG = 'modify-'
 // A product is "done" once it has at least this many photos.
 const MIN_PHOTOS = 3
 
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
+
 // Result for the single-shot / looping callers (apply route, weekly cron).
 export interface ImageGenResult {
   ok: boolean
@@ -56,7 +58,7 @@ function buildPrompts(p: ShopifyProduct): { white: string; lifestyle: string; de
  * Uses gpt-image-1 (OpenAI's current image model): dall-e-3 is not available on
  * project keys, and gpt-image-1 always returns b64_json (no response_format).
  */
-async function gptImage(prompt: string): Promise<{ b64: string | null; error?: string }> {
+async function gptImage(prompt: string, attempt = 0): Promise<{ b64: string | null; error?: string }> {
   const key = process.env.OPENAI_API_KEY
   if (!key) return { b64: null, error: 'OPENAI_API_KEY absente côté serveur' }
   try {
@@ -66,9 +68,18 @@ async function gptImage(prompt: string): Promise<{ b64: string | null; error?: s
       body: JSON.stringify({ model: 'gpt-image-1', prompt, n: 1, size: '1024x1024', quality: 'medium' }),
     })
     if (!res.ok) {
-      const body = (await res.text()).slice(0, 300)
-      console.error('[image-gen] OpenAI error', res.status, body)
-      return { b64: null, error: `OpenAI ${res.status}: ${body}` }
+      const body = await res.text()
+      // Rate-limit (5 images/min) — honor Retry-After / "try again in Xs" and retry.
+      if (res.status === 429 && attempt < 4) {
+        const retryAfter = Number(res.headers.get('retry-after'))
+        const m = body.match(/try again in ([\d.]+)s/i)
+        const waitMs = ((retryAfter > 0 ? retryAfter : m ? parseFloat(m[1]) : 15) + 1) * 1000
+        console.warn(`[image-gen] 429 rate limit — waiting ${Math.round(waitMs / 1000)}s then retry (attempt ${attempt + 1})`)
+        await sleep(waitMs)
+        return gptImage(prompt, attempt + 1)
+      }
+      console.error('[image-gen] OpenAI error', res.status, body.slice(0, 300))
+      return { b64: null, error: `OpenAI ${res.status}: ${body.slice(0, 300)}` }
     }
     const data = await res.json() as { data?: { b64_json?: string }[] }
     const b64 = data.data?.[0]?.b64_json ?? null
@@ -123,14 +134,18 @@ async function finalizeApplied(store: Store, supabase: SupabaseClient, fixId: st
 }
 
 /**
- * Processes ONE batch of products (default 3) that still have fewer than 3
+ * Processes ONE batch of products (default 1) that still have fewer than 3
  * photos: for each, generates 3 photos (white bg, lifestyle, detail) with
  * gpt-image-1 and uploads them to Shopify. Shopify is the source of truth, so
  * the operation is idempotent and resumable — the client polls until `done`.
  * The fix is only marked applied when EVERY product has its photos.
+ *
+ * batchSize is 1 (one product per call) to respect gpt-image-1's 5 images/min
+ * rate limit: a single product = 3 sequential images, and the client waits 15s
+ * between products. A 429 retry in gptImage() is the safety net.
  */
 export async function generateProductImagesBatch(
-  store: Store, supabase: SupabaseClient, fixId: string, batchSize = 3,
+  store: Store, supabase: SupabaseClient, fixId: string, batchSize = 1,
 ): Promise<ImageGenProgress> {
   if (!process.env.OPENAI_API_KEY) {
     return { ok: false, done: false, total: 0, processed: 0, generatedThisBatch: 0, costUsdThisBatch: 0, reason: 'no_openai_key' }
@@ -149,9 +164,11 @@ export async function generateProductImagesBatch(
     return { ok: true, done: true, total, processed: total, generatedThisBatch: 0, costUsdThisBatch: 0 }
   }
 
-  // Process up to `batchSize` products in parallel (max concurrency).
+  // Process `batchSize` product(s) — default 1, sequentially, to stay under
+  // gpt-image-1's 5 images/min rate limit.
   const batch = targets.slice(0, batchSize)
-  const results = await Promise.all(batch.map((p) => generateForProduct(store, p)))
+  const results: { srcs: string[]; error?: string }[] = []
+  for (const p of batch) results.push(await generateForProduct(store, p))
 
   const generatedThisBatch = results.reduce((s, r) => s + r.srcs.length, 0)
   const succeededProducts = results.filter((r) => r.srcs.length >= 1).length
@@ -195,11 +212,12 @@ export async function generateProductImages(store: Store, supabase: SupabaseClie
   let last: ImageGenProgress | null = null
   // Stay under the function's maxDuration; cron can re-call to finish the rest.
   while (Date.now() - start < 250_000) {
-    const p = await generateProductImagesBatch(store, supabase, fixId, 3)
+    const p = await generateProductImagesBatch(store, supabase, fixId, 1)
     last = p
     totalGen += p.generatedThisBatch
     if (!p.ok) return { ok: false, reason: p.reason, detail: p.detail, generated: totalGen }
     if (p.done) break
+    await sleep(15_000) // respect the 5 images/min rate limit between products
   }
   return { ok: true, generated: totalGen, productTitle: last?.current }
 }

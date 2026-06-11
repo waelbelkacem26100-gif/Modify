@@ -19,7 +19,7 @@ export default function FixesContent() {
   const [applying, setApplying] = useState<string | null>(null)
   const [capturing, setCapturing] = useState<string | null>(null)
   const [generatingImg, setGeneratingImg] = useState<string | null>(null)
-  const [genProgress, setGenProgress] = useState<Record<string, { processed: number; total: number; current?: string; cost: number }>>({})
+  const [genProgress, setGenProgress] = useState<Record<string, { processed: number; total: number; current?: string; cost: number; waitS?: number }>>({})
   const [rolling, setRolling] = useState<string | null>(null)
   const [promoting, setPromoting] = useState<string | null>(null)
   const [applyErrors, setApplyErrors] = useState<Record<string, string>>({})
@@ -115,15 +115,16 @@ export default function FixesContent() {
   }
 
   // Generates 3 IA photos for EVERY product with < 3 images. The server processes
-  // one batch (up to 3 products) per call; we poll until `done`, showing a live
-  // progress bar. No client timeout: each batch returns on its own.
+  // ONE product per call (gpt-image-1 caps at 5 images/min); we poll until `done`
+  // with a 15s pause between products, showing a live progress bar + countdown.
+  // No client timeout: each call returns on its own.
   async function generateImages(fix: Fix) {
     setGeneratingImg(fix.id)
     setApplyErrors((prev) => ({ ...prev, [fix.id]: '' }))
     setGenProgress((prev) => ({ ...prev, [fix.id]: { processed: 0, total: 0, cost: 0 } }))
     let cost = 0
     try {
-      for (let i = 0; i < 100; i++) { // hard safety cap on batches
+      for (let i = 0; i < 100; i++) { // hard safety cap on products
         const res = await fetch('/api/fixes/generate-images', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -138,11 +139,16 @@ export default function FixesContent() {
           break
         }
         cost += d.costUsdThisBatch ?? 0
-        setGenProgress((prev) => ({
-          ...prev,
-          [fix.id]: { processed: d.processed ?? 0, total: d.total ?? 0, current: d.current, cost },
-        }))
+        const processed = d.processed ?? 0
+        const total = d.total ?? 0
+        setGenProgress((prev) => ({ ...prev, [fix.id]: { processed, total, current: d.current, cost } }))
         if (d.done) { showConfirmation(fix.title); await fetchFixes(); break }
+
+        // Pause 15s between products (rate limit) with a visible countdown.
+        for (let s = 15; s > 0; s--) {
+          setGenProgress((prev) => ({ ...prev, [fix.id]: { processed, total, current: d.current, cost, waitS: s } }))
+          await new Promise((r) => setTimeout(r, 1000))
+        }
       }
     } finally {
       setGeneratingImg(null)
@@ -417,24 +423,27 @@ export default function FixesContent() {
                     {generatingImg === fix.id && genProgress[fix.id] && (() => {
                       const p = genProgress[fix.id]
                       const pct = p.total ? Math.round((p.processed / p.total) * 100) : 0
+                      const next = p.total ? Math.min(p.processed + 1, p.total) : 0
+                      const label = !p.total
+                        ? 'Préparation…'
+                        : p.waitS != null
+                        ? `Produit ${next}/${p.total} — prochaine photo dans ${p.waitS}s…`
+                        : `Produit ${next}/${p.total} — génération en cours…`
                       return (
                         <div className="mt-3">
                           <div className="flex items-center justify-between text-xs text-text-secondary mb-1.5">
                             <span className="inline-flex items-center gap-1.5 min-w-0">
                               <span className="w-3 h-3 border-2 border-primary border-t-transparent rounded-full animate-spin flex-shrink-0" />
-                              <span className="truncate">
-                                {p.total ? `Produit ${p.processed}/${p.total}` : 'Préparation…'}
-                                {p.current ? ` — ${p.current}` : ''} · Génération en cours…
-                              </span>
+                              <span className="truncate">{label}</span>
                             </span>
                             <span className="flex-shrink-0 font-medium">{pct}%</span>
                           </div>
                           <div className="h-2 bg-surface-2 rounded-full overflow-hidden">
                             <div className="h-full bg-primary rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
                           </div>
-                          {p.cost > 0 && (
-                            <p className="text-text-muted text-[11px] mt-1">≈ ${p.cost.toFixed(2)} de génération IA · 3 photos/produit</p>
-                          )}
+                          <p className="text-text-muted text-[11px] mt-1">
+                            1 produit à la fois (limite IA : 5 images/min){p.cost > 0 ? ` · ≈ $${p.cost.toFixed(2)}` : ''}
+                          </p>
                         </div>
                       )
                     })()}
