@@ -53,6 +53,8 @@ export interface Fix {
   risk_group: RiskGroup | null
   verification_status: 'pending' | 'verified' | 'failed' | null
   preview_theme_id: string | null
+  screenshot_before: string | null
+  screenshot_after: string | null
   created_at: string
 }
 

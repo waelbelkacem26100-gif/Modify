@@ -6,6 +6,7 @@ import {
 } from 'lucide-react'
 import Button from '@/components/ui/Button'
 import Badge from '@/components/ui/Badge'
+import BeforeAfterSlider from '@/components/dashboard/BeforeAfterSlider'
 import { fixMode, MODE_PRESENTATION, whatChanged, beforeAfter } from '@/lib/fix-presentation'
 import type { Fix } from '@/types'
 
@@ -15,6 +16,7 @@ export default function FixesContent() {
   const [fixes, setFixes] = useState<Fix[]>([])
   const [loading, setLoading] = useState(true)
   const [applying, setApplying] = useState<string | null>(null)
+  const [capturing, setCapturing] = useState<string | null>(null)
   const [rolling, setRolling] = useState<string | null>(null)
   const [promoting, setPromoting] = useState<string | null>(null)
   const [applyErrors, setApplyErrors] = useState<Record<string, string>>({})
@@ -60,10 +62,23 @@ export default function FixesContent() {
     return `https://${shopDomain}/admin/themes/${fix.preview_theme_id}/editor`
   }
 
+  function shoot(fixId: string, when: 'before' | 'after') {
+    return fetch('/api/fixes/screenshot', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fix_id: fixId, when }),
+    }).catch(() => {})
+  }
+
   async function applyFix(fix: Fix) {
     setApplying(fix.id)
     setApplyErrors((prev) => ({ ...prev, [fix.id]: '' }))
     try {
+      // 1. Capture the BEFORE state (best-effort, before the page changes)
+      setCapturing(fix.id)
+      await shoot(fix.id, 'before')
+
+      // 2. Apply the fix
       const res = await fetch('/api/fixes/apply', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -75,12 +90,19 @@ export default function FixesContent() {
         setFixes((prev) => prev.map((f) =>
           f.id === fix.id ? { ...f, status: newStatus, preview_theme_id: data.preview_theme_id ?? f.preview_theme_id } : f
         ))
-        if (newStatus === 'applied') showConfirmation(fix.title)
+        if (newStatus === 'applied') {
+          showConfirmation(fix.title)
+          // 3. Capture the AFTER state (let the change propagate), then refresh
+          await new Promise((r) => setTimeout(r, 2500))
+          await shoot(fix.id, 'after')
+          await fetchFixes()
+        }
       } else {
         setApplyErrors((prev) => ({ ...prev, [fix.id]: data.error ?? 'Une erreur est survenue.' }))
       }
     } finally {
       setApplying(null)
+      setCapturing(null)
     }
   }
 
@@ -290,6 +312,20 @@ export default function FixesContent() {
                         </div>
                       )
                     })()}
+
+                    {/* Real before/after screenshots — comparison slider */}
+                    {fix.screenshot_before && fix.screenshot_after && (
+                      <div className="mt-3">
+                        <p className="text-text-muted text-[11px] mb-1.5">Glissez pour comparer votre page produit avant / après :</p>
+                        <BeforeAfterSlider before={fix.screenshot_before} after={fix.screenshot_after} />
+                      </div>
+                    )}
+                    {capturing === fix.id && (
+                      <p className="mt-2 text-text-muted text-xs inline-flex items-center gap-1.5">
+                        <span className="w-3 h-3 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                        📸 Capture avant / après de votre boutique…
+                      </p>
+                    )}
 
                     {/* Inline confirmation + link to the REAL live result */}
                     {applied && (
