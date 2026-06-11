@@ -25,7 +25,6 @@ const THEME_WRITE_FORBIDDEN_MSG =
 import { getOrCreateSessionBackup, classifyRiskGroup } from '@/lib/theme-backup'
 import { logAction } from '@/lib/audit-log'
 import { fixCapability } from '@/lib/fix-capability'
-import { generateProductImages } from '@/lib/image-gen'
 import type { Store, Audit, AuditResult, Fix, RiskGroup } from '@/types'
 
 export const maxDuration = 300 // theme duplication for Group C previews can be slow
@@ -178,36 +177,13 @@ export async function PATCH(request: NextRequest) {
   await getValidAccessToken(store, supabase)
 
   // ── Honest capability gate (runs BEFORE risk-group routing) ────────────────
-  // A "photos produit" fix must NEVER be routed to applyGroupADescriptions (which
-  // would falsely mark it "applied" without adding a single photo). It can only
-  // become "applied" when DALL·E 3 actually generates + uploads real images.
-  const capability = fixCapability(typedFix)
-
-  if (capability === 'guide') {
-    // Real reviews / videos / authentic photos — Modify can't fabricate these.
+  // "Guide" fixes (real reviews, videos, product photos) can't be done by Modify
+  // itself — the merchant follows a step-by-step guide. Never auto-mark applied.
+  if (fixCapability(typedFix) === 'guide') {
     return NextResponse.json({
-      error: "Ce point nécessite votre intervention (avis réels, vidéos, vraies photos). Ouvrez le guide pas à pas.",
+      error: "Ce point nécessite votre intervention (avis réels, vidéos, photos produit). Ouvrez le guide pas à pas.",
       code: 'GUIDE_ONLY',
     }, { status: 422 })
-  }
-
-  if (capability === 'generate') {
-    const result = await generateProductImages(store, supabase, fix_id)
-    if (!result.ok) {
-      // Do NOT mark applied — nothing real was added to Shopify.
-      const msg = result.reason === 'no_openai_key'
-        ? "La génération d'images n'est pas encore activée (clé OpenAI manquante)."
-        : result.reason === 'no_product'
-        ? 'Aucun produit à enrichir sur cette boutique.'
-        : result.detail
-        ? `La génération des photos a échoué — aucune image ajoutée : ${result.detail}`
-        : 'La génération des photos a échoué — aucune image ajoutée. Réessayez.'
-      return NextResponse.json({ error: msg, code: 'IMAGE_GEN_FAILED', detail: result.detail }, { status: 502 })
-    }
-    return NextResponse.json({
-      success: true, group: 'generate', method: 'gpt-image-1',
-      product: result.productTitle, generated: result.generated,
-    })
   }
 
   const riskGroup: RiskGroup = classifyRiskGroup(typedFix.type, typedFix.title, typedFix.risk_group)

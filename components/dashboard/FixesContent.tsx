@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import {
-  CheckCircle, RotateCcw, RefreshCw, Eye, Rocket, X, Wand2, Zap, Sparkles,
+  CheckCircle, RotateCcw, RefreshCw, Eye, Rocket, X, Wand2, Zap,
 } from 'lucide-react'
 import Button from '@/components/ui/Button'
 import Badge from '@/components/ui/Badge'
@@ -18,7 +18,6 @@ export default function FixesContent() {
   const [loading, setLoading] = useState(true)
   const [applying, setApplying] = useState<string | null>(null)
   const [capturing, setCapturing] = useState<string | null>(null)
-  const [generatingImg, setGeneratingImg] = useState<string | null>(null)
   const [rolling, setRolling] = useState<string | null>(null)
   const [promoting, setPromoting] = useState<string | null>(null)
   const [applyErrors, setApplyErrors] = useState<Record<string, string>>({})
@@ -37,15 +36,6 @@ export default function FixesContent() {
   }, [])
 
   useEffect(() => { fetchFixes() }, [fetchFixes])
-
-  // While a server-side image job runs (fix.status === 'generating'), auto-poll
-  // so the UI refreshes itself and flips to "Appliqué" when the cron finishes —
-  // even after a page reload or if the tab was closed and reopened.
-  useEffect(() => {
-    if (!fixes.some((f) => f.status === 'generating')) return
-    const t = setInterval(fetchFixes, 8000)
-    return () => clearInterval(t)
-  }, [fixes, fetchFixes])
 
   // Persisted store mode (auto vs weekly approval) — server-backed.
   useEffect(() => {
@@ -120,27 +110,6 @@ export default function FixesContent() {
   async function applyAll() {
     const pending = fixes.filter((f) => f.status === 'pending' && fixMode(f.risk_group) === 'auto')
     for (const f of pending) await applyFix(f)
-  }
-
-  // Starts a SERVER-SIDE job: flips the fix to 'generating' and returns at once.
-  // A 1/min Vercel cron generates 3 IA photos per product (one product per run,
-  // respecting gpt-image-1's 5 images/min limit) and uploads them to Shopify.
-  // The job keeps running even if this tab is closed — the UI just polls status.
-  async function generateImages(fix: Fix) {
-    setGeneratingImg(fix.id)
-    setApplyErrors((prev) => ({ ...prev, [fix.id]: '' }))
-    try {
-      const res = await fetch('/api/fixes/generate-images', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fix_id: fix.id }),
-      })
-      const d = await res.json() as { error?: string }
-      if (!res.ok) setApplyErrors((prev) => ({ ...prev, [fix.id]: d.error ?? 'Impossible de lancer la génération.' }))
-      else await fetchFixes() // status is now 'generating' → auto-polling kicks in
-    } finally {
-      setGeneratingImg(null)
-    }
   }
 
   async function promoteFix(fix: Fix) {
@@ -299,11 +268,7 @@ export default function FixesContent() {
           {fixes.map((fix) => {
             const cap = fixCapability(fix)
             const capInfo = CAPABILITY_META[cap]
-            // For "generate" fixes, "applied" requires REAL images on Shopify
-            // (screenshot_after populated) — a DB status of 'applied' alone is not
-            // enough, so we never show a false "Corrigé" without photos.
-            const realImages = Boolean(fix.screenshot_after)
-            const applied = fix.status === 'applied' && (cap !== 'generate' || realImages)
+            const applied = fix.status === 'applied'
             return (
               <div key={fix.id} className="bg-surface border border-border rounded-2xl p-5">
                 <div className="flex items-start justify-between gap-4">
@@ -315,9 +280,8 @@ export default function FixesContent() {
                       </span>
                       {/* Guide fixes are never "applied" — Modify can't do them itself. */}
                       {cap !== 'guide' && (
-                        <Badge variant={(fix.status === 'generating' ? 'pending' : fix.status) as 'applied' | 'pending' | 'rolled_back' | 'failed' | 'preview'}>
+                        <Badge variant={fix.status as 'applied' | 'pending' | 'rolled_back' | 'failed' | 'preview'}>
                           {applied ? 'Appliqué' :
-                           fix.status === 'generating' ? '⏳ Génération en cours' :
                            fix.status === 'rolled_back' ? 'Annulé' :
                            fix.status === 'failed' ? 'À réessayer' :
                            fix.status === 'preview' ? 'En attente de votre validation' : 'À venir'}
@@ -335,12 +299,7 @@ export default function FixesContent() {
                     {cap === 'guide' ? (
                       <p className="text-text-secondary text-xs leading-relaxed">
                         <span className="text-sky-400 font-medium">À faire vous-même : </span>
-                        Modify ne peut pas créer ça à votre place (avis réels, vidéos, vraies photos), mais vous guide pas à pas.
-                      </p>
-                    ) : cap === 'generate' ? (
-                      <p className="text-text-secondary text-xs leading-relaxed">
-                        <span className="text-text-muted font-medium">Ce que Modify génère : </span>
-                        3 photos par IA (fond blanc, situation réelle, détail) pour <strong>chaque produit</strong> ayant moins de 3 photos, ajoutées directement sur Shopify.
+                        Modify ne peut pas créer ça à votre place (avis réels, vidéos, photos produit), mais vous guide pas à pas.
                       </p>
                     ) : (
                       <p className="text-text-secondary text-xs leading-relaxed">
@@ -368,33 +327,8 @@ export default function FixesContent() {
                       )
                     })()}
 
-                    {/* Generated photos: gallery (before 1 image vs after N) */}
-                    {cap === 'generate' && fix.screenshot_after && (() => {
-                      const afterImgs = fix.screenshot_after.split(',').filter(Boolean)
-                      return (
-                        <div className="mt-3 grid sm:grid-cols-2 gap-3">
-                          <div>
-                            <p className="text-danger text-[11px] font-semibold uppercase tracking-wide mb-1">Avant · 1 photo</p>
-                            {fix.screenshot_before
-                              // eslint-disable-next-line @next/next/no-img-element
-                              ? <img src={fix.screenshot_before} alt="Avant" className="w-full rounded-lg border border-border object-cover aspect-square" />
-                              : <div className="aspect-square rounded-lg border border-dashed border-border flex items-center justify-center text-text-muted text-xs">Aucune photo</div>}
-                          </div>
-                          <div>
-                            <p className="text-success text-[11px] font-semibold uppercase tracking-wide mb-1">Après · {afterImgs.length} photos (IA)</p>
-                            <div className="grid grid-cols-3 gap-1.5">
-                              {afterImgs.map((src, i) => (
-                                // eslint-disable-next-line @next/next/no-img-element
-                                <img key={i} src={src} alt={`Après ${i + 1}`} className="w-full rounded-lg border border-border object-cover aspect-square" />
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-                      )
-                    })()}
-
-                    {/* Real before/after page screenshots — comparison slider (non-generate) */}
-                    {cap !== 'generate' && fix.screenshot_before && fix.screenshot_after && (
+                    {/* Real before/after page screenshots — comparison slider */}
+                    {fix.screenshot_before && fix.screenshot_after && (
                       <div className="mt-3">
                         <p className="text-text-muted text-[11px] mb-1.5">Glissez pour comparer votre page produit avant / après :</p>
                         <BeforeAfterSlider before={fix.screenshot_before} after={fix.screenshot_after} />
@@ -405,21 +339,6 @@ export default function FixesContent() {
                         <span className="w-3 h-3 border-2 border-primary border-t-transparent rounded-full animate-spin" />
                         📸 Capture avant / après de votre boutique…
                       </p>
-                    )}
-
-                    {/* Server-side image job running — status only; auto-refreshes. */}
-                    {fix.status === 'generating' && (
-                      <div className="mt-3 flex items-start gap-2.5 bg-primary/5 border border-primary/15 rounded-lg p-3">
-                        <span className="w-4 h-4 mt-0.5 border-2 border-primary border-t-transparent rounded-full animate-spin flex-shrink-0" />
-                        <div className="min-w-0">
-                          <p className="text-text-primary text-xs font-medium">Génération en cours…</p>
-                          <p className="text-text-secondary text-[11px] leading-snug mt-0.5">
-                            Modify crée 3 photos IA par produit et les ajoute à votre boutique. Ça continue
-                            même si vous fermez cette page — revenez quand vous voulez, la page se met à jour
-                            toute seule.
-                          </p>
-                        </div>
-                      </div>
                     )}
 
                     {/* Inline confirmation + link to the REAL live result — only
@@ -455,13 +374,6 @@ export default function FixesContent() {
                         className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-sky-400/30 text-sky-400 hover:bg-sky-400/10 transition-colors">
                         Voir le guide →
                       </a>
-                    )}
-                    {/* 🎨 Generate: launch the server-side photo job. Shown only when
-                        pending (hidden while 'generating' and once applied). */}
-                    {cap === 'generate' && fix.status === 'pending' && (
-                      <Button size="sm" onClick={() => generateImages(fix)} loading={generatingImg === fix.id}>
-                        <Sparkles className="w-3.5 h-3.5" /> Générer les photos
-                      </Button>
                     )}
                     {/* ✅ Auto: really apply */}
                     {cap === 'auto' && fix.status === 'pending' && (
