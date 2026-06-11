@@ -1,49 +1,51 @@
 {%- liquid
-  assign rating = block.settings.rating | times: 1.0
-  assign full = rating | floor
+  # Real review data only — sourced from the store's review metafields
+  # (Shopify Product Reviews / Judge.me / Loox all write reviews.rating + reviews.rating_count).
+  # NEVER fabricate reviews: if there are none, show an honest message instead.
+  assign rating_obj = product.metafields.reviews.rating.value
+  assign rating = 0
+  assign scale = 5
+  if rating_obj != blank
+    assign rating = rating_obj.rating | times: 1.0
+    assign scale = rating_obj.scale_max | default: 5
+  endif
+  assign count = product.metafields.reviews.rating_count.value | default: 0 | times: 1
+  if rating > 0 and scale != 5 and scale != 0
+    assign rating = rating | times: 5.0 | divided_by: scale
+  endif
+  assign rating_rounded = rating | round: 1
+  assign full = rating | round
+  assign star_color = block.settings.star_color
 -%}
-<div class="modify-social-proof" style="margin: 1rem 0;" {{ block.shopify_attributes }}>
-  <div class="modify-stars" role="img" aria-label="{{ rating }} / 5" style="display: inline-flex; align-items: center; gap: 2px;">
-    {%- for i in (1..5) -%}
-      {%- if i <= full -%}
-        {%- assign star_color = block.settings.star_color -%}
-      {%- else -%}
-        {%- assign star_color = '#d1d5db' -%}
-      {%- endif -%}
-      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" style="color: {{ star_color }};">
-        <path fill="currentColor" d="m12 2 3 6.3 6.9.9-5 4.8 1.2 6.8L12 18l-6.1 3.6 1.2-6.8-5-4.8 6.9-.9L12 2Z"/>
-      </svg>
-    {%- endfor -%}
-    <span class="modify-rating-num" style="margin-left: .4rem; font-weight: 600; font-size: .9rem;">{{ rating }}</span>
-  </div>
-
-  <p class="modify-review-count" style="font-size: .8rem; opacity: .7; margin: .25rem 0 0;">
-    {{ block.settings.count }} {{ block.settings.count_label }}
-  </p>
-
-  {%- if block.settings.quote != blank -%}
-    <blockquote class="modify-review-quote" style="font-style: italic; font-size: .9rem; margin: .6rem 0 0; padding-left: .8rem; border-left: 3px solid {{ block.settings.star_color }};">
-      “{{ block.settings.quote }}”
-      {%- if block.settings.author != blank -%}
-        <cite style="display: block; font-style: normal; font-size: .8rem; opacity: .6; margin-top: .25rem;">— {{ block.settings.author }}</cite>
-      {%- endif -%}
-    </blockquote>
+<div class="modify-social-proof" style="box-sizing:border-box; width:100%; margin:1rem 0; font-family:inherit;" {{ block.shopify_attributes }}>
+  {%- if count > 0 and rating > 0 -%}
+    <div class="modify-sp-row" style="display:flex; align-items:center; flex-wrap:wrap; gap:.5rem;">
+      <span class="modify-stars" role="img" aria-label="{{ rating_rounded }} sur 5" style="display:inline-flex; align-items:center; gap:1px; line-height:1;">
+        {%- for i in (1..5) -%}
+          {%- if i <= full -%}{%- assign c = star_color -%}{%- else -%}{%- assign c = '#d1d5db' -%}{%- endif -%}
+          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" style="color:{{ c }}; display:block;"><path fill="currentColor" d="m12 2 3 6.3 6.9.9-5 4.8 1.2 6.8L12 18l-6.1 3.6 1.2-6.8-5-4.8 6.9-.9L12 2Z"/></svg>
+        {%- endfor -%}
+      </span>
+      <span class="modify-rating-num" style="font-weight:700; font-size:.95rem;">{{ rating_rounded }}</span>
+      <span class="modify-review-count" style="font-size:.85rem; opacity:.7;">· {{ count }} avis client{% if count > 1 %}s{% endif %}</span>
+    </div>
+  {%- else -%}
+    <div class="modify-no-reviews" style="display:flex; align-items:flex-start; gap:.6rem; padding:.75rem .9rem; border:1px solid #e5e7eb; border-radius:10px; background:#fafafa; font-size:.85rem; line-height:1.45; color:#52525b;">
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" style="color:{{ star_color }}; flex-shrink:0; margin-top:1px;"><path fill="currentColor" d="m12 2 3 6.3 6.9.9-5 4.8 1.2 6.8L12 18l-6.1 3.6 1.2-6.8-5-4.8 6.9-.9L12 2Z"/></svg>
+      <span>{{ block.settings.empty_message }}</span>
+    </div>
   {%- endif -%}
 </div>
 
 {% schema %}
 {
-  "name": "Modify Social Proof",
+  "name": "Modify Avis clients",
   "target": "section",
   "enabled_on": { "templates": ["product"] },
   "settings": [
-    { "type": "range", "id": "rating", "label": "Note moyenne", "min": 1, "max": 5, "step": 0.1, "default": 4.8 },
+    { "type": "paragraph", "content": "Affiche la vraie note et le vrai nombre d'avis de ce produit (via votre app d'avis). Aucune donnée n'est inventée : sans avis, un message vous invite à en collecter." },
     { "type": "color", "id": "star_color", "label": "Couleur des étoiles", "default": "#f59e0b" },
-    { "type": "text", "id": "count", "label": "Nombre d'avis", "default": "247" },
-    { "type": "text", "id": "count_label", "label": "Libellé", "default": "avis clients vérifiés" },
-    { "type": "header", "content": "Témoignage (optionnel)" },
-    { "type": "textarea", "id": "quote", "label": "Citation", "default": "Qualité au rendez-vous, livraison rapide. Je recommande !" },
-    { "type": "text", "id": "author", "label": "Auteur", "default": "Marie L., cliente vérifiée" }
+    { "type": "text", "id": "empty_message", "label": "Message sans avis", "default": "Vous n'avez pas encore d'avis. Modify va vous aider à en collecter." }
   ]
 }
 {% endschema %}

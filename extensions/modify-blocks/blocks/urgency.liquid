@@ -7,10 +7,11 @@
   elsif block.settings.mode == 'low_stock' and product.selected_or_first_available_variant.inventory_management == 'shopify' and qty > 0 and qty <= threshold
     assign show = true
   endif
+  assign color = block.settings.color
 -%}
 {%- if show -%}
-  <div class="modify-urgency" style="display: inline-flex; align-items: center; gap: .5rem; margin: .75rem 0; padding: .5rem .85rem; border-radius: 8px; background: color-mix(in srgb, {{ block.settings.color }} 10%, transparent); font-size: .875rem; font-weight: 500; color: {{ block.settings.color }};" {{ block.shopify_attributes }}>
-    <span class="modify-urgency-dot" style="width: 8px; height: 8px; border-radius: 50%; background: {{ block.settings.color }}; flex-shrink: 0;"></span>
+  <div class="modify-urgency" style="box-sizing:border-box; display:inline-flex; align-items:center; gap:.5rem; margin:.85rem 0; padding:.45rem .8rem; border-radius:999px; background:color-mix(in srgb, {{ color }} 12%, transparent); border:1px solid color-mix(in srgb, {{ color }} 30%, transparent); font-family:inherit; font-size:.82rem; font-weight:600; line-height:1.2; color:{{ color }};" {{ block.shopify_attributes }}>
+    <span class="modify-urgency-dot" style="width:7px; height:7px; border-radius:50%; background:{{ color }}; flex-shrink:0; box-shadow:0 0 0 3px color-mix(in srgb, {{ color }} 20%, transparent);"></span>
     <span class="modify-urgency-text">
       {%- if block.settings.mode == 'low_stock' -%}
         {{ block.settings.low_stock_text | replace: '[qty]', qty }}

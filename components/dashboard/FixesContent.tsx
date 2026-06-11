@@ -6,7 +6,6 @@ import {
 } from 'lucide-react'
 import Button from '@/components/ui/Button'
 import Badge from '@/components/ui/Badge'
-import ActivationCard from '@/components/dashboard/ActivationCard'
 import { fixMode, MODE_PRESENTATION, whatChanged, beforeAfter } from '@/lib/fix-presentation'
 import type { Fix } from '@/types'
 
@@ -127,7 +126,6 @@ export default function FixesContent() {
 
   const totalApplied = fixes.filter((f) => f.status === 'applied').length
   const totalRecovered = fixes.filter((f) => f.status === 'applied').reduce((s, f) => s + f.impact_euros, 0)
-  const hasThemeFixes = fixes.some((f) => (f.risk_group ?? 'b') !== 'a')
   const pendingAuto = fixes.filter((f) => f.status === 'pending' && fixMode(f.risk_group) === 'auto').length
 
   if (loading) {
@@ -216,9 +214,6 @@ export default function FixesContent() {
         )}
       </div>
 
-      {/* Activation guide for theme app blocks */}
-      {hasThemeFixes && <ActivationCard />}
-
       {/* Summary */}
       {fixes.length > 0 && (
         <div className="bg-success/5 border border-success/20 rounded-2xl p-5 mb-6 flex items-center justify-between gap-4 flex-wrap">
@@ -296,10 +291,22 @@ export default function FixesContent() {
                       )
                     })()}
 
-                    {/* Inline confirmation for applied fixes */}
+                    {/* Inline confirmation + link to the REAL live result */}
                     {applied && (
-                      <div className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 bg-success/10 border border-success/20 rounded-lg text-success text-xs font-medium">
-                        <CheckCircle className="w-3.5 h-3.5" /> Visible sur votre boutique maintenant
+                      <div className="mt-2 flex items-center gap-2 flex-wrap">
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-success/10 border border-success/20 rounded-lg text-success text-xs font-medium">
+                          <CheckCircle className="w-3.5 h-3.5" /> Appliqué
+                        </span>
+                        {shopDomain && (
+                          <a
+                            href={`https://${shopDomain}/collections/all`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-primary text-xs font-medium hover:text-primary-dark transition-colors"
+                          >
+                            <Eye className="w-3.5 h-3.5" /> Voir le résultat sur ma boutique →
+                          </a>
+                        )}
                       </div>
                     )}
 
