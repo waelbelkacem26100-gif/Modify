@@ -205,7 +205,7 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: msg, code: 'IMAGE_GEN_FAILED', detail: result.detail }, { status: 502 })
     }
     return NextResponse.json({
-      success: true, group: 'generate', method: 'dalle3',
+      success: true, group: 'generate', method: 'gpt-image-1',
       product: result.productTitle, generated: result.generated,
     })
   }

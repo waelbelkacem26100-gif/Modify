@@ -19,6 +19,7 @@ export default function FixesContent() {
   const [applying, setApplying] = useState<string | null>(null)
   const [capturing, setCapturing] = useState<string | null>(null)
   const [generatingImg, setGeneratingImg] = useState<string | null>(null)
+  const [genProgress, setGenProgress] = useState<Record<string, { processed: number; total: number; current?: string; cost: number }>>({})
   const [rolling, setRolling] = useState<string | null>(null)
   const [promoting, setPromoting] = useState<string | null>(null)
   const [applyErrors, setApplyErrors] = useState<Record<string, string>>({})
@@ -113,20 +114,39 @@ export default function FixesContent() {
     for (const f of pending) await applyFix(f)
   }
 
+  // Generates 3 IA photos for EVERY product with < 3 images. The server processes
+  // one batch (up to 3 products) per call; we poll until `done`, showing a live
+  // progress bar. No client timeout: each batch returns on its own.
   async function generateImages(fix: Fix) {
     setGeneratingImg(fix.id)
     setApplyErrors((prev) => ({ ...prev, [fix.id]: '' }))
+    setGenProgress((prev) => ({ ...prev, [fix.id]: { processed: 0, total: 0, cost: 0 } }))
+    let cost = 0
     try {
-      const res = await fetch('/api/fixes/generate-images', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fix_id: fix.id }),
-      })
-      const d = await res.json() as { error?: string }
-      if (res.ok) { showConfirmation(fix.title); await fetchFixes() }
-      else setApplyErrors((prev) => ({ ...prev, [fix.id]: d.error ?? 'La génération a échoué.' }))
+      for (let i = 0; i < 100; i++) { // hard safety cap on batches
+        const res = await fetch('/api/fixes/generate-images', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fix_id: fix.id }),
+        })
+        const d = await res.json() as {
+          error?: string; done?: boolean; total?: number; processed?: number
+          current?: string; costUsdThisBatch?: number
+        }
+        if (!res.ok) {
+          setApplyErrors((prev) => ({ ...prev, [fix.id]: d.error ?? 'La génération a échoué.' }))
+          break
+        }
+        cost += d.costUsdThisBatch ?? 0
+        setGenProgress((prev) => ({
+          ...prev,
+          [fix.id]: { processed: d.processed ?? 0, total: d.total ?? 0, current: d.current, cost },
+        }))
+        if (d.done) { showConfirmation(fix.title); await fetchFixes(); break }
+      }
     } finally {
       setGeneratingImg(null)
+      setGenProgress((prev) => { const n = { ...prev }; delete n[fix.id]; return n })
     }
   }
 
@@ -326,7 +346,7 @@ export default function FixesContent() {
                     ) : cap === 'generate' ? (
                       <p className="text-text-secondary text-xs leading-relaxed">
                         <span className="text-text-muted font-medium">Ce que Modify génère : </span>
-                        3 photos par IA (fond blanc, situation réelle, détail), ajoutées à votre fiche produit Shopify.
+                        3 photos par IA (fond blanc, situation réelle, détail) pour <strong>chaque produit</strong> ayant moins de 3 photos, ajoutées directement sur Shopify.
                       </p>
                     ) : (
                       <p className="text-text-secondary text-xs leading-relaxed">
@@ -392,6 +412,32 @@ export default function FixesContent() {
                         📸 Capture avant / après de votre boutique…
                       </p>
                     )}
+
+                    {/* Live progress bar while generating photos for ALL products */}
+                    {generatingImg === fix.id && genProgress[fix.id] && (() => {
+                      const p = genProgress[fix.id]
+                      const pct = p.total ? Math.round((p.processed / p.total) * 100) : 0
+                      return (
+                        <div className="mt-3">
+                          <div className="flex items-center justify-between text-xs text-text-secondary mb-1.5">
+                            <span className="inline-flex items-center gap-1.5 min-w-0">
+                              <span className="w-3 h-3 border-2 border-primary border-t-transparent rounded-full animate-spin flex-shrink-0" />
+                              <span className="truncate">
+                                {p.total ? `Produit ${p.processed}/${p.total}` : 'Préparation…'}
+                                {p.current ? ` — ${p.current}` : ''} · Génération en cours…
+                              </span>
+                            </span>
+                            <span className="flex-shrink-0 font-medium">{pct}%</span>
+                          </div>
+                          <div className="h-2 bg-surface-2 rounded-full overflow-hidden">
+                            <div className="h-full bg-primary rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
+                          </div>
+                          {p.cost > 0 && (
+                            <p className="text-text-muted text-[11px] mt-1">≈ ${p.cost.toFixed(2)} de génération IA · 3 photos/produit</p>
+                          )}
+                        </div>
+                      )
+                    })()}
 
                     {/* Inline confirmation + link to the REAL live result — only
                         for fixes Modify actually performs (never for guide fixes). */}
