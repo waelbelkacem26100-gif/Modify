@@ -2,12 +2,13 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import {
-  CheckCircle, RotateCcw, RefreshCw, Eye, Rocket, X, Wand2, Zap,
+  CheckCircle, RotateCcw, RefreshCw, Eye, Rocket, X, Wand2, Zap, Sparkles,
 } from 'lucide-react'
 import Button from '@/components/ui/Button'
 import Badge from '@/components/ui/Badge'
 import BeforeAfterSlider from '@/components/dashboard/BeforeAfterSlider'
-import { fixMode, MODE_PRESENTATION, whatChanged, beforeAfter } from '@/lib/fix-presentation'
+import { fixMode, whatChanged, beforeAfter } from '@/lib/fix-presentation'
+import { fixCapability, CAPABILITY_META } from '@/lib/fix-capability'
 import type { Fix } from '@/types'
 
 type StoreMode = 'auto' | 'approval'
@@ -17,6 +18,7 @@ export default function FixesContent() {
   const [loading, setLoading] = useState(true)
   const [applying, setApplying] = useState<string | null>(null)
   const [capturing, setCapturing] = useState<string | null>(null)
+  const [generatingImg, setGeneratingImg] = useState<string | null>(null)
   const [rolling, setRolling] = useState<string | null>(null)
   const [promoting, setPromoting] = useState<string | null>(null)
   const [applyErrors, setApplyErrors] = useState<Record<string, string>>({})
@@ -109,6 +111,23 @@ export default function FixesContent() {
   async function applyAll() {
     const pending = fixes.filter((f) => f.status === 'pending' && fixMode(f.risk_group) === 'auto')
     for (const f of pending) await applyFix(f)
+  }
+
+  async function generateImages(fix: Fix) {
+    setGeneratingImg(fix.id)
+    setApplyErrors((prev) => ({ ...prev, [fix.id]: '' }))
+    try {
+      const res = await fetch('/api/fixes/generate-images', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fix_id: fix.id }),
+      })
+      const d = await res.json() as { error?: string }
+      if (res.ok) { showConfirmation(fix.title); await fetchFixes() }
+      else setApplyErrors((prev) => ({ ...prev, [fix.id]: d.error ?? 'La génération a échoué.' }))
+    } finally {
+      setGeneratingImg(null)
+    }
   }
 
   async function promoteFix(fix: Fix) {
@@ -265,7 +284,8 @@ export default function FixesContent() {
       ) : (
         <div className="space-y-3">
           {fixes.map((fix) => {
-            const mInfo = MODE_PRESENTATION[fixMode(fix.risk_group)]
+            const cap = fixCapability(fix)
+            const capInfo = CAPABILITY_META[cap]
             const applied = fix.status === 'applied'
             return (
               <div key={fix.id} className="bg-surface border border-border rounded-2xl p-5">
@@ -273,15 +293,18 @@ export default function FixesContent() {
                   <div className="flex-1 min-w-0">
                     {/* Badges */}
                     <div className="flex items-center gap-2 flex-wrap mb-2">
-                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium border ${mInfo.cls}`}>
-                        {mInfo.emoji} {mInfo.label}
+                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium border ${capInfo.cls}`}>
+                        {capInfo.emoji} {capInfo.label}
                       </span>
-                      <Badge variant={fix.status as 'applied' | 'pending' | 'rolled_back' | 'failed' | 'preview'}>
-                        {applied ? 'Appliqué' :
-                         fix.status === 'rolled_back' ? 'Annulé' :
-                         fix.status === 'failed' ? 'À réessayer' :
-                         fix.status === 'preview' ? 'En attente de votre validation' : 'À venir'}
-                      </Badge>
+                      {/* Guide fixes are never "applied" — Modify can't do them itself. */}
+                      {cap !== 'guide' && (
+                        <Badge variant={fix.status as 'applied' | 'pending' | 'rolled_back' | 'failed' | 'preview'}>
+                          {applied ? 'Appliqué' :
+                           fix.status === 'rolled_back' ? 'Annulé' :
+                           fix.status === 'failed' ? 'À réessayer' :
+                           fix.status === 'preview' ? 'En attente de votre validation' : 'À venir'}
+                        </Badge>
+                      )}
                       <span className="text-success text-sm font-semibold ml-auto flex-shrink-0">
                         +€{fix.impact_euros}/mois
                       </span>
@@ -289,15 +312,29 @@ export default function FixesContent() {
 
                     <h3 className="font-medium text-text-primary text-sm mb-1">{fix.title}</h3>
 
-                    {/* What changed — plain language */}
-                    <p className="text-text-secondary text-xs leading-relaxed">
-                      <span className="text-text-muted font-medium">Ce qui change : </span>
-                      {whatChanged(fix)}
-                    </p>
+                    {/* What changed — plain language. Guide fixes are honest:
+                        Modify can't do them, it guides the merchant. */}
+                    {cap === 'guide' ? (
+                      <p className="text-text-secondary text-xs leading-relaxed">
+                        <span className="text-sky-400 font-medium">À faire vous-même : </span>
+                        Modify ne peut pas créer ça à votre place (avis réels, vidéos, vraies photos), mais vous guide pas à pas.
+                      </p>
+                    ) : cap === 'generate' ? (
+                      <p className="text-text-secondary text-xs leading-relaxed">
+                        <span className="text-text-muted font-medium">Ce que Modify génère : </span>
+                        2 photos par IA (une en situation réelle + une sur fond blanc), ajoutées à votre produit.
+                      </p>
+                    ) : (
+                      <p className="text-text-secondary text-xs leading-relaxed">
+                        <span className="text-text-muted font-medium">Ce qui change : </span>
+                        {whatChanged(fix)}
+                      </p>
+                    )}
 
-                    {/* Before / after — shown side by side on each fix (preview
-                        before applying, captured result after). */}
-                    {(applied || fix.status === 'pending') && (() => {
+                    {/* Before / after — shown for fixes Modify actually performs
+                        (preview before applying, captured result after). Not for
+                        guide fixes, which Modify doesn't do itself. */}
+                    {cap !== 'guide' && (applied || fix.status === 'pending') && (() => {
                       const ba = beforeAfter(fix)
                       return (
                         <div className="mt-3 grid sm:grid-cols-2 gap-2">
@@ -313,8 +350,33 @@ export default function FixesContent() {
                       )
                     })()}
 
-                    {/* Real before/after screenshots — comparison slider */}
-                    {fix.screenshot_before && fix.screenshot_after && (
+                    {/* Generated photos: gallery (before 1 image vs after N) */}
+                    {cap === 'generate' && fix.screenshot_after && (() => {
+                      const afterImgs = fix.screenshot_after.split(',').filter(Boolean)
+                      return (
+                        <div className="mt-3 grid sm:grid-cols-2 gap-3">
+                          <div>
+                            <p className="text-danger text-[11px] font-semibold uppercase tracking-wide mb-1">Avant · 1 photo</p>
+                            {fix.screenshot_before
+                              // eslint-disable-next-line @next/next/no-img-element
+                              ? <img src={fix.screenshot_before} alt="Avant" className="w-full rounded-lg border border-border object-cover aspect-square" />
+                              : <div className="aspect-square rounded-lg border border-dashed border-border flex items-center justify-center text-text-muted text-xs">Aucune photo</div>}
+                          </div>
+                          <div>
+                            <p className="text-success text-[11px] font-semibold uppercase tracking-wide mb-1">Après · {afterImgs.length} photos (IA)</p>
+                            <div className="grid grid-cols-3 gap-1.5">
+                              {afterImgs.map((src, i) => (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img key={i} src={src} alt={`Après ${i + 1}`} className="w-full rounded-lg border border-border object-cover aspect-square" />
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })()}
+
+                    {/* Real before/after page screenshots — comparison slider (non-generate) */}
+                    {cap !== 'generate' && fix.screenshot_before && fix.screenshot_after && (
                       <div className="mt-3">
                         <p className="text-text-muted text-[11px] mb-1.5">Glissez pour comparer votre page produit avant / après :</p>
                         <BeforeAfterSlider before={fix.screenshot_before} after={fix.screenshot_after} />
@@ -327,8 +389,9 @@ export default function FixesContent() {
                       </p>
                     )}
 
-                    {/* Inline confirmation + link to the REAL live result */}
-                    {applied && (
+                    {/* Inline confirmation + link to the REAL live result — only
+                        for fixes Modify actually performs (never for guide fixes). */}
+                    {applied && cap !== 'guide' && (
                       <div className="mt-2 flex items-center gap-2 flex-wrap">
                         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-success/10 border border-success/20 rounded-lg text-success text-xs font-medium">
                           <CheckCircle className="w-3.5 h-3.5" /> Appliqué
@@ -351,9 +414,23 @@ export default function FixesContent() {
                     )}
                   </div>
 
-                  {/* Actions */}
+                  {/* Actions — depend on what Modify can honestly do */}
                   <div className="flex items-center gap-2 flex-shrink-0">
-                    {fix.status === 'pending' && (
+                    {/* 👋 Guide: Modify can't do it — open the step-by-step plan, no "Appliquer" */}
+                    {cap === 'guide' && (
+                      <a href="/dashboard/guides"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-sky-400/30 text-sky-400 hover:bg-sky-400/10 transition-colors">
+                        Voir le guide →
+                      </a>
+                    )}
+                    {/* 🎨 Generate: produce real photos with DALL·E 3 */}
+                    {cap === 'generate' && (fix.status === 'pending' || fix.status === 'failed') && (
+                      <Button size="sm" onClick={() => generateImages(fix)} loading={generatingImg === fix.id}>
+                        <Sparkles className="w-3.5 h-3.5" /> Générer les photos
+                      </Button>
+                    )}
+                    {/* ✅ Auto: really apply */}
+                    {cap === 'auto' && fix.status === 'pending' && (
                       <Button size="sm" onClick={() => applyFix(fix)} loading={applying === fix.id}>
                         <CheckCircle className="w-3.5 h-3.5" /> Appliquer
                       </Button>
@@ -376,7 +453,7 @@ export default function FixesContent() {
                         <RotateCcw className="w-3.5 h-3.5" /> Annuler
                       </Button>
                     )}
-                    {fix.status === 'failed' && (
+                    {fix.status === 'failed' && cap === 'auto' && (
                       <Button size="sm" variant="ghost" onClick={() => applyFix(fix)} loading={applying === fix.id}>
                         <RefreshCw className="w-3.5 h-3.5" /> Réessayer
                       </Button>

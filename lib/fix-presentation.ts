@@ -68,7 +68,7 @@ export function whatChanged(fix: { type?: string | null; title?: string | null }
  * Plain-language before/after for an applied fix, e.g.
  * "Avant : aucun badge de confiance — Après : 3 badges ajoutés sous le bouton d'achat".
  */
-export function beforeAfter(fix: { type?: string | null; title?: string | null }): { before: string; after: string } {
+export function beforeAfter(fix: { type?: string | null; title?: string | null; description?: string | null }): { before: string; after: string } {
   const h = `${fix.type ?? ''} ${fix.title ?? ''}`.toLowerCase()
   // Check reviews/ratings before trust: the category is often "trust", so a
   // reviews-titled fix must not be mistaken for a trust-badge fix.
@@ -86,7 +86,12 @@ export function beforeAfter(fix: { type?: string | null; title?: string | null }
     return { before: 'Prix sans mise en avant', after: 'Prix et promotion clairement mis en valeur' }
   if (/cross|upsell|bundle|collection|panier/.test(h))
     return { before: 'Aucune suggestion de produits', after: 'Produits complémentaires suggérés pour augmenter le panier' }
-  return { before: 'État précédent de la page', after: 'Amélioration appliquée et visible' }
+  // Fallback: tie it to the REAL problem detected on this store (audit description).
+  const problem = (fix.description ?? '').trim()
+  return {
+    before: problem || (fix.title ? `Problème : ${fix.title}` : 'Problème détecté sur cette page'),
+    after: `Corrigé sur votre boutique${fix.title ? ` — ${fix.title}` : ''}.`,
+  }
 }
 
 /**
