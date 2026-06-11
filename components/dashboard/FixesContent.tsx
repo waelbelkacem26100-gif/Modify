@@ -286,7 +286,11 @@ export default function FixesContent() {
           {fixes.map((fix) => {
             const cap = fixCapability(fix)
             const capInfo = CAPABILITY_META[cap]
-            const applied = fix.status === 'applied'
+            // For "generate" fixes, "applied" requires REAL images on Shopify
+            // (screenshot_after populated) — a DB status of 'applied' alone is not
+            // enough, so we never show a false "Corrigé" without photos.
+            const realImages = Boolean(fix.screenshot_after)
+            const applied = fix.status === 'applied' && (cap !== 'generate' || realImages)
             return (
               <div key={fix.id} className="bg-surface border border-border rounded-2xl p-5">
                 <div className="flex items-start justify-between gap-4">
@@ -322,7 +326,7 @@ export default function FixesContent() {
                     ) : cap === 'generate' ? (
                       <p className="text-text-secondary text-xs leading-relaxed">
                         <span className="text-text-muted font-medium">Ce que Modify génère : </span>
-                        2 photos par IA (une en situation réelle + une sur fond blanc), ajoutées à votre produit.
+                        3 photos par IA (fond blanc, situation réelle, détail), ajoutées à votre fiche produit Shopify.
                       </p>
                     ) : (
                       <p className="text-text-secondary text-xs leading-relaxed">
@@ -423,8 +427,10 @@ export default function FixesContent() {
                         Voir le guide →
                       </a>
                     )}
-                    {/* 🎨 Generate: produce real photos with DALL·E 3 */}
-                    {cap === 'generate' && (fix.status === 'pending' || fix.status === 'failed') && (
+                    {/* 🎨 Generate: produce real photos with DALL·E 3. Shown until
+                        real images exist on Shopify — even if the row was wrongly
+                        marked 'applied' by an earlier generic apply (no photos). */}
+                    {cap === 'generate' && !applied && fix.status !== 'preview' && (
                       <Button size="sm" onClick={() => generateImages(fix)} loading={generatingImg === fix.id}>
                         <Sparkles className="w-3.5 h-3.5" /> Générer les photos
                       </Button>

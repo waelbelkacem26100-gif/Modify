@@ -14,8 +14,8 @@ export interface ImageGenResult {
   reason?: string
 }
 
-/** Builds two relevant DALL·E 3 prompts from the product's own data. */
-function buildPrompts(p: ShopifyProduct): { lifestyle: string; white: string } {
+/** Builds three relevant DALL·E 3 prompts from the product's own data. */
+function buildPrompts(p: ShopifyProduct): { white: string; lifestyle: string; detail: string } {
   const name = p.title
   const cat = p.product_type || p.tags?.split(',')[0]?.trim() || 'produit'
   const desc = (p.body_html ?? '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 240)
@@ -23,6 +23,7 @@ function buildPrompts(p: ShopifyProduct): { lifestyle: string; white: string } {
   return {
     white: `Professional e-commerce product photography of "${name}" (${cat}), centered on a clean pure white seamless background, soft studio lighting, sharp focus, high detail, realistic, no text, no watermark, no people.${ctx}`,
     lifestyle: `Lifestyle photograph of "${name}" (${cat}) shown in a real, natural everyday setting where it is actually used, warm natural light, appealing and authentic, realistic, no text, no watermark.${ctx}`,
+    detail: `Close-up macro detail photograph of "${name}" (${cat}) highlighting its texture, material and finish, professional studio lighting, very sharp focus, clean neutral background, realistic, no text, no watermark.${ctx}`,
   }
 }
 
@@ -61,7 +62,8 @@ export async function generateProductImages(store: Store, supabase: SupabaseClie
   const prompts = buildPrompts(target)
   const newSrcs: string[] = []
 
-  for (const [kind, prompt] of [['lifestyle', prompts.lifestyle], ['white', prompts.white]] as const) {
+  // 3 photos par produit : fond blanc, situation réelle (lifestyle), détail.
+  for (const [kind, prompt] of [['white', prompts.white], ['lifestyle', prompts.lifestyle], ['detail', prompts.detail]] as const) {
     const b64 = await dalle3(prompt)
     if (!b64) continue
     try {
@@ -76,9 +78,10 @@ export async function generateProductImages(store: Store, supabase: SupabaseClie
     }
   }
 
+  // Honnêteté : on ne marque "appliqué" QUE si de vraies images sont sur Shopify.
   if (newSrcs.length === 0) return { ok: false, productTitle: target.title, before, reason: 'generation_failed' }
 
-  const after = [...(before ? [before] : []), ...newSrcs].slice(0, 3)
+  const after = newSrcs.slice(0, 3) // les photos réellement générées et uploadées
   // Persist the before/after for the UI (reusing the screenshot columns: text URLs).
   await supabase.from('fixes').update({
     screenshot_before: before,
