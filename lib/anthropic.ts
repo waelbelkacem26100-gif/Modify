@@ -282,6 +282,8 @@ export interface BlogArticleContext {
   niche: string
   productExamples: string[]
   recentTitles: string[]
+  // Internal links to weave into the article (title → absolute product URL).
+  productLinks?: { title: string; url: string }[]
 }
 
 export interface BlogArticleResult {
@@ -293,46 +295,84 @@ export interface BlogArticleResult {
 }
 
 export async function generateBlogArticle(ctx: BlogArticleContext): Promise<BlogArticleResult> {
+  const links = (ctx.productLinks ?? []).slice(0, 6)
+  const linksBlock = links.length
+    ? links.map((l) => `- ${l.title} → ${l.url}`).join('\n')
+    : '- (aucun lien produit fourni)'
+
   const message = await anthropic.messages.create({
     model: 'claude-opus-4-8',
-    max_tokens: 4096,
+    max_tokens: 8000,
     messages: [
       {
         role: 'user',
-        content: `Tu es un expert SEO et copywriter e-commerce francophone. Tu écris des articles de blog qui attirent du trafic organique qualifié et qui poussent subtilement vers les produits d'une boutique.
+        content: `Tu es un expert SEO et copywriter e-commerce francophone. Tu écris des articles de blog LONGS et de QUALITÉ qui attirent du trafic organique qualifié et poussent subtilement vers les produits d'une boutique.
 
 Boutique : ${ctx.shopName}
 Niche / thématique : ${ctx.niche}
 Exemples de produits : ${ctx.productExamples.slice(0, 8).join(', ') || 'Non spécifié'}
 
+LIENS INTERNES à intégrer naturellement dans l'article (utilise la vraie URL en <a href="...">) :
+${linksBlock}
+
 Articles déjà publiés (NE PAS répéter ces sujets, choisis un angle frais) :
 ${ctx.recentTitles.length ? ctx.recentTitles.map((t) => `- ${t}`).join('\n') : '- (aucun)'}
 
-Génère UN article de blog SEO complet, optimisé pour le référencement et la conversion.
+Génère UN article de blog SEO complet, **de 2000 mots minimum**, optimisé pour le référencement Google ET pour être cité par les IA (ChatGPT, Perplexity) : structure claire, réponses directes, sections bien titrées.
 
-Retourne UNIQUEMENT un JSON valide avec cette structure exacte :
+Retourne UNIQUEMENT un JSON valide :
 {
   "title": "Titre accrocheur et optimisé SEO (50-65 caractères, contient le mot-clé principal)",
-  "body_html": "<p>Introduction qui accroche...</p><h2>Sous-titre 1</h2><p>...</p><h2>Sous-titre 2</h2><p>...</p>... Article de 700-900 mots, structuré avec des balises h2/h3, listes <ul> si pertinent. Ton expert mais accessible. Intègre naturellement des mots-clés de la niche. Termine par un paragraphe qui invite à découvrir les produits de la boutique. HTML propre uniquement.",
-  "summary": "Extrait de 1-2 phrases pour la prévisualisation (max 160 caractères)",
+  "body_html": "Article HTML de 2000 mots MINIMUM. Structure : <p>intro qui répond d'emblée à l'intention de recherche</p>, plusieurs <h2> (et <h3> si utile), paragraphes <p>, listes <ul><li>, et 2 à 4 LIENS INTERNES <a href=\\"URL exacte fournie ci-dessus\\">ancre naturelle</a> vers les produits. Termine par une conclusion qui invite à découvrir la boutique. HTML propre uniquement (h2, h3, p, ul, li, a, strong).",
+  "summary": "Extrait de 1-2 phrases (max 160 caractères)",
   "tags": "3 à 5 tags séparés par des virgules, en rapport avec la niche",
   "meta_description": "Meta description SEO de 150-155 caractères max, incitative au clic"
 }
 
 Règles :
-- Tout en français
-- Article réellement utile : conseils concrets, pas de remplissage
-- body_html : 700 à 900 mots, HTML propre (h2, h3, p, ul/li uniquement)
-- Aucun cliché marketing générique
-- Retourne UNIQUEMENT le JSON, pas de markdown ni d'explication`,
+- Tout en français, ton expert mais accessible.
+- body_html : **2000 mots minimum**, conseils concrets et utiles (pas de remplissage).
+- Intègre 2 à 4 liens internes en utilisant EXACTEMENT les URLs fournies.
+- Pour l'optimisation IA (GEO) : réponds clairement aux questions que se poseraient les lecteurs, avec des phrases factuelles et citables.
+- Retourne UNIQUEMENT le JSON, pas de markdown.`,
       },
     ],
   })
 
   const content = message.content[0]
   if (content.type !== 'text') throw new Error('Unexpected response type')
+  const raw = content.text.trim().replace(/^```(?:json)?/i, '').replace(/```$/i, '').trim()
+  return JSON.parse(raw) as BlogArticleResult
+}
 
-  return JSON.parse(content.text) as BlogArticleResult
+// ─── GEO: structured product FAQ (for AI citation + FAQ schema) ──────────────────
+
+export interface ProductFaq { question: string; answer: string }
+
+/** Generates 3 concise, factual FAQ entries for a product (used as a metafield
+ * the theme can render as FAQPage structured data — boosts AI/Google citations). */
+export async function generateProductFaq(p: { title: string; product_type?: string }): Promise<ProductFaq[]> {
+  const message = await anthropic.messages.create({
+    model: 'claude-opus-4-8',
+    max_tokens: 1024,
+    messages: [
+      {
+        role: 'user',
+        content: `Produit : "${p.title}"${p.product_type ? ` (${p.product_type})` : ''}.
+Génère 3 questions-réponses fréquentes (FAQ) qu'un acheteur se pose, en français, factuelles et concises (réponse 1-2 phrases). Optimisé pour être cité par les IA.
+Retourne UNIQUEMENT un JSON : [{"question":"...","answer":"..."}, ...] (exactement 3). Pas de markdown.`,
+      },
+    ],
+  })
+  const content = message.content[0]
+  if (content.type !== 'text') return []
+  const raw = content.text.trim().replace(/^```(?:json)?/i, '').replace(/```$/i, '').trim()
+  try {
+    const arr = JSON.parse(raw.slice(raw.indexOf('['), raw.lastIndexOf(']') + 1)) as ProductFaq[]
+    return arr.filter((f) => f?.question && f?.answer).slice(0, 3)
+  } catch {
+    return []
+  }
 }
 
 // ─── Bundle / cross-sell suggestions ────────────────────────────────────────────

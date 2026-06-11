@@ -577,6 +577,50 @@ export async function updateProductDescription(
 
 // ─── Group A handlers: image alt text + SEO metafields ──────────────────────────
 
+/** Sets an arbitrary product metafield (used for GEO FAQ data). Best-effort. */
+export async function setProductMetafield(
+  shopDomain: string,
+  accessToken: string,
+  productId: number,
+  namespace: string,
+  key: string,
+  value: string,
+  type = 'json'
+): Promise<void> {
+  const res = await fetch(
+    `https://${shopDomain}/admin/api/${SHOPIFY_API_VERSION}/products/${productId}/metafields.json`,
+    {
+      method: 'POST',
+      headers: shopifyHeaders(accessToken),
+      body: JSON.stringify({ metafield: { namespace, key, value, type } }),
+    }
+  )
+  if (!res.ok) {
+    const body = await res.text()
+    throw new Error(`metafield ${namespace}.${key} failed ${res.status}: ${body.slice(0, 150)}`)
+  }
+}
+
+/** Reads a product's SEO metafields (global.title_tag / global.description_tag). */
+export async function getProductSeoMeta(
+  shopDomain: string,
+  accessToken: string,
+  productId: number
+): Promise<{ titleTag: string | null; descriptionTag: string | null }> {
+  try {
+    const res = await fetch(
+      `https://${shopDomain}/admin/api/${SHOPIFY_API_VERSION}/products/${productId}/metafields.json?namespace=global`,
+      { headers: shopifyHeaders(accessToken) }
+    )
+    if (!res.ok) return { titleTag: null, descriptionTag: null }
+    const data = (await res.json()) as { metafields?: { key: string; value: string }[] }
+    const find = (k: string) => data.metafields?.find((m) => m.key === k)?.value ?? null
+    return { titleTag: find('title_tag'), descriptionTag: find('description_tag') }
+  } catch {
+    return { titleTag: null, descriptionTag: null }
+  }
+}
+
 export async function getProductWithImages(
   shopDomain: string,
   accessToken: string,

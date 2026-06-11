@@ -52,6 +52,12 @@ export async function generateAndPublishArticle(
   const products = await getProductsDetailed(store.shop_domain, store.access_token, 50)
   const { niche, examples } = deriveNiche(products)
 
+  // Internal links the article should weave in (title → product URL).
+  const productLinks = products
+    .filter((p) => p.handle)
+    .slice(0, 6)
+    .map((p) => ({ title: p.title, url: `https://${store.shop_domain}/products/${p.handle}` }))
+
   // Recent titles — both from Shopify and our own records — to avoid repetition
   const existing = await listArticles(store.shop_domain, store.access_token, blog.id, 20)
   const recentTitles = existing.map((a) => a.title)
@@ -61,6 +67,7 @@ export async function generateAndPublishArticle(
     niche,
     productExamples: examples,
     recentTitles,
+    productLinks,
   })
 
   const created = await createArticle(store.shop_domain, store.access_token, blog.id, {

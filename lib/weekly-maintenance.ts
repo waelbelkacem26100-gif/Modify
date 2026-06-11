@@ -1,5 +1,6 @@
 import { runStoreAudit } from '@/lib/run-audit'
 import { applyPendingFixesForStore } from '@/lib/apply-pending'
+import { fixAllSeo } from '@/lib/seo-fix'
 import type { Store } from '@/types'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -48,6 +49,9 @@ export async function runWeeklyMaintenance(store: Store, supabase: SupabaseClien
 
   // 3. Apply everything pending (logs each action via the apply pipeline)
   const { applied, failed } = await applyPendingFixesForStore(store, supabase)
+
+  // 4. SEO + GEO auto-corrections (best-effort, bounded so the cron stays in budget)
+  try { await fixAllSeo(store, supabase, 6) } catch (e) { console.error('[weekly-maintenance] seo fix failed', String(e)) }
 
   const { data: a } = await supabase.from('audits').select('results').eq('id', auditId).maybeSingle()
   const newIssues = Array.isArray(a?.results) ? a.results.length : 0
