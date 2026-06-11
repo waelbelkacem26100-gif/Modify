@@ -64,6 +64,29 @@ export function whatChanged(fix: { type?: string | null; title?: string | null }
 }
 
 /**
+ * Plain-language before/after for an applied fix, e.g.
+ * "Avant : aucun badge de confiance — Après : 3 badges ajoutés sous le bouton d'achat".
+ */
+export function beforeAfter(fix: { type?: string | null; title?: string | null }): { before: string; after: string } {
+  const h = `${fix.type ?? ''} ${fix.title ?? ''}`.toLowerCase()
+  if (/trust|garantie|guarantee|secur|badge/.test(h))
+    return { before: 'Aucun badge de confiance sous le bouton d’achat', after: '3 badges ajoutés (paiement sécurisé, garantie, retours)' }
+  if (/review|avis|rating|social|proof|customer/.test(h))
+    return { before: 'Aucun avis client affiché', after: 'Note moyenne et avis clients ajoutés sur la page produit' }
+  if (/urgen|stock|scarcit|countdown|rebours/.test(h))
+    return { before: 'Aucun signal d’urgence', after: 'Message de stock limité ajouté pour inciter à l’achat' }
+  if (/image|alt|photo|visuel/.test(h))
+    return { before: 'Images lourdes et sans description', after: 'Images allégées et décrites pour Google' }
+  if (/description|content|copy|seo|meta|titre/.test(h))
+    return { before: 'Description courte ou absente', after: 'Description vendeuse réécrite (bénéfices + SEO)' }
+  if (/price|promo|discount|prix|solde/.test(h))
+    return { before: 'Prix sans mise en avant', after: 'Prix et promotion clairement mis en valeur' }
+  if (/cross|upsell|bundle|collection|panier/.test(h))
+    return { before: 'Aucune suggestion de produits', after: 'Produits complémentaires suggérés pour augmenter le panier' }
+  return { before: 'État précédent de la page', after: 'Amélioration appliquée et visible' }
+}
+
+/**
  * Translates an internal audit-log action into a merchant-facing timeline entry.
  * Returns null for internal/noise actions that shouldn't be shown to merchants.
  */

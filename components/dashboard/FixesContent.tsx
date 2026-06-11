@@ -7,7 +7,7 @@ import {
 import Button from '@/components/ui/Button'
 import Badge from '@/components/ui/Badge'
 import ActivationCard from '@/components/dashboard/ActivationCard'
-import { fixMode, MODE_PRESENTATION, whatChanged } from '@/lib/fix-presentation'
+import { fixMode, MODE_PRESENTATION, whatChanged, beforeAfter } from '@/lib/fix-presentation'
 import type { Fix } from '@/types'
 
 type StoreMode = 'auto' | 'approval'
@@ -266,10 +266,27 @@ export default function FixesContent() {
                       {whatChanged(fix)}
                     </p>
 
+                    {/* Before / after for applied fixes */}
+                    {applied && (() => {
+                      const ba = beforeAfter(fix)
+                      return (
+                        <div className="mt-3 grid sm:grid-cols-2 gap-2">
+                          <div className="bg-danger/5 border border-danger/15 rounded-lg p-2.5">
+                            <p className="text-danger text-[11px] font-semibold uppercase tracking-wide mb-0.5">Avant</p>
+                            <p className="text-text-secondary text-xs leading-snug">{ba.before}</p>
+                          </div>
+                          <div className="bg-success/5 border border-success/15 rounded-lg p-2.5">
+                            <p className="text-success text-[11px] font-semibold uppercase tracking-wide mb-0.5">Après</p>
+                            <p className="text-text-secondary text-xs leading-snug">{ba.after}</p>
+                          </div>
+                        </div>
+                      )
+                    })()}
+
                     {/* Inline confirmation for applied fixes */}
                     {applied && (
-                      <div className="mt-3 inline-flex items-center gap-1.5 px-2.5 py-1 bg-success/10 border border-success/20 rounded-lg text-success text-xs font-medium">
-                        <CheckCircle className="w-3.5 h-3.5" /> Visible sur votre boutique
+                      <div className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 bg-success/10 border border-success/20 rounded-lg text-success text-xs font-medium">
+                        <CheckCircle className="w-3.5 h-3.5" /> Visible sur votre boutique maintenant
                       </div>
                     )}
 

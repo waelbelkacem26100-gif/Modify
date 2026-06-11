@@ -7,7 +7,8 @@ import { snapshotStoreScore } from '@/lib/store-score'
 import { isTokenExpired, getValidAccessToken } from '@/lib/shopify-token'
 import { logAction } from '@/lib/audit-log'
 import { readStoreMode } from '@/lib/store-mode'
-import { applyPendingFixesForStore, getPendingFixes } from '@/lib/apply-pending'
+import { getPendingFixes } from '@/lib/apply-pending'
+import { runWeeklyMaintenance } from '@/lib/weekly-maintenance'
 import { signApprovalToken } from '@/lib/approval-token'
 import type { Store } from '@/types'
 
@@ -77,11 +78,11 @@ export async function GET(request: NextRequest) {
         }
         // Nothing to approve → fall through to the regular weekly recap.
       } else {
-        // Auto mode: apply everything before sending the recap.
-        const r = await applyPendingFixesForStore(store, supabase)
-        if (r.applied || r.failed) {
-          await logAction(supabase, store.id, 'auto_fixes_applied', { applied: r.applied, failed: r.failed }, r.failed ? 'warning' : 'success')
-        }
+        // Auto mode: full pipeline — fresh audit, generate new fixes, apply them.
+        const m = await runWeeklyMaintenance(store, supabase)
+        await logAction(supabase, store.id, 'auto_maintenance', {
+          audit_id: m.auditId, new_issues: m.newIssues, generated: m.generated, applied: m.applied, failed: m.failed,
+        }, m.failed ? 'warning' : 'success')
       }
 
       const report = await buildWeeklyReport(store, supabase)

@@ -18,6 +18,7 @@ import {
 import { generateFix, generateProductDescription, buildProductHtml, extractRealAnchors } from '@/lib/anthropic'
 import { duplicateTheme, ThemeWriteForbiddenError, ThemeBlocksIncompatibleError } from '@/lib/shopify'
 import { appBlockForFix, enableProductAppBlock } from '@/lib/shopify-app-blocks'
+import { getLearnedPriority, prioritizeIssues } from '@/lib/fix-learning'
 
 const THEME_WRITE_FORBIDDEN_MSG =
   "Shopify bloque l'écriture de fichiers thème via l'API (une exemption Shopify est requise, le scope write_themes ne suffit plus). Les correctifs Groupe B/C ne peuvent pas être appliqués automatiquement — voir Theme App Extensions."
@@ -57,8 +58,11 @@ export async function GET() {
 // ─── POST: generate fixes for an audit ───────────────────────────────────────
 
 export async function POST(request: NextRequest) {
-  const { userId } = await auth()
-  if (!userId) return new NextResponse('Unauthorized', { status: 401 })
+  // Merchant (Clerk) or Modify itself (weekly cron) via the internal secret.
+  const internal = request.headers.get('x-modify-internal')
+  const isInternal = Boolean(process.env.CRON_SECRET) && internal === process.env.CRON_SECRET
+  const { userId } = isInternal ? { userId: null } : await auth()
+  if (!isInternal && !userId) return new NextResponse('Unauthorized', { status: 401 })
 
   const body = await request.json() as { audit_id: string }
   const { audit_id } = body
@@ -71,7 +75,7 @@ export async function POST(request: NextRequest) {
   if (!audit) return NextResponse.json({ error: 'Audit not found' }, { status: 404 })
 
   const auditTyped = audit as Audit & { stores: Store }
-  if (auditTyped.stores.user_id !== userId) return new NextResponse('Forbidden', { status: 403 })
+  if (!isInternal && auditTyped.stores.user_id !== userId) return new NextResponse('Forbidden', { status: 403 })
 
   const store = auditTyped.stores
   await getValidAccessToken(store, supabase)
@@ -85,7 +89,10 @@ export async function POST(request: NextRequest) {
 
   const assets = await getThemeAssets(store.shop_domain, store.access_token, String(mainTheme.id))
 
-  const fixableIssues = results.filter((r) => r.fix_available).slice(0, 5)
+  // Continuous improvement: order by the fix types that have worked best on THIS
+  // store (after 4 weeks of history); otherwise by € impact. Take the top 5.
+  const learnedOrder = await getLearnedPriority(store, supabase)
+  const fixableIssues = prioritizeIssues(results.filter((r) => r.fix_available), learnedOrder).slice(0, 5)
 
   const fixInserts = await Promise.all(
     fixableIssues.map(async (issue) => {

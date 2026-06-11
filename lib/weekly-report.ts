@@ -10,6 +10,7 @@ export async function buildWeeklyReport(
   supabase: SupabaseClient
 ): Promise<WeeklyReportData> {
   const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+  const monthSince = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://modify-coral.vercel.app'
 
   // Audits for this store (newest first)
@@ -22,19 +23,23 @@ export async function buildWeeklyReport(
   const auditIds: string[] = (audits ?? []).map((a: { id: string }) => a.id)
   const latestAudit = (audits ?? [])[0] as { results?: unknown[] } | undefined
 
-  // Fixes applied in the last 7 days → € recovered + count
+  // Fixes applied in the last 7 days → € recovered + the list itself
   let recoveredEuros = 0
   let fixesApplied = 0
   let potentialEuros = 0
+  let monthRecoveredEuros = 0
+  let appliedFixesList: { title: string; impact_euros: number }[] = []
   if (auditIds.length) {
     const { data: applied } = await supabase
       .from('fixes')
-      .select('impact_euros')
+      .select('title, impact_euros')
       .in('audit_id', auditIds)
       .eq('status', 'applied')
       .gte('created_at', since)
-    recoveredEuros = (applied ?? []).reduce((s: number, f: { impact_euros: number }) => s + (f.impact_euros ?? 0), 0)
-    fixesApplied = (applied ?? []).length
+      .order('impact_euros', { ascending: false })
+    appliedFixesList = (applied ?? []) as { title: string; impact_euros: number }[]
+    recoveredEuros = appliedFixesList.reduce((s, f) => s + (f.impact_euros ?? 0), 0)
+    fixesApplied = appliedFixesList.length
 
     const { data: pending } = await supabase
       .from('fixes')
@@ -42,6 +47,15 @@ export async function buildWeeklyReport(
       .in('audit_id', auditIds)
       .eq('status', 'pending')
     potentialEuros = (pending ?? []).reduce((s: number, f: { impact_euros: number }) => s + (f.impact_euros ?? 0), 0)
+
+    // Total recovered this month (last 30 days)
+    const { data: monthApplied } = await supabase
+      .from('fixes')
+      .select('impact_euros')
+      .in('audit_id', auditIds)
+      .eq('status', 'applied')
+      .gte('created_at', monthSince)
+    monthRecoveredEuros = (monthApplied ?? []).reduce((s: number, f: { impact_euros: number }) => s + (f.impact_euros ?? 0), 0)
   }
 
   // Images compressed this week
@@ -76,8 +90,10 @@ export async function buildWeeklyReport(
   return {
     shopName: store.shop_name ?? store.shop_domain,
     recoveredEuros,
+    monthRecoveredEuros,
     potentialEuros,
     fixesApplied,
+    appliedFixesList,
     imagesOptimized,
     mbSaved,
     articlesPublished: articlesPublished ?? 0,

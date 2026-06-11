@@ -5,8 +5,10 @@ const FROM = process.env.EMAIL_FROM ?? 'Modify <rapport@modify-coral.vercel.app>
 export interface WeeklyReportData {
   shopName: string
   recoveredEuros: number
+  monthRecoveredEuros: number
   potentialEuros: number
   fixesApplied: number
+  appliedFixesList: { title: string; impact_euros: number }[]
   imagesOptimized: number
   mbSaved: number
   articlesPublished: number
@@ -24,10 +26,6 @@ function row(label: string, value: string, accent = '#18181b'): string {
 }
 
 export function renderWeeklyReportHtml(d: WeeklyReportData): string {
-  const speed = d.pageSpeedScore == null
-    ? '—'
-    : `${d.pageSpeedScore}/100${d.pageSpeedDelta ? ` (${d.pageSpeedDelta > 0 ? '+' : ''}${d.pageSpeedDelta})` : ''}`
-
   return `<!DOCTYPE html>
 <html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
 <body style="margin:0;background:#f4f4f5;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;">
@@ -35,21 +33,29 @@ export function renderWeeklyReportHtml(d: WeeklyReportData): string {
     <tr><td align="center">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border-radius:16px;overflow:hidden;border:1px solid #e4e4e7;">
         <tr><td style="background:#FF5C35;padding:28px 32px;">
-          <p style="margin:0;color:#fff;font-size:13px;opacity:.85;">Rapport hebdomadaire · ${d.shopName}</p>
-          <h1 style="margin:6px 0 0;color:#fff;font-size:22px;font-weight:800;">Cette semaine, Modify a récupéré</h1>
-          <p style="margin:8px 0 0;color:#fff;font-size:40px;font-weight:800;">€${d.recoveredEuros.toLocaleString('fr-FR')}<span style="font-size:16px;font-weight:500;opacity:.8;"> récupérés</span></p>
+          <p style="margin:0;color:#fff;font-size:13px;opacity:.85;">${d.shopName}</p>
+          <h1 style="margin:6px 0 0;color:#fff;font-size:22px;font-weight:800;">Voici ce que Modify a corrigé cette semaine</h1>
+          <p style="margin:8px 0 0;color:#fff;font-size:40px;font-weight:800;">€${d.recoveredEuros.toLocaleString('fr-FR')}<span style="font-size:16px;font-weight:500;opacity:.8;"> récupérés cette semaine</span></p>
         </td></tr>
         <tr><td style="padding:24px 32px;">
+          ${d.appliedFixesList.length > 0 ? `
+          <p style="margin:0 0 8px;color:#18181b;font-size:15px;font-weight:700;">Corrigé cette semaine</p>
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:20px;">
+            ${d.appliedFixesList.map((f) => `<tr>
+              <td style="padding:9px 0;border-bottom:1px solid #ececec;color:#18181b;font-size:14px;">✅ ${f.title}</td>
+              <td style="padding:9px 0;border-bottom:1px solid #ececec;color:#16a34a;font-size:14px;font-weight:600;text-align:right;white-space:nowrap;">+€${f.impact_euros}/mois</td>
+            </tr>`).join('')}
+          </table>` : `
+          <p style="margin:0 0 20px;color:#52525b;font-size:14px;">Aucun nouveau correctif cette semaine — votre boutique est déjà bien optimisée. 🎉</p>`}
+
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-            ${row('Correctifs appliqués', String(d.fixesApplied))}
-            ${row('Images compressées', `${d.imagesOptimized} (${d.mbSaved} Mo économisés)`)}
-            ${row('Articles SEO publiés', String(d.articlesPublished))}
-            ${row('Score vitesse mobile', speed, d.pageSpeedScore != null && d.pageSpeedScore >= 90 ? '#16a34a' : '#d97706')}
-            ${row('Nouveaux problèmes détectés', String(d.newIssues), d.newIssues > 0 ? '#dc2626' : '#16a34a')}
+            ${row('Total récupéré ce mois', `€${d.monthRecoveredEuros.toLocaleString('fr-FR')}`, '#16a34a')}
+            ${row('Images allégées', `${d.imagesOptimized} (${d.mbSaved} Mo)`)}
+            ${row('Articles publiés', String(d.articlesPublished))}
             ${row('Potentiel restant à récupérer', `€${d.potentialEuros.toLocaleString('fr-FR')}/mois`, '#FF5C35')}
           </table>
           <div style="text-align:center;margin-top:28px;">
-            <a href="${d.dashboardUrl}" style="display:inline-block;background:#18181b;color:#fff;text-decoration:none;font-size:14px;font-weight:600;padding:12px 28px;border-radius:10px;">Voir le dashboard</a>
+            <a href="${d.dashboardUrl}" style="display:inline-block;background:#18181b;color:#fff;text-decoration:none;font-size:14px;font-weight:600;padding:12px 28px;border-radius:10px;">Voir le rapport complet</a>
           </div>
           <p style="margin:24px 0 0;color:#a1a1aa;font-size:12px;text-align:center;line-height:1.5;">
             Modify entretient votre boutique automatiquement, chaque semaine.<br>Vous n'avez rien à faire.
