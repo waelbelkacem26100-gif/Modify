@@ -33,11 +33,13 @@ export interface AppBlockSpec {
  */
 export function appBlockForFix(fix: { type?: string | null; title?: string | null }): AppBlockSpec | null {
   const hay = `${fix.type ?? ''} ${fix.title ?? ''}`.toLowerCase()
+  // Reviews/ratings before trust: the category is often "trust", so a
+  // reviews-titled fix must map to social-proof, not trust-badges.
+  if (/review|rating|avis|social|proof|customer/.test(hay)) {
+    return { handle: 'social-proof', blockKey: 'modify_social_proof' }
+  }
   if (/\btrust\b|guarantee|garantie|badge|secur/.test(hay)) {
     return { handle: 'trust-badges', blockKey: 'modify_trust_badges' }
-  }
-  if (/review|rating|avis|social|proof/.test(hay)) {
-    return { handle: 'social-proof', blockKey: 'modify_social_proof' }
   }
   if (/urgen|scarcit|stock|countdown|compte\s*à\s*rebours/.test(hay)) {
     return { handle: 'urgency', blockKey: 'modify_urgency' }

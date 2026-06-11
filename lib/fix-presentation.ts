@@ -44,10 +44,11 @@ export const MODE_PRESENTATION = {
 // One-line, non-technical "what changed" for a fix, derived from its type/title.
 export function whatChanged(fix: { type?: string | null; title?: string | null }): string {
   const h = `${fix.type ?? ''} ${fix.title ?? ''}`.toLowerCase()
-  if (/trust|garantie|guarantee|secur|badge/.test(h))
-    return 'Badges de confiance ajoutés (paiement sécurisé, garantie, retours) sur vos pages produit.'
+  // Reviews/ratings before trust (category is often "trust").
   if (/review|avis|rating|social|proof|customer/.test(h))
     return 'Avis clients et note moyenne ajoutés sur vos pages produit.'
+  if (/trust|garantie|guarantee|secur|badge/.test(h))
+    return 'Badges de confiance ajoutés (paiement sécurisé, garantie, retours) sur vos pages produit.'
   if (/urgen|stock|scarcit|countdown|rebours/.test(h))
     return 'Indicateur d’urgence ajouté (stock limité) pour inciter à l’achat.'
   if (/image|alt|photo|visuel/.test(h))
@@ -69,10 +70,12 @@ export function whatChanged(fix: { type?: string | null; title?: string | null }
  */
 export function beforeAfter(fix: { type?: string | null; title?: string | null }): { before: string; after: string } {
   const h = `${fix.type ?? ''} ${fix.title ?? ''}`.toLowerCase()
-  if (/trust|garantie|guarantee|secur|badge/.test(h))
-    return { before: 'Aucun badge de confiance sous le bouton d’achat', after: '3 badges ajoutés (paiement sécurisé, garantie, retours)' }
+  // Check reviews/ratings before trust: the category is often "trust", so a
+  // reviews-titled fix must not be mistaken for a trust-badge fix.
   if (/review|avis|rating|social|proof|customer/.test(h))
     return { before: 'Aucun avis client affiché', after: 'Note moyenne et avis clients ajoutés sur la page produit' }
+  if (/trust|garantie|guarantee|secur|badge/.test(h))
+    return { before: 'Aucun badge de confiance sous le bouton d’achat', after: '3 badges ajoutés (paiement sécurisé, garantie, retours)' }
   if (/urgen|stock|scarcit|countdown|rebours/.test(h))
     return { before: 'Aucun signal d’urgence', after: 'Message de stock limité ajouté pour inciter à l’achat' }
   if (/image|alt|photo|visuel/.test(h))
