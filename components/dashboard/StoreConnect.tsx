@@ -32,7 +32,7 @@ export default function StoreConnect() {
           Connectez votre boutique
         </h2>
         <p className="text-text-secondary text-sm mb-8 leading-relaxed">
-          Entrez votre domaine Shopify pour démarrer l&apos;analyse de conversion.
+          Entrez votre domaine Shopify — la connexion prend moins de 2 minutes.
           Connexion sécurisée par Shopify — vous gardez le contrôle et pouvez révoquer l’accès à tout moment.
         </p>
 

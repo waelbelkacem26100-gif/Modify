@@ -70,6 +70,7 @@ export async function POST(request: NextRequest) {
 
     const ctx: GuideContext = {
       shopName: store.shop_name ?? store.shop_domain,
+      storeHandle: store.shop_domain.replace('.myshopify.com', ''),
       niche: [...types, ...tags].slice(0, 12).join(', ') || 'e-commerce généraliste',
       themeName,
       productExamples: products.map((p) => p.title).slice(0, 8),

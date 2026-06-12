@@ -487,6 +487,8 @@ export interface GeneratedGuide {
 
 export interface GuideContext {
   shopName: string
+  /** Handle admin Shopify (ex: hvzrra-fb) pour les liens directs. */
+  storeHandle: string
   niche: string
   themeName: string
   productExamples: string[]
@@ -530,8 +532,14 @@ Retourne UNIQUEMENT un JSON valide avec cette structure exacte :
 }
 
 Règles :
-- Tout en français
+- Tout en français, compréhensible en moins de 10 secondes par un marchand non-technique
 - 4 à 7 étapes, chacune réellement actionnable (pas de généralités)
+- Quand une étape se passe dans l'admin Shopify, inclus le lien DIRECT dans detail :
+  produits → https://admin.shopify.com/store/${ctx.storeHandle}/products
+  thème → https://admin.shopify.com/store/${ctx.storeHandle}/themes
+  pages → https://admin.shopify.com/store/${ctx.storeHandle}/pages
+  réductions → https://admin.shopify.com/store/${ctx.storeHandle}/discounts
+- Utilise les VRAIS noms de produits fournis (jamais "votre produit")
 - impact_euros : estimation mensuelle réaliste du gain
 - Retourne UNIQUEMENT le JSON`,
       },
