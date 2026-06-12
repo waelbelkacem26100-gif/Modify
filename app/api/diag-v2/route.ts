@@ -41,6 +41,50 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ kicked: res.ok, status: res.status, body: await res.json().catch(() => null) })
   }
 
+  // Génère les correctifs depuis un audit (pipeline interne testé).
+  if (action === 'genfixes') {
+    const auditId = request.nextUrl.searchParams.get('audit_id')
+    const res = await fetch(`${request.nextUrl.origin}/api/fixes/apply`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-modify-internal': process.env.CRON_SECRET ?? '' },
+      body: JSON.stringify({ audit_id: auditId }),
+    })
+    const body = await res.json().catch(() => null) as { fixes?: { id: string; title: string; risk_group: string }[] } | null
+    return NextResponse.json({
+      ok: res.ok, status: res.status,
+      fixes: body?.fixes?.map((f) => ({ id: f.id, title: f.title, risk: f.risk_group })) ?? body,
+    })
+  }
+
+  // Applique UN correctif via le pipeline complet (backup→apply→verify→proof).
+  if (action === 'applyfix') {
+    const fixId = request.nextUrl.searchParams.get('fix_id')
+    const res = await fetch(`${request.nextUrl.origin}/api/fixes/apply`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'x-modify-internal': process.env.CRON_SECRET ?? '' },
+      body: JSON.stringify({ fix_id: fixId, confirm_high_risk: false }),
+    })
+    return NextResponse.json({ ok: res.ok, status: res.status, body: await res.json().catch(() => null) })
+  }
+
+  // Liste les correctifs d'un audit avec l'état du backup.
+  if (action === 'fixes') {
+    const auditId = request.nextUrl.searchParams.get('audit_id')
+    const { data: fixes } = await supabase
+      .from('fixes').select('id, title, status, verification_status, risk_group, file_path, original_file_content, screenshot_before, screenshot_after')
+      .eq('audit_id', auditId ?? '').order('impact_euros', { ascending: false })
+    return NextResponse.json({
+      fixes: (fixes ?? []).map((f: Record<string, unknown>) => ({
+        id: f.id, title: f.title, status: f.status, verif: f.verification_status, risk: f.risk_group,
+        file: f.file_path,
+        backup: f.original_file_content
+          ? (String(f.original_file_content).startsWith('{"__modify_backup"') ? 'group_a_json' : `theme_file(${String(f.original_file_content).length}b)`)
+          : null,
+        shots: [f.screenshot_before ? 'before' : null, f.screenshot_after ? 'after' : null].filter(Boolean),
+      })),
+    })
+  }
+
   // Trace de chaîne : logs de réception/envoi pour un audit.
   if (action === 'trace') {
     const auditId = request.nextUrl.searchParams.get('audit_id')
