@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServiceRoleClient } from '@/lib/supabase-server'
 
 export const runtime = 'nodejs'
-export const maxDuration = 60
+export const maxDuration = 300
 
 // TEMPORARY diagnostics for the v2 marathon — lets the build agent trigger and
 // observe real flows (audit chain) without a Clerk session. Guarded by a
