@@ -10,7 +10,7 @@ export default function SignUpPage() {
           colorInputText: '#FAFAFA',
           colorText: '#FAFAFA',
           colorTextSecondary: '#A1A1AA',
-          colorPrimary: '#FF5C35',
+          colorPrimary: '#FF6B35',
           colorDanger: '#EF4444',
           borderRadius: '12px',
           fontFamily: 'var(--font-dm-sans)',

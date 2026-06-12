@@ -114,10 +114,10 @@ export default function SuiviContent({ d }: { d: SuiviData }) {
                     <stop offset="100%" stopColor={scoreColor} stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
+                <CartesianGrid strokeDasharray="3 3" stroke="#26262A" />
                 <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#71717a' }} tickLine={false} axisLine={false} />
                 <YAxis domain={[0, 100]} tick={{ fontSize: 10, fill: '#71717a' }} tickLine={false} axisLine={false} />
-                <Tooltip contentStyle={{ background: '#27272a', border: '1px solid #3f3f46', borderRadius: 12, fontSize: 12 }}
+                <Tooltip contentStyle={{ background: '#26262A', border: '1px solid #3f3f46', borderRadius: 12, fontSize: 12 }}
                   labelStyle={{ color: '#a1a1aa' }} formatter={(v: number) => [`${v}/100`, 'Score']} />
                 <Area type="monotone" dataKey="score" stroke={scoreColor} strokeWidth={2} fill="url(#scoreGrad)" />
               </AreaChart>

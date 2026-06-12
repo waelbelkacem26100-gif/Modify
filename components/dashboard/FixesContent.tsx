@@ -191,7 +191,7 @@ export default function FixesContent() {
         <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-4 py-3 bg-success text-white rounded-xl shadow-xl max-w-md">
           <CheckCircle className="w-5 h-5 flex-shrink-0" />
           <p className="text-sm font-medium">{confirmation} appliqué — visible sur votre boutique</p>
-          <button onClick={() => setConfirmation(null)} className="ml-1"><X className="w-4 h-4" /></button>
+          <button onClick={() => setConfirmation(null)} className="ml-1" aria-label="Fermer la notification"><X className="w-4 h-4" /></button>
         </div>
       )}
 

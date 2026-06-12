@@ -47,7 +47,7 @@ export default function ConversionChart({ data, fixAppliedDate }: ConversionChar
   return (
     <ResponsiveContainer width="100%" height={280}>
       <LineChart data={formatted} margin={{ top: 5, right: 10, bottom: 5, left: 0 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#27272A" vertical={false} />
+        <CartesianGrid strokeDasharray="3 3" stroke="#26262A" vertical={false} />
         <XAxis
           dataKey="date"
           tick={{ fill: '#71717A', fontSize: 11 }}
@@ -68,18 +68,18 @@ export default function ConversionChart({ data, fixAppliedDate }: ConversionChar
               day: '2-digit',
               month: 'short',
             })}
-            stroke="#FF5C35"
+            stroke="#FF6B35"
             strokeDasharray="4 4"
-            label={{ value: 'Correctifs appliqués', fill: '#FF5C35', fontSize: 10 }}
+            label={{ value: 'Correctifs appliqués', fill: '#FF6B35', fontSize: 10 }}
           />
         )}
         <Line
           type="monotone"
           dataKey="Taux"
-          stroke="#FF5C35"
+          stroke="#FF6B35"
           strokeWidth={2}
           dot={false}
-          activeDot={{ r: 4, fill: '#FF5C35', stroke: '#09090B', strokeWidth: 2 }}
+          activeDot={{ r: 4, fill: '#FF6B35', stroke: '#0A0A0B', strokeWidth: 2 }}
         />
       </LineChart>
     </ResponsiveContainer>

@@ -33,7 +33,7 @@ export default function StoreConnect() {
         </h2>
         <p className="text-text-secondary text-sm mb-8 leading-relaxed">
           Entrez votre domaine Shopify pour démarrer l&apos;analyse de conversion.
-          La connexion est sécurisée via OAuth officiel Shopify.
+          Connexion sécurisée par Shopify — vous gardez le contrôle et pouvez révoquer l’accès à tout moment.
         </p>
 
         <div className="space-y-3">
