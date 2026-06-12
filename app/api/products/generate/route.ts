@@ -28,7 +28,9 @@ export async function POST(request: NextRequest) {
 
   if (!store) return NextResponse.json({ error: 'No store connected' }, { status: 404 })
 
-  const result = await generateProductDescription({
+  let result
+  try {
+    result = await generateProductDescription({
     title: product.title,
     product_type: product.product_type,
     tags: product.tags,
@@ -39,7 +41,11 @@ export async function POST(request: NextRequest) {
       option2: v.option2,
     })),
     image_count: product.images?.length ?? 0,
-  })
+    })
+  } catch (e) {
+    console.error('[products/generate] AI generation failed:', String(e))
+    return NextResponse.json({ error: 'La génération de la description a échoué. Réessayez dans un instant.' }, { status: 502 })
+  }
 
   return NextResponse.json({
     ...result,

@@ -36,9 +36,9 @@ export default function Hero() {
         {/* Stats */}
         <div className="grid grid-cols-3 gap-0 max-w-sm sm:max-w-xl mx-auto">
           {[
-            { icon: TrendingUp, value: '+23%', label: 'uplift moyen' },
-            { icon: Clock, value: '< 2 min', label: 'pour scanner' },
-            { icon: MousePointerClick, value: '1 clic', label: 'pour appliquer' },
+            { icon: TrendingUp, value: '6', label: 'analyses spécialisées' },
+            { icon: Clock, value: '~3 min', label: 'pour tout analyser' },
+            { icon: MousePointerClick, value: '1 clic', label: 'pour corriger' },
           ].map((stat, i) => (
             <div
               key={i}
@@ -73,9 +73,9 @@ export default function Hero() {
           {/* Fake dashboard content */}
           <div className="p-4 sm:p-6 grid grid-cols-3 gap-3 sm:gap-4">
             {[
-              { label: 'Revenus récupérés', value: '€ 2,840', color: 'text-success' },
-              { label: 'Problèmes détectés', value: '12', color: 'text-warning' },
-              { label: 'Correctifs appliqués', value: '8', color: 'text-primary' },
+              { label: 'Manque à gagner identifié', value: '875 €/mois', color: 'text-success' },
+              { label: 'Problèmes détectés', value: '19', color: 'text-warning' },
+              { label: 'Corrigés automatiquement', value: '8', color: 'text-primary' },
             ].map((card) => (
               <div key={card.label} className="bg-surface-2 rounded-xl p-3 sm:p-4 border border-border">
                 <p className="text-text-muted text-[10px] sm:text-xs mb-1">{card.label}</p>

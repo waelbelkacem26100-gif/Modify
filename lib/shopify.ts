@@ -191,6 +191,7 @@ export async function getThemes(shopDomain: string, accessToken: string) {
     `https://${shopDomain}/admin/api/${SHOPIFY_API_VERSION}/themes.json`,
     { headers: shopifyHeaders(accessToken) }
   )
+  if (!res.ok) { console.error('[shopify] getThemes failed', res.status); return [] }
   const data = (await res.json()) as { themes: ShopifyTheme[] }
   return data.themes
 }
@@ -200,8 +201,9 @@ export async function getThemeAssets(shopDomain: string, accessToken: string, th
     `https://${shopDomain}/admin/api/${SHOPIFY_API_VERSION}/themes/${themeId}/assets.json`,
     { headers: shopifyHeaders(accessToken) }
   )
+  if (!res.ok) { console.error('[shopify] getThemeAssets failed', res.status); return [] }
   const data = (await res.json()) as { assets: ShopifyAsset[] }
-  return data.assets
+  return data.assets ?? []
 }
 
 export async function getThemeAsset(
@@ -214,6 +216,7 @@ export async function getThemeAsset(
     `https://${shopDomain}/admin/api/${SHOPIFY_API_VERSION}/themes/${themeId}/assets.json?asset[key]=${encodeURIComponent(key)}`,
     { headers: shopifyHeaders(accessToken) }
   )
+  if (!res.ok) { console.error('[shopify] getThemeAsset failed', res.status, key); return null }
   const data = (await res.json()) as { asset: ShopifyAsset }
   return data.asset
 }
@@ -290,8 +293,9 @@ export async function getProducts(shopDomain: string, accessToken: string, limit
     `https://${shopDomain}/admin/api/${SHOPIFY_API_VERSION}/products.json?limit=${limit}&fields=id,title,body_html,images,variants,status`,
     { headers: shopifyHeaders(accessToken) }
   )
+  if (!res.ok) { console.error('[shopify] getProducts failed', res.status); return [] }
   const data = (await res.json()) as { products: ShopifyProduct[] }
-  return data.products
+  return data.products ?? []
 }
 
 export async function getOrdersForDateRange(
@@ -525,6 +529,7 @@ export async function getProductsDetailed(
     `https://${shopDomain}/admin/api/${SHOPIFY_API_VERSION}/products.json?limit=${limit}&status=active`,
     { headers: shopifyHeaders(accessToken) }
   )
+  if (!res.ok) { console.error('[shopify] getProductsDetailed failed', res.status); return [] }
   const data = (await res.json()) as { products: ShopifyProduct[] }
   return data.products ?? []
 }

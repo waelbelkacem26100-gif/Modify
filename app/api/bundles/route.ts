@@ -31,9 +31,15 @@ export async function GET() {
   const products = await getProductsDetailed(store.shop_domain, store.access_token, 50)
   const byTitle = new Map(products.map((p) => [p.title.trim().toLowerCase(), p.id]))
 
-  const suggestions = await suggestBundles(
-    products.map((p) => ({ title: p.title, product_type: p.product_type }))
-  )
+  let suggestions
+  try {
+    suggestions = await suggestBundles(
+      products.map((p) => ({ title: p.title, product_type: p.product_type }))
+    )
+  } catch (e) {
+    console.error('[bundles] AI suggestion failed:', String(e))
+    return NextResponse.json({ error: 'La suggestion de packs a échoué. Réessayez dans un instant.' }, { status: 502 })
+  }
 
   const bundles = suggestions.map((b) => ({
     title: b.title,

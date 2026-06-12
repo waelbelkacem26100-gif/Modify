@@ -1,18 +1,23 @@
-import { Euro, ImageDown, FileText, Clock } from 'lucide-react'
+import { ScanSearch, Euro, Wand2, Clock } from 'lucide-react'
 
+// Exemple RÉEL (anonymisé) : audit complet d'une boutique d'équipement
+// nautique sur l'environnement de production Modify — pas de chiffres inventés.
 const stats = [
-  { icon: Euro, value: '€2,840', label: 'récupérés / mois', sub: 'en moyenne sur les correctifs appliqués', color: 'text-success' },
-  { icon: ImageDown, value: '−90%', label: 'poids des images', sub: 'compression automatique vérifiée', color: 'text-primary' },
-  { icon: FileText, value: '4 / mois', label: 'articles SEO publiés', sub: 'contenu organique en pilote auto', color: 'text-blue-400' },
-  { icon: Clock, value: '12 h', label: 'économisées / mois', sub: 'tout ce que vous ne faites plus', color: 'text-violet-400' },
+  { icon: ScanSearch, value: '19', label: 'problèmes détectés', sub: 'sur une vraie boutique analysée', color: 'text-primary' },
+  { icon: Euro, value: '875€', label: 'identifiés / mois', sub: 'manque à gagner chiffré point par point', color: 'text-success' },
+  { icon: Wand2, value: '8', label: 'corrigés automatiquement', sub: 'sauvegarde + vérification à chaque fois', color: 'text-blue-400' },
+  { icon: Clock, value: '~3 min', label: 'pour l’analyse complète', sub: '6 analyses spécialisées en parallèle', color: 'text-violet-400' },
 ]
 
+// Répartition exacte du même audit (sommes par domaine).
 const breakdown = [
-  { label: 'Descriptions & SEO produits', euros: '€780' },
-  { label: 'Vitesse & images', euros: '€640' },
-  { label: 'Trust & social proof', euros: '€620' },
-  { label: 'Promos sur invendus', euros: '€800' },
+  { label: 'Fiches produits (photos, descriptions, titres)', euros: 300 },
+  { label: 'Confiance (avis, garanties, contact)', euros: 245 },
+  { label: 'Apparence & navigation', euros: 215 },
+  { label: 'Vitesse & visibilité Google', euros: 115 },
 ]
+const total = breakdown.reduce((s, b) => s + b.euros, 0)
+const max = Math.max(...breakdown.map((b) => b.euros))
 
 export default function Results() {
   return (
@@ -22,7 +27,7 @@ export default function Results() {
       <div className="relative max-w-6xl mx-auto px-4 sm:px-6">
         <div className="text-center mb-10 sm:mb-16">
           <p className="text-primary text-sm font-medium uppercase tracking-widest mb-4">
-            Des résultats, pas des scores
+            Un exemple réel, pas une promesse
           </p>
           <h2 className="font-syne text-3xl sm:text-4xl md:text-5xl font-bold text-text-primary mb-4 sm:mb-5">
             Vous voyez toujours
@@ -36,7 +41,7 @@ export default function Results() {
           </p>
         </div>
 
-        {/* Headline stats */}
+        {/* Headline stats — vrai audit */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5 mb-8 sm:mb-12">
           {stats.map((s) => (
             <div key={s.label} className="bg-surface border border-border rounded-2xl p-5 sm:p-6 text-center">
@@ -48,32 +53,32 @@ export default function Results() {
           ))}
         </div>
 
-        {/* € breakdown card */}
+        {/* € breakdown — répartition exacte du même audit */}
         <div className="max-w-2xl mx-auto bg-surface border border-border rounded-2xl p-6 sm:p-8">
           <div className="flex items-center justify-between mb-5">
-            <h3 className="font-syne font-semibold text-text-primary">Revenu récupéré par levier</h3>
-            <span className="text-text-muted text-xs">estimation mensuelle</span>
+            <h3 className="font-syne font-semibold text-text-primary">Manque à gagner par domaine</h3>
+            <span className="text-text-muted text-xs">audit réel · boutique nautique</span>
           </div>
           <div className="space-y-3">
             {breakdown.map((b) => (
               <div key={b.label} className="flex items-center gap-3">
                 <span className="text-text-secondary text-sm flex-1">{b.label}</span>
                 <div className="flex-1 h-2 bg-surface-2 rounded-full overflow-hidden max-w-[40%]">
-                  <div className="h-full bg-success/70 rounded-full" style={{ width: `${(parseInt(b.euros.replace(/\D/g, '')) / 800) * 100}%` }} />
+                  <div className="h-full bg-success/70 rounded-full" style={{ width: `${(b.euros / max) * 100}%` }} />
                 </div>
-                <span className="font-syne font-bold text-success text-sm w-14 text-right">{b.euros}</span>
+                <span className="font-syne font-bold text-success text-sm w-14 text-right">{b.euros}€</span>
               </div>
             ))}
           </div>
           <div className="border-t border-border mt-5 pt-4 flex items-center justify-between">
-            <span className="text-text-primary text-sm font-medium">Total récupérable</span>
-            <span className="font-syne font-bold text-2xl text-success">€2,840<span className="text-text-muted text-sm font-medium">/mois</span></span>
+            <span className="text-text-primary text-sm font-medium">Total identifié</span>
+            <span className="font-syne font-bold text-2xl text-success">{total}€<span className="text-text-muted text-sm font-medium">/mois</span></span>
           </div>
         </div>
 
         <p className="text-center text-text-muted text-xs mt-6 max-w-xl mx-auto">
-          Estimations basées sur les leviers de conversion détectés. Vos résultats réels dépendent de votre
-          trafic et de votre catalogue — Modify affiche vos chiffres exacts dans le dashboard.
+          Chiffres issus d&apos;un audit Modify réel (boutique anonymisée). Vos résultats dépendent de votre
+          trafic et de votre catalogue — Modify affiche vos chiffres exacts dans votre tableau de bord.
         </p>
       </div>
     </section>
