@@ -21,7 +21,6 @@ export const AUDIT_CHECKS: Record<ProblemCategory, string[]> = {
     'Structure des descriptions : listes à puces, questions/réponses, tableau de caractéristiques — si l\'extrait ne permet pas de juger, ne l\'affirme pas',
     'Prix incohérents entre produits très proches (cannibalisation : deux variantes similaires à prix illogiques)',
     'Tags et catégorisation : produits sans tags ou mal classés pour la navigation et la recherche interne',
-    'Vidéo de démonstration présente ou non (tu ne peux pas le vérifier ici → ne le liste PAS sauf si une autre donnée le prouve)',
   ],
   uiux: [
     'Hiérarchie de la home : bannière principale claire (promesse + bouton), preuve sociale, catégories mises en avant',
@@ -45,7 +44,6 @@ export const AUDIT_CHECKS: Record<ProblemCategory, string[]> = {
     'robots.txt présent et n\'interdit pas l\'indexation',
     'sitemap.xml présent (plan du site pour Google)',
     'Maillage interne : la home renvoie-t-elle vers les fiches et le blog (liens internes dans le HTML) ?',
-    'ATTENTION : la LONGUEUR des descriptions produit appartient à l\'agent Fiches produits — toi, tu juges uniquement les titres/descriptions GOOGLE (méta), la duplication et la lisibilité par les IA, pas le contenu commercial.',
   ],
   trust: [
     'Badges de paiement / sécurité visibles sur la fiche produit',
@@ -69,7 +67,6 @@ export const AUDIT_CHECKS: Record<ProblemCategory, string[]> = {
     'Filtres sur la page collection (prix, catégorie, disponibilité) — HTML collection fourni',
     'Pop-up / bandeau de bienvenue : présent et utile (code promo, newsletter) sans être intrusif',
     'Programme de fidélité ou de parrainage visible',
-    'Récupération de panier abandonné (tu ne peux pas le vérifier ici → ne le liste PAS)',
   ],
   mobile: [
     'Menu mobile (burger) présent et fonctionnel',
