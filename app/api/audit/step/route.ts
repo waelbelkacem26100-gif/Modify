@@ -2,6 +2,7 @@ import { NextRequest, NextResponse, after } from 'next/server'
 import { createServiceRoleClient } from '@/lib/supabase-server'
 import { getValidAccessToken } from '@/lib/shopify-token'
 import { runAuditStep } from '@/lib/audit/orchestrator'
+import { logAction } from '@/lib/audit-log'
 import type { Store } from '@/types'
 
 export const runtime = 'nodejs'
