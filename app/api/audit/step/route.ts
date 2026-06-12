@@ -45,17 +45,24 @@ export async function POST(request: NextRequest) {
       await getValidAccessToken(store, supabase)
       const r = await runAuditStep(store, auditId, step, supabase)
       if (r.nextIndex !== null) {
-        try {
-          const res = await fetch(`${origin}/api/audit/step`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'x-modify-internal': process.env.CRON_SECRET ?? '' },
-            body: JSON.stringify({ audit_id: auditId, step: r.nextIndex }),
-          })
-          await logAction(supabase, store.id, 'audit_chain_sent',
-            { audit_id: auditId, from: step, to: r.nextIndex, http: res.status }, res.ok ? 'success' : 'failed')
-        } catch (e) {
-          await logAction(supabase, store.id, 'audit_chain_sent',
-            { audit_id: auditId, from: step, to: r.nextIndex, error: String(e).slice(0, 200) }, 'failed')
+        // Double tentative : un maillon qui meurt ici serait rattrapé par le
+        // watchdog du GET (polling UI), mais autant éviter la pause de 75s.
+        let sent = false
+        for (let attempt = 1; attempt <= 2 && !sent; attempt++) {
+          try {
+            const res = await fetch(`${origin}/api/audit/step`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'x-modify-internal': process.env.CRON_SECRET ?? '' },
+              body: JSON.stringify({ audit_id: auditId, step: r.nextIndex }),
+            })
+            sent = res.ok
+            await logAction(supabase, store.id, 'audit_chain_sent',
+              { audit_id: auditId, from: step, to: r.nextIndex, http: res.status, attempt }, res.ok ? 'success' : 'failed')
+          } catch (e) {
+            await logAction(supabase, store.id, 'audit_chain_sent',
+              { audit_id: auditId, from: step, to: r.nextIndex, error: String(e).slice(0, 200), attempt }, 'failed')
+          }
+          if (!sent && attempt === 1) await new Promise((r2) => setTimeout(r2, 5000))
         }
       }
     } catch (e) {

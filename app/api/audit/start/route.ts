@@ -46,7 +46,7 @@ export async function GET() {
       .in('action', ['audit_category_done', 'audit_started'])
       .order('created_at', { ascending: false }).limit(1).maybeSingle()
     const lastActivity = lastLog ? new Date(lastLog.created_at).getTime() : new Date(audit.created_at).getTime()
-    if (Date.now() - lastActivity > 120_000 && progress.done < progress.total) {
+    if (Date.now() - lastActivity > 75_000 && progress.done < progress.total) {
       const origin = new URL(
         process.env.NEXT_PUBLIC_APP_URL || 'https://modify-coral.vercel.app'
       ).origin

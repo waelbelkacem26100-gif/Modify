@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import {
-  CheckCircle, RotateCcw, RefreshCw, Eye, Rocket, X, Wand2, Zap,
+  CheckCircle, RotateCcw, RefreshCw, Eye, Rocket, X, Wand2, Zap, ArrowRight,
 } from 'lucide-react'
 import Button from '@/components/ui/Button'
 import Badge from '@/components/ui/Badge'
@@ -12,18 +12,22 @@ import { fixCapability, CAPABILITY_META } from '@/lib/fix-capability'
 import type { Fix } from '@/types'
 
 type StoreMode = 'auto' | 'approval'
+type Tab = 'auto' | 'guides'
 
 export default function FixesContent() {
   const [fixes, setFixes] = useState<Fix[]>([])
   const [loading, setLoading] = useState(true)
+  const [tab, setTab] = useState<Tab>('auto')
   const [applying, setApplying] = useState<string | null>(null)
-  const [capturing, setCapturing] = useState<string | null>(null)
+  const [applyingAll, setApplyingAll] = useState(false)
   const [rolling, setRolling] = useState<string | null>(null)
   const [promoting, setPromoting] = useState<string | null>(null)
   const [applyErrors, setApplyErrors] = useState<Record<string, string>>({})
   const [shopDomain, setShopDomain] = useState<string | null>(null)
   const [mode, setMode] = useState<StoreMode>('auto')
   const [confirmation, setConfirmation] = useState<string | null>(null)
+  const [expanded, setExpanded] = useState<string | null>(null)
+  const auditIdRef = useRef<string | null>(null)
 
   const fetchFixes = useCallback(async () => {
     const res = await fetch('/api/fixes/apply')
@@ -31,11 +35,28 @@ export default function FixesContent() {
       const data = await res.json() as { fixes: Fix[]; shop_domain?: string }
       setFixes(data.fixes ?? [])
       setShopDomain(data.shop_domain ?? null)
+      auditIdRef.current = data.fixes?.[0]?.audit_id ?? null
     }
     setLoading(false)
   }, [])
 
   useEffect(() => { fetchFixes() }, [fetchFixes])
+
+  // Pendant "Tout appliquer" (chaîne serveur), on rafraîchit la liste : les
+  // statuts passent à "Corrigé" un par un, même si l'onglet avait été fermé.
+  useEffect(() => {
+    if (!applyingAll) return
+    const t = setInterval(async () => {
+      await fetchFixes()
+    }, 4000)
+    return () => clearInterval(t)
+  }, [applyingAll, fetchFixes])
+  useEffect(() => {
+    if (applyingAll && !fixes.some((f) => f.status === 'pending' && fixCapability(f) === 'auto')) {
+      setApplyingAll(false)
+      setConfirmation('Tous les correctifs automatiques')
+    }
+  }, [fixes, applyingAll])
 
   // Persisted store mode (auto vs weekly approval) — server-backed.
   useEffect(() => {
@@ -63,23 +84,12 @@ export default function FixesContent() {
     return `https://${shopDomain}/admin/themes/${fix.preview_theme_id}/editor`
   }
 
-  function shoot(fixId: string, when: 'before' | 'after') {
-    return fetch('/api/fixes/screenshot', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ fix_id: fixId, when }),
-    }).catch(() => {})
-  }
-
   async function applyFix(fix: Fix) {
     setApplying(fix.id)
     setApplyErrors((prev) => ({ ...prev, [fix.id]: '' }))
     try {
-      // 1. Capture the BEFORE state (best-effort, before the page changes)
-      setCapturing(fix.id)
-      await shoot(fix.id, 'before')
-
-      // 2. Apply the fix
+      // Pipeline serveur : backup → application → vérification Shopify →
+      // screenshot de preuve → statut. (Les captures sont prises côté serveur.)
       const res = await fetch('/api/fixes/apply', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -93,23 +103,29 @@ export default function FixesContent() {
         ))
         if (newStatus === 'applied') {
           showConfirmation(fix.title)
-          // 3. Capture the AFTER state (let the change propagate), then refresh
-          await new Promise((r) => setTimeout(r, 2500))
-          await shoot(fix.id, 'after')
-          await fetchFixes()
+          // Laisse le temps au screenshot "après" d'arriver, puis rafraîchit.
+          setTimeout(fetchFixes, 9000)
         }
       } else {
         setApplyErrors((prev) => ({ ...prev, [fix.id]: data.error ?? 'Une erreur est survenue.' }))
       }
     } finally {
       setApplying(null)
-      setCapturing(null)
     }
   }
 
+  // "Tout appliquer" : déclenche la chaîne serveur (1 correctif par étape) —
+  // l'onglet peut être fermé, la chaîne continue toute seule.
   async function applyAll() {
-    const pending = fixes.filter((f) => f.status === 'pending' && fixMode(f.risk_group) === 'auto')
-    for (const f of pending) await applyFix(f)
+    if (!auditIdRef.current) return
+    if (!window.confirm('Appliquer tous les correctifs automatiques ? Une sauvegarde est créée avant chaque modification.')) return
+    setApplyingAll(true)
+    const res = await fetch('/api/fixes/apply-all', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ audit_id: auditIdRef.current }),
+    })
+    if (!res.ok) setApplyingAll(false)
   }
 
   async function promoteFix(fix: Fix) {
@@ -134,6 +150,7 @@ export default function FixesContent() {
   }
 
   async function rollbackFix(fix: Fix) {
+    if (!window.confirm('Annuler cette correction ? Les valeurs d’origine seront restaurées sur votre boutique.')) return
     setRolling(fix.id)
     try {
       const res = await fetch('/api/fixes/rollback', {
@@ -142,14 +159,20 @@ export default function FixesContent() {
         body: JSON.stringify({ fix_id: fix.id }),
       })
       if (res.ok) setFixes((prev) => prev.map((f) => f.id === fix.id ? { ...f, status: 'rolled_back' } : f))
+      else {
+        const d = await res.json().catch(() => ({})) as { error?: string }
+        setApplyErrors((prev) => ({ ...prev, [fix.id]: d.error ?? 'L’annulation a échoué.' }))
+      }
     } finally {
       setRolling(null)
     }
   }
 
-  const totalApplied = fixes.filter((f) => f.status === 'applied').length
+  const autoFixes = fixes.filter((f) => fixCapability(f) === 'auto')
+  const guideFixes = fixes.filter((f) => fixCapability(f) === 'guide')
   const totalRecovered = fixes.filter((f) => f.status === 'applied').reduce((s, f) => s + f.impact_euros, 0)
-  const pendingAuto = fixes.filter((f) => f.status === 'pending' && fixMode(f.risk_group) === 'auto').length
+  const pendingAuto = autoFixes.filter((f) => f.status === 'pending').length
+  const shown = tab === 'auto' ? autoFixes : guideFixes
 
   if (loading) {
     return (
@@ -165,112 +188,112 @@ export default function FixesContent() {
       {confirmation && (
         <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-4 py-3 bg-success text-white rounded-xl shadow-xl max-w-md">
           <CheckCircle className="w-5 h-5 flex-shrink-0" />
-          <p className="text-sm font-medium">{confirmation} appliqué — visible sur votre boutique maintenant</p>
+          <p className="text-sm font-medium">{confirmation} appliqué — visible sur votre boutique</p>
           <button onClick={() => setConfirmation(null)} className="ml-1"><X className="w-4 h-4" /></button>
         </div>
       )}
 
-      {/* Header */}
+      {/* Header — l'objectif en grand */}
       <div className="mb-6 flex items-start justify-between gap-3 flex-wrap">
         <div>
-          <h1 className="font-syne font-bold text-xl sm:text-2xl text-text-primary mb-1">Vos correctifs</h1>
+          <h1 className="font-syne font-bold text-xl sm:text-2xl text-text-primary mb-1">
+            {totalRecovered > 0
+              ? <>Corrections : <span className="text-success">{`€${Math.round(totalRecovered).toLocaleString('fr-FR')}`}/mois récupérés</span></>
+              : 'Vos corrections'}
+          </h1>
           <p className="text-text-secondary text-sm">
-            Chaque correctif augmente vos ventes. Une sauvegarde est créée avant toute modification.
+            Sauvegarde → application → vérification sur Shopify : « Corrigé » uniquement si c’est réellement en ligne.
           </p>
         </div>
         {shopDomain && (
-          <a
-            href={`https://${shopDomain}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-4 py-2 bg-surface border border-border hover:border-primary/40 hover:bg-primary/5 text-text-primary text-sm font-medium rounded-xl transition-colors flex-shrink-0"
-          >
+          <a href={`https://${shopDomain}`} target="_blank" rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-surface border border-border hover:border-primary/40 hover:bg-primary/5 text-text-primary text-sm font-medium rounded-xl transition-colors flex-shrink-0">
             <Eye className="w-4 h-4" /> Visualiser ma boutique
           </a>
         )}
       </div>
 
       {/* Mode toggle */}
-      <div className="bg-surface border border-border rounded-2xl p-4 sm:p-5 mb-6">
-        <p className="text-text-primary font-medium text-sm mb-3">Comment Modify doit-il agir ?</p>
-        <div className="grid sm:grid-cols-2 gap-3">
-          <button
-            onClick={() => changeMode('auto')}
-            className={`text-left rounded-xl p-4 border transition-colors ${
-              mode === 'auto' ? 'border-primary bg-primary/5' : 'border-border hover:border-zinc-600'
-            }`}
-          >
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-lg">🔄</span>
-              <span className="font-medium text-text-primary text-sm">Mode automatique</span>
-              {mode === 'auto' && <CheckCircle className="w-4 h-4 text-primary ml-auto" />}
-            </div>
-            <p className="text-text-secondary text-xs leading-relaxed">
-              Modify applique toutes les améliorations sans rien vous demander.
-            </p>
-          </button>
-
-          <button
-            onClick={() => changeMode('approval')}
-            className={`text-left rounded-xl p-4 border transition-colors ${
-              mode === 'approval' ? 'border-primary bg-primary/5' : 'border-border hover:border-zinc-600'
-            }`}
-          >
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-lg">✋</span>
-              <span className="font-medium text-text-primary text-sm">Je veux approuver chaque semaine</span>
-              {mode === 'approval' && <CheckCircle className="w-4 h-4 text-primary ml-auto" />}
-            </div>
-            <p className="text-text-secondary text-xs leading-relaxed">
-              Chaque lundi, vous recevez un email avec la liste. Vous approuvez en 1 clic.
-            </p>
-          </button>
+      <div className="mb-6 bg-surface border border-border rounded-2xl p-4 flex items-center justify-between gap-3 flex-wrap">
+        <div>
+          <p className="text-text-primary text-sm font-medium">Mode de votre boutique</p>
+          <p className="text-text-muted text-xs">
+            {mode === 'auto'
+              ? 'Modify applique les améliorations automatiquement chaque semaine.'
+              : 'Modify vous envoie un email chaque lundi — vous validez en 1 clic.'}
+          </p>
         </div>
+        <div className="flex items-center bg-surface-2 rounded-xl p-1">
+          {(['auto', 'approval'] as StoreMode[]).map((m) => (
+            <button key={m} onClick={() => changeMode(m)}
+              className={[
+                'px-3 py-1.5 rounded-lg text-xs font-medium transition-colors duration-150',
+                mode === m ? 'bg-primary text-white' : 'text-text-secondary hover:text-text-primary',
+              ].join(' ')}>
+              {m === 'auto' ? '🔄 Automatique' : '✋ Sur validation'}
+            </button>
+          ))}
+        </div>
+      </div>
 
-        {mode === 'auto' && pendingAuto > 0 && (
-          <div className="mt-4 flex items-center justify-between gap-3 flex-wrap">
-            <p className="text-text-secondary text-xs">{pendingAuto} amélioration(s) prête(s) à appliquer.</p>
-            <Button size="sm" onClick={applyAll} loading={applying !== null}>
-              <Zap className="w-3.5 h-3.5" /> Tout appliquer maintenant
-            </Button>
-          </div>
+      {/* Onglets + Tout appliquer */}
+      <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
+        <div className="flex items-center bg-surface border border-border rounded-xl p-1">
+          {([
+            { key: 'auto', label: `✅ Automatiques (${autoFixes.length})` },
+            { key: 'guides', label: `👋 Guides (${guideFixes.length})` },
+          ] as { key: Tab; label: string }[]).map((t) => (
+            <button key={t.key} onClick={() => setTab(t.key)}
+              className={[
+                'px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-150',
+                tab === t.key ? 'bg-primary/10 text-primary' : 'text-text-secondary hover:text-text-primary',
+              ].join(' ')}>
+              {t.label}
+            </button>
+          ))}
+        </div>
+        {tab === 'auto' && pendingAuto > 0 && (
+          <Button size="sm" onClick={applyAll} loading={applyingAll}>
+            <Zap className="w-3.5 h-3.5" />
+            {applyingAll ? 'Application en cours…' : `Tout appliquer (${pendingAuto})`}
+          </Button>
         )}
       </div>
 
-      {/* Summary */}
-      {fixes.length > 0 && (
-        <div className="bg-success/5 border border-success/20 rounded-2xl p-5 mb-6 flex items-center justify-between gap-4 flex-wrap">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-success/10 flex items-center justify-center">
-              <CheckCircle className="w-5 h-5 text-success" />
-            </div>
-            <div>
-              <p className="font-syne font-bold text-lg text-text-primary">{totalApplied} correctif(s) appliqué(s)</p>
-              <p className="text-text-muted text-xs">sur {fixes.length} au total</p>
-            </div>
-          </div>
-          <div className="text-right">
-            <p className="font-syne font-bold text-2xl text-success">€{totalRecovered.toLocaleString('fr-FR')}</p>
-            <p className="text-text-muted text-xs">récupérés / mois</p>
-          </div>
+      {applyingAll && (
+        <div className="mb-4 flex items-start gap-2.5 bg-primary/5 border border-primary/15 rounded-xl p-3">
+          <span className="w-4 h-4 mt-0.5 border-2 border-primary border-t-transparent rounded-full animate-spin flex-shrink-0" />
+          <p className="text-text-secondary text-xs leading-snug">
+            Modify applique vos correctifs un par un (sauvegarde + vérification à chaque fois).
+            Vous pouvez fermer cette page : tout continue automatiquement.
+          </p>
         </div>
       )}
 
-      {/* Fix list */}
-      {fixes.length === 0 ? (
-        <div className="bg-surface border border-border rounded-2xl p-10 text-center">
+      {/* Liste */}
+      {shown.length === 0 ? (
+        <div className="text-center py-12">
           <Wand2 className="w-10 h-10 text-text-muted mx-auto mb-3" />
-          <h3 className="font-syne font-semibold text-text-primary mb-2">Aucun correctif pour l’instant</h3>
-          <p className="text-text-secondary text-sm">Lancez une analyse de votre boutique pour générer vos correctifs.</p>
+          <p className="text-text-secondary text-sm mb-4">
+            {fixes.length === 0
+              ? 'Lancez une analyse pour générer vos corrections.'
+              : tab === 'auto' ? 'Aucune correction automatique pour le moment.' : 'Aucun guide pour le moment.'}
+          </p>
+          {fixes.length === 0 && (
+            <a href="/dashboard" className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary-dark text-white text-sm font-medium rounded-xl transition-colors">
+              Aller à l’analyse <ArrowRight className="w-4 h-4" />
+            </a>
+          )}
         </div>
       ) : (
         <div className="space-y-3">
-          {fixes.map((fix) => {
+          {shown.map((fix) => {
             const cap = fixCapability(fix)
             const capInfo = CAPABILITY_META[cap]
             const applied = fix.status === 'applied'
+            const isExpanded = expanded === fix.id
             return (
-              <div key={fix.id} className="bg-surface border border-border rounded-2xl p-5">
+              <div key={fix.id} className="bg-surface border border-border rounded-2xl p-5 transition-colors duration-150">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1 min-w-0">
                     {/* Badges */}
@@ -278,13 +301,12 @@ export default function FixesContent() {
                       <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium border ${capInfo.cls}`}>
                         {capInfo.emoji} {capInfo.label}
                       </span>
-                      {/* Guide fixes are never "applied" — Modify can't do them itself. */}
                       {cap !== 'guide' && (
                         <Badge variant={fix.status as 'applied' | 'pending' | 'rolled_back' | 'failed' | 'preview'}>
-                          {applied ? 'Appliqué' :
+                          {applied ? '✓ Corrigé' :
                            fix.status === 'rolled_back' ? 'Annulé' :
-                           fix.status === 'failed' ? 'À réessayer' :
-                           fix.status === 'preview' ? 'En attente de votre validation' : 'À venir'}
+                           fix.status === 'failed' ? 'Échec — réessayer' :
+                           fix.status === 'preview' ? 'En attente de votre validation' : 'À appliquer'}
                         </Badge>
                       )}
                       <span className="text-success text-sm font-semibold ml-auto flex-shrink-0">
@@ -294,8 +316,6 @@ export default function FixesContent() {
 
                     <h3 className="font-medium text-text-primary text-sm mb-1">{fix.title}</h3>
 
-                    {/* What changed — plain language. Guide fixes are honest:
-                        Modify can't do them, it guides the merchant. */}
                     {cap === 'guide' ? (
                       <p className="text-text-secondary text-xs leading-relaxed">
                         <span className="text-sky-400 font-medium">À faire vous-même : </span>
@@ -308,9 +328,7 @@ export default function FixesContent() {
                       </p>
                     )}
 
-                    {/* Before / after — shown for fixes Modify actually performs
-                        (preview before applying, captured result after). Not for
-                        guide fixes, which Modify doesn't do itself. */}
+                    {/* Détail before/after (texte) */}
                     {cap !== 'guide' && (applied || fix.status === 'pending') && (() => {
                       const ba = beforeAfter(fix)
                       return (
@@ -327,35 +345,32 @@ export default function FixesContent() {
                       )
                     })()}
 
-                    {/* Real before/after page screenshots — comparison slider */}
+                    {/* Preuve visuelle — slider avant/après (screenshots réels) */}
                     {fix.screenshot_before && fix.screenshot_after && (
                       <div className="mt-3">
-                        <p className="text-text-muted text-[11px] mb-1.5">Glissez pour comparer votre page produit avant / après :</p>
-                        <BeforeAfterSlider before={fix.screenshot_before} after={fix.screenshot_after} />
+                        <button onClick={() => setExpanded(isExpanded ? null : fix.id)}
+                          className="text-primary text-xs font-medium hover:text-primary-dark transition-colors">
+                          {isExpanded ? 'Masquer la comparaison ▲' : 'Voir la preuve avant / après ▼'}
+                        </button>
+                        {isExpanded && (
+                          <div className="mt-2">
+                            <p className="text-text-muted text-[11px] mb-1.5">Glissez pour comparer votre page avant / après :</p>
+                            <BeforeAfterSlider before={fix.screenshot_before} after={fix.screenshot_after} />
+                          </div>
+                        )}
                       </div>
                     )}
-                    {capturing === fix.id && (
-                      <p className="mt-2 text-text-muted text-xs inline-flex items-center gap-1.5">
-                        <span className="w-3 h-3 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                        📸 Capture avant / après de votre boutique…
-                      </p>
-                    )}
 
-                    {/* Inline confirmation + link to the REAL live result — only
-                        for fixes Modify actually performs (never for guide fixes). */}
+                    {/* Confirmation + lien réel */}
                     {applied && cap !== 'guide' && (
                       <div className="mt-2 flex items-center gap-2 flex-wrap">
                         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-success/10 border border-success/20 rounded-lg text-success text-xs font-medium">
-                          <CheckCircle className="w-3.5 h-3.5" /> Appliqué
+                          <CheckCircle className="w-3.5 h-3.5" /> Vérifié sur Shopify
                         </span>
                         {shopDomain && (
-                          <a
-                            href={`https://${shopDomain}/collections/all`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 text-primary text-xs font-medium hover:text-primary-dark transition-colors"
-                          >
-                            <Eye className="w-3.5 h-3.5" /> Voir le résultat sur ma boutique →
+                          <a href={`https://${shopDomain}/collections/all`} target="_blank" rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-primary text-xs font-medium hover:text-primary-dark transition-colors">
+                            <Eye className="w-3.5 h-3.5" /> Voir sur ma boutique →
                           </a>
                         )}
                       </div>
@@ -366,18 +381,16 @@ export default function FixesContent() {
                     )}
                   </div>
 
-                  {/* Actions — depend on what Modify can honestly do */}
+                  {/* Actions */}
                   <div className="flex items-center gap-2 flex-shrink-0">
-                    {/* 👋 Guide: Modify can't do it — open the step-by-step plan, no "Appliquer" */}
                     {cap === 'guide' && (
                       <a href="/dashboard/accompagnement"
                         className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-sky-400/30 text-sky-400 hover:bg-sky-400/10 transition-colors">
                         Voir le guide →
                       </a>
                     )}
-                    {/* ✅ Auto: really apply */}
                     {cap === 'auto' && fix.status === 'pending' && (
-                      <Button size="sm" onClick={() => applyFix(fix)} loading={applying === fix.id}>
+                      <Button size="sm" onClick={() => applyFix(fix)} loading={applying === fix.id} disabled={applyingAll}>
                         <CheckCircle className="w-3.5 h-3.5" /> Appliquer
                       </Button>
                     )}

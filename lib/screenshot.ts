@@ -57,6 +57,17 @@ async function uploadScreenshot(supabase: SupabaseClient, bytes: ArrayBuffer, pa
   return data?.publicUrl ?? null
 }
 
+/** True when the storefront is password-protected (a screenshot would only show
+ * the password page — never store that as "proof"). */
+async function storefrontIsGated(url: string): Promise<boolean> {
+  try {
+    const res = await fetch(url, { redirect: 'follow', headers: { 'User-Agent': 'Mozilla/5.0' } })
+    return /\/password/.test(res.url)
+  } catch {
+    return true
+  }
+}
+
 /**
  * Captures the store's product page and stores it on the fix as the before/after
  * screenshot. Called by the apply flow (orchestrated by the merchant's single
@@ -66,6 +77,11 @@ export async function captureFixScreenshot(
   store: Store, fixId: string, when: ScreenshotWhen, supabase: SupabaseClient
 ): Promise<string | null> {
   const url = await productUrlForStore(store)
+  // Honnêteté : vitrine sous mot de passe → pas de fausse "preuve".
+  if (await storefrontIsGated(url)) {
+    console.warn('[screenshot] storefront password-protected — skipping', url)
+    return null
+  }
   const bytes = await captureScreenshot(url)
   if (!bytes) return null
   const publicUrl = await uploadScreenshot(supabase, bytes, `${store.id}/${fixId}-${when}-${Date.now()}.jpg`)
