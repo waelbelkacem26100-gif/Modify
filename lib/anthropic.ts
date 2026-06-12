@@ -401,6 +401,11 @@ Autres règles :
 - Concis et actionnable : termine souvent par UN prochain pas clair.
 - Si une donnée manque, dis-le honnêtement plutôt que d'inventer.
 
+ACTIONS INLINE — tu peux DÉCLENCHER de vraies actions. Quand tu proposes :
+- de lancer une analyse complète → ajoute exactement [ACTION:launch_audit] à la fin de ta réponse ;
+- d'appliquer un correctif précis → ajoute [ACTION:apply_fix:<id>] avec l'id exact donné dans les données ("Je lance ?").
+L'interface transforme ces marqueurs en boutons cliquables (avec confirmation). Maximum 2 marqueurs par réponse, uniquement quand c'est LE bon prochain pas. N'explique jamais le marqueur, ne l'entoure pas de code.
+
 ═══ DONNÉES DE LA BOUTIQUE ═══
 ${context}`
 

@@ -1,10 +1,24 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { Send, Sparkles, Lock, Bot } from 'lucide-react'
+import { Send, Sparkles, Lock, Bot, ScanSearch, CheckCircle, Loader2 } from 'lucide-react'
 import SubscribeButton from '@/components/dashboard/SubscribeButton'
 
 interface Msg { role: 'user' | 'assistant'; content: string }
+
+// Actions inline proposées par l'agent via des marqueurs [ACTION:...] dans sa
+// réponse — transformées en boutons cliquables (avec confirmation).
+type InlineAction = { kind: 'launch_audit' } | { kind: 'apply_fix'; fixId: string }
+
+function parseActions(reply: string): { text: string; actions: InlineAction[] } {
+  const actions: InlineAction[] = []
+  const text = reply
+    .replace(/\[ACTION:launch_audit\]/g, () => { actions.push({ kind: 'launch_audit' }); return '' })
+    .replace(/\[ACTION:apply_fix:([a-z0-9-]+)\]/gi, (_, id: string) => { actions.push({ kind: 'apply_fix', fixId: id }); return '' })
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+  return { text, actions: actions.slice(0, 2) }
+}
 
 const STARTERS = [
   'Comment augmenter mes ventes ce mois-ci ?',
@@ -19,7 +33,34 @@ export default function AgentChat({ isPro }: { isPro: boolean }) {
   const [loading, setLoading] = useState(false)
   const [gated, setGated] = useState(false)
   const [error, setError] = useState('')
+  const [runningAction, setRunningAction] = useState<string | null>(null)
   const endRef = useRef<HTMLDivElement>(null)
+
+  // Exécute une action proposée par l'agent (après confirmation).
+  async function runAction(a: InlineAction) {
+    const key = a.kind === 'apply_fix' ? `fix-${a.fixId}` : a.kind
+    const label = a.kind === 'launch_audit' ? 'Lancer une analyse complète de votre boutique ?' : 'Appliquer ce correctif maintenant ? (sauvegarde automatique avant)'
+    if (!window.confirm(label)) return
+    setRunningAction(key)
+    try {
+      const res = a.kind === 'launch_audit'
+        ? await fetch('/api/audit/start', { method: 'POST' })
+        : await fetch('/api/fixes/apply', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ fix_id: a.fixId, confirm_high_risk: false }),
+          })
+      const ok = res.ok
+      const note = a.kind === 'launch_audit'
+        ? (ok ? '✅ Analyse lancée ! Suivez la progression sur l’onglet Analyse — je te dirai ce qu’on y trouve.' : '❌ Impossible de lancer l’analyse — réessaie dans un instant.')
+        : (ok ? '✅ Correctif appliqué et vérifié sur ta boutique. Tu peux l’annuler à tout moment depuis Corrections.' : '❌ Le correctif n’a pas pu être appliqué — regarde l’onglet Corrections pour le détail.')
+      setMessages((m) => [...m, { role: 'assistant', content: note }])
+    } catch {
+      setMessages((m) => [...m, { role: 'assistant', content: '❌ Une erreur réseau a interrompu l’action.' }])
+    } finally {
+      setRunningAction(null)
+    }
+  }
 
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages, loading])
 
@@ -92,13 +133,32 @@ export default function AgentChat({ isPro }: { isPro: boolean }) {
           </div>
         )}
 
-        {messages.map((m, i) => (
-          <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-            <div className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap ${
-              m.role === 'user' ? 'bg-primary text-white' : 'bg-surface border border-border text-text-primary'
-            }`}>{m.content}</div>
-          </div>
-        ))}
+        {messages.map((m, i) => {
+          const { text, actions } = m.role === 'assistant' ? parseActions(m.content) : { text: m.content, actions: [] as InlineAction[] }
+          return (
+            <div key={i} className={`flex flex-col ${m.role === 'user' ? 'items-end' : 'items-start'}`}>
+              <div className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap ${
+                m.role === 'user' ? 'bg-primary text-white' : 'bg-surface border border-border text-text-primary'
+              }`}>{text}</div>
+              {actions.length > 0 && (
+                <div className="flex items-center gap-2 mt-2 flex-wrap">
+                  {actions.map((a, j) => {
+                    const key = a.kind === 'apply_fix' ? `fix-${a.fixId}` : a.kind
+                    const busy = runningAction === key
+                    return (
+                      <button key={j} onClick={() => runAction(a)} disabled={runningAction != null}
+                        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-primary hover:bg-primary-dark text-white text-xs font-medium transition-colors disabled:opacity-50">
+                        {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          : a.kind === 'launch_audit' ? <ScanSearch className="w-3.5 h-3.5" /> : <CheckCircle className="w-3.5 h-3.5" />}
+                        {a.kind === 'launch_audit' ? 'Lancer l’analyse' : 'Appliquer ce correctif'}
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          )
+        })}
 
         {loading && (
           <div className="flex justify-start">

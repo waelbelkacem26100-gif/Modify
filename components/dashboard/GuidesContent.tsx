@@ -9,7 +9,7 @@ import Button from '@/components/ui/Button'
 
 type GuideType = 'photos' | 'theme_ux' | 'marketing' | 'products'
 
-interface Step { title: string; detail: string }
+interface Step { title: string; detail: string; done?: boolean }
 interface Guide {
   id: string
   type: GuideType
@@ -58,6 +58,22 @@ export default function GuidesContent() {
     const status = g.status === 'done' ? 'todo' : 'done'
     setGuides((prev) => prev.map((x) => x.id === g.id ? { ...x, status } : x))
     await fetch('/api/guides', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ guide_id: g.id, status }) })
+  }
+
+  // Checklist interactive : coche une étape — l'état est persisté en base
+  // (rechargez la page : il est conservé). Tout coché → guide terminé.
+  async function toggleStep(g: Guide, i: number) {
+    const done = !g.steps[i]?.done
+    setGuides((prev) => prev.map((x) => {
+      if (x.id !== g.id) return x
+      const steps = x.steps.map((s, j) => j === i ? { ...s, done } : s)
+      const allDone = steps.length > 0 && steps.every((s) => s.done)
+      return { ...x, steps, status: allDone ? 'done' : 'todo' }
+    }))
+    await fetch('/api/guides', {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ guide_id: g.id, step_index: i, done }),
+    }).catch(() => {})
   }
 
   function toggleExpand(id: string) {
@@ -141,17 +157,23 @@ export default function GuidesContent() {
                   onClick={() => toggleExpand(g.id)}
                   className="w-full flex items-center justify-between px-5 py-3 border-t border-border text-text-muted hover:text-text-secondary text-xs transition-colors bg-surface-2"
                 >
-                  <span>{g.steps?.length ?? 0} étapes</span>
+                  <span>
+                    {(g.steps ?? []).filter((s) => s.done).length}/{g.steps?.length ?? 0} étapes faites
+                  </span>
                   {isOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                 </button>
                 {isOpen && (
                   <ol className="divide-y divide-border">
                     {(g.steps ?? []).map((s, i) => (
                       <li key={i} className="p-4 flex gap-3">
-                        <span className="w-5 h-5 rounded-full bg-primary/10 text-primary text-[11px] font-semibold flex items-center justify-center flex-shrink-0">{i + 1}</span>
+                        <button onClick={() => toggleStep(g, i)} className="flex-shrink-0 mt-0.5" title={s.done ? 'Décocher' : 'Marquer comme fait'}>
+                          {s.done
+                            ? <CheckCircle2 className="w-5 h-5 text-success" />
+                            : <span className="w-5 h-5 rounded-full bg-primary/10 text-primary text-[11px] font-semibold flex items-center justify-center">{i + 1}</span>}
+                        </button>
                         <div className="min-w-0">
-                          <p className="text-text-primary text-sm font-medium">{s.title}</p>
-                          <p className="text-text-secondary text-xs mt-0.5 leading-relaxed whitespace-pre-wrap">{s.detail}</p>
+                          <p className={`text-sm font-medium ${s.done ? 'text-text-muted line-through' : 'text-text-primary'}`}>{s.title}</p>
+                          <p className={`text-xs mt-0.5 leading-relaxed whitespace-pre-wrap ${s.done ? 'text-text-muted' : 'text-text-secondary'}`}>{s.detail}</p>
                         </div>
                       </li>
                     ))}

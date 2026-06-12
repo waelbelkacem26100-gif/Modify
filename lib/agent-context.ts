@@ -17,18 +17,20 @@ export async function buildAgentContext(store: Store, supabase: SupabaseClient):
   lines.push(`Boutique : ${store.shop_name ?? store.shop_domain} (${store.shop_domain})`)
   lines.push(`Mode Modify : ${store.mode === 'approval' ? 'approbation hebdomadaire' : 'automatique'}`)
 
-  // Latest audit
+  // Latest audit (v2 : 6 catégories, capability ✅/👋, éléments exacts)
   const { data: audit } = await supabase
     .from('audits').select('*').eq('store_id', store.id)
     .order('created_at', { ascending: false }).limit(1).maybeSingle()
   const a = audit as Audit | null
   if (a?.results?.length) {
     lines.push(`\nDernier audit (${new Date(a.created_at).toLocaleDateString('fr-FR')}) — ${a.results.length} problèmes détectés, impact total ${euros(a.total_impact_euros ?? 0)}/mois :`)
-    for (const r of [...a.results].sort((x, y) => y.impact_euros - x.impact_euros).slice(0, 8)) {
-      lines.push(`  • ${r.title} — ${euros(r.impact_euros)}/mois (priorité ${r.priority})`)
+    for (const r of [...a.results].sort((x, y) => y.impact_euros - x.impact_euros).slice(0, 10)) {
+      const cap = r.capability ?? (r.fix_available ? 'auto' : 'guide')
+      const items = r.affected_items?.length ? ` [concerne : ${r.affected_items.slice(0, 3).join(', ')}]` : ''
+      lines.push(`  • ${cap === 'auto' ? '✅' : '👋'} ${r.title} — ${euros(r.impact_euros)}/mois (priorité ${r.priority})${items}`)
     }
   } else {
-    lines.push('\nAucun audit complet récent.')
+    lines.push('\nAucun audit complet récent. (Tu peux proposer d’en lancer une avec [ACTION:launch_audit].)')
   }
 
   // Fixes — applied (recovered) + pending (proactive suggestions)
@@ -39,15 +41,15 @@ export async function buildAgentContext(store: Store, supabase: SupabaseClient):
   }
   if (auditIds.length) {
     const { data: fixes } = await supabase
-      .from('fixes').select('title, impact_euros, status').in('audit_id', auditIds)
-    const all = (fixes ?? []) as Pick<Fix, 'title' | 'impact_euros' | 'status'>[]
+      .from('fixes').select('id, title, impact_euros, status').in('audit_id', auditIds)
+    const all = (fixes ?? []) as Pick<Fix, 'id' | 'title' | 'impact_euros' | 'status'>[]
     const applied = all.filter((f) => f.status === 'applied')
     const pending = all.filter((f) => f.status === 'pending').sort((x, y) => y.impact_euros - x.impact_euros)
     const recovered = applied.reduce((s, f) => s + (f.impact_euros ?? 0), 0)
     lines.push(`\nCorrectifs : ${applied.length} appliqués (${euros(recovered)}/mois récupérés).`)
     if (pending.length) {
-      lines.push(`Correctifs NON encore appliqués (à suggérer proactivement) :`)
-      for (const f of pending.slice(0, 6)) lines.push(`  • ${f.title} — gain potentiel ${euros(f.impact_euros)}/mois`)
+      lines.push(`Correctifs NON encore appliqués (à suggérer proactivement — utilise [ACTION:apply_fix:<id>] avec l'id exact) :`)
+      for (const f of pending.slice(0, 6)) lines.push(`  • id=${f.id} | ${f.title} — gain potentiel ${euros(f.impact_euros)}/mois`)
     }
   }
 

@@ -98,20 +98,43 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// PATCH: toggle a guide's status (todo/done)
+// PATCH: toggle a guide's status (todo/done) OR a single step's done state.
+// La checklist par étape est persistée DANS le jsonb `steps` existant
+// (chaque étape gagne un booléen `done`) — zéro migration.
 export async function PATCH(request: NextRequest) {
   const { userId } = await auth()
   if (!userId) return new NextResponse('Unauthorized', { status: 401 })
 
-  const body = await request.json().catch(() => ({})) as { guide_id?: string; status?: 'todo' | 'done' }
-  if (!body.guide_id || !body.status) {
-    return NextResponse.json({ error: 'guide_id and status required' }, { status: 400 })
+  const body = await request.json().catch(() => ({})) as {
+    guide_id?: string; status?: 'todo' | 'done'; step_index?: number; done?: boolean
+  }
+  if (!body.guide_id) {
+    return NextResponse.json({ error: 'guide_id required' }, { status: 400 })
   }
 
   const supabase = await createServiceRoleClient()
   const store = await getStore(supabase, userId)
   if (!store) return new NextResponse('Forbidden', { status: 403 })
 
+  // Coche/décoche UNE étape → état persisté ; le guide passe "done" tout seul
+  // quand toutes les étapes sont cochées.
+  if (typeof body.step_index === 'number') {
+    const { data: guide } = await supabase
+      .from('guides').select('steps').eq('id', body.guide_id).eq('store_id', store.id).single()
+    if (!guide) return NextResponse.json({ error: 'Guide introuvable' }, { status: 404 })
+    const steps = (Array.isArray(guide.steps) ? guide.steps : []) as { title: string; detail: string; done?: boolean }[]
+    if (body.step_index < 0 || body.step_index >= steps.length) {
+      return NextResponse.json({ error: 'step_index invalide' }, { status: 400 })
+    }
+    steps[body.step_index] = { ...steps[body.step_index], done: Boolean(body.done) }
+    const allDone = steps.length > 0 && steps.every((s) => s.done)
+    await supabase.from('guides')
+      .update({ steps, status: allDone ? 'done' : 'todo', completed_at: allDone ? new Date().toISOString() : null })
+      .eq('id', body.guide_id).eq('store_id', store.id)
+    return NextResponse.json({ success: true, steps, status: allDone ? 'done' : 'todo' })
+  }
+
+  if (!body.status) return NextResponse.json({ error: 'status required' }, { status: 400 })
   await supabase.from('guides')
     .update({ status: body.status, completed_at: body.status === 'done' ? new Date().toISOString() : null })
     .eq('id', body.guide_id).eq('store_id', store.id)
