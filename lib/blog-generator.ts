@@ -5,6 +5,7 @@ import {
   createArticle,
 } from '@/lib/shopify'
 import { generateBlogArticle } from '@/lib/anthropic'
+import { generateIllustration } from '@/lib/blog-illustration'
 import { logAction } from '@/lib/audit-log'
 import type { Store } from '@/types'
 
@@ -70,6 +71,18 @@ export async function generateAndPublishArticle(
     productLinks,
   })
 
+  // Illustration éditoriale gpt-image-1 (1 article = 1 image à la une).
+  // JAMAIS bloquante : si la génération échoue, l'article part sans image.
+  let illustration: string | null = null
+  try {
+    const ill = await generateIllustration(article.title, article.summary)
+    illustration = ill.b64
+    if (ill.b64) {
+      await logAction(supabase, store.id, 'blog_illustration_generated',
+        { title: article.title, cost_usd: ill.costUsd }, 'success')
+    }
+  } catch (e) { console.error('[blog] illustration failed (publishing without):', String(e)) }
+
   const created = await createArticle(store.shop_domain, store.access_token, blog.id, {
     title: article.title,
     bodyHtml: article.body_html,
@@ -78,6 +91,8 @@ export async function generateAndPublishArticle(
     author: 'Modify',
     published: true,
     metaDescription: article.meta_description,
+    imageAttachmentBase64: illustration,
+    imageAlt: article.title,
   })
 
   const url = `https://${store.shop_domain}/blogs/${blog.handle}/${created.handle}`

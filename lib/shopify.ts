@@ -839,6 +839,9 @@ export async function createArticle(
     author?: string
     published?: boolean
     metaDescription?: string | null
+    /** Featured image: base64 PNG/JPEG bytes (Shopify hosts it). */
+    imageAttachmentBase64?: string | null
+    imageAlt?: string | null
   }
 ): Promise<ShopifyArticle> {
   interface ArticlePayload {
@@ -848,6 +851,7 @@ export async function createArticle(
     tags?: string
     author?: string
     published: boolean
+    image?: { attachment: string; alt?: string }
     metafields?: Array<{ key: string; value: string; type: string; namespace: string }>
   }
   const article: ArticlePayload = {
@@ -858,6 +862,9 @@ export async function createArticle(
   if (opts.summaryHtml) article.summary_html = opts.summaryHtml
   if (opts.tags) article.tags = opts.tags
   if (opts.author) article.author = opts.author
+  if (opts.imageAttachmentBase64) {
+    article.image = { attachment: opts.imageAttachmentBase64, alt: opts.imageAlt ?? opts.title }
+  }
   if (opts.metaDescription) {
     article.metafields = [
       { key: 'description_tag', value: opts.metaDescription, type: 'single_line_text_field', namespace: 'global' },
