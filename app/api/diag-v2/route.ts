@@ -67,6 +67,17 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ ok: res.ok, status: res.status, body: await res.json().catch(() => null) })
   }
 
+  // Lance la chaîne "Tout appliquer" (1 correctif/étape, auto-propagée).
+  if (action === 'applyall') {
+    const auditId = request.nextUrl.searchParams.get('audit_id')
+    const res = await fetch(`${request.nextUrl.origin}/api/fixes/apply-all`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-modify-internal': process.env.CRON_SECRET ?? '' },
+      body: JSON.stringify({ audit_id: auditId }),
+    })
+    return NextResponse.json({ ok: res.ok, status: res.status, body: await res.json().catch(() => null) })
+  }
+
   // Annule un correctif (restauration du backup, pipeline réel).
   if (action === 'rollbackfix') {
     const fixId = request.nextUrl.searchParams.get('fix_id')
