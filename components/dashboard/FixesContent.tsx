@@ -370,7 +370,7 @@ export default function FixesContent() {
                   <div className="flex items-center gap-2 flex-shrink-0">
                     {/* 👋 Guide: Modify can't do it — open the step-by-step plan, no "Appliquer" */}
                     {cap === 'guide' && (
-                      <a href="/dashboard/guides"
+                      <a href="/dashboard/accompagnement"
                         className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-sky-400/30 text-sky-400 hover:bg-sky-400/10 transition-colors">
                         Voir le guide →
                       </a>

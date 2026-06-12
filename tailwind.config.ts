@@ -9,23 +9,27 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        background: '#09090B',
-        surface: '#111113',
+        // Design system v2 — dark premium (Linear/Vercel/Stripe niveau).
+        background: '#0A0A0B',
+        surface: '#141416',
         'surface-2': '#1C1C1F',
-        border: '#27272A',
-        primary: '#FF5C35',
-        'primary-dark': '#E04A25',
-        'primary-glow': 'rgba(255, 92, 53, 0.15)',
+        border: '#26262A',
+        primary: '#FF6B35',
+        'primary-dark': '#E55622',
+        'primary-glow': 'rgba(255, 107, 53, 0.15)',
         'text-primary': '#FAFAFA',
         'text-secondary': '#A1A1AA',
         'text-muted': '#71717A',
         success: '#22C55E',
         warning: '#F59E0B',
         danger: '#EF4444',
+        info: '#3B82F6',
       },
       fontFamily: {
-        syne: ['var(--font-syne)', 'sans-serif'],
-        sans: ['var(--font-dm-sans)', 'sans-serif'],
+        // Inter everywhere — `syne` kept as an alias so existing components
+        // (font-syne headings) pick up Inter without edits.
+        syne: ['var(--font-inter)', 'sans-serif'],
+        sans: ['var(--font-inter)', 'sans-serif'],
       },
       animation: {
         'fade-up': 'fadeUp 0.5s ease-out forwards',

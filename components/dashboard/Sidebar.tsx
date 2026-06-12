@@ -5,33 +5,28 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { UserButton } from '@clerk/nextjs'
 import {
-  LayoutDashboard,
   ScanSearch,
-  Wand2,
-  BarChart3,
   Zap,
   CreditCard,
   Package,
   TrendingUp,
   Newspaper,
-  Compass,
-  Bot,
-  Home,
+  HeartHandshake,
+  BarChart3,
   LogOut,
 } from 'lucide-react'
 
+// Navigation v2 — 4 sections. Un marchand non-technique comprend tout en 10s.
 // `hidden` entries are intentionally kept (pages + code stay intact) but not
-// shown in the nav — Modify is refocused on its core value. Flip to re-enable.
+// shown in the nav — futur SaaS "Agent Marketing". Flip to re-enable.
 const navItems = [
-  { href: '/dashboard', icon: LayoutDashboard, label: "Vue d'ensemble" },
-  { href: '/dashboard/agent', icon: Bot, label: 'Assistant' },
-  { href: '/dashboard/audit', icon: ScanSearch, label: 'Audit IA' },
-  { href: '/dashboard/fixes', icon: Wand2, label: 'Correctifs' },
+  { href: '/dashboard', icon: ScanSearch, label: 'Analyse' },
+  { href: '/dashboard/corrections', icon: Zap, label: 'Corrections' },
+  { href: '/dashboard/accompagnement', icon: HeartHandshake, label: 'Accompagnement' },
+  { href: '/dashboard/resultats', icon: BarChart3, label: 'Résultats' },
   { href: '/dashboard/winning-products', icon: TrendingUp, label: 'Produits gagnants', hidden: true },
   { href: '/dashboard/products', icon: Package, label: 'Produits', hidden: true },
   { href: '/dashboard/seo', icon: Newspaper, label: 'Contenu SEO', hidden: true },
-  { href: '/dashboard/guides', icon: Compass, label: 'Accompagnement' },
-  { href: '/dashboard/suivi', icon: BarChart3, label: 'Suivi & ROI' },
 ]
 
 interface Props {
@@ -112,13 +107,6 @@ export default function Sidebar({ shopDomain }: Props) {
       {/* Bottom */}
       <div className="px-3 py-4 border-t border-border space-y-1">
         <Link
-          href="/"
-          className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 text-text-secondary hover:text-text-primary hover:bg-surface-2"
-        >
-          <Home className="w-4 h-4 flex-shrink-0" />
-          Accueil
-        </Link>
-        <Link
           href="/dashboard/subscription"
           className={[
             'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150',
@@ -133,7 +121,7 @@ export default function Sidebar({ shopDomain }: Props) {
         <div className="flex items-center gap-3 px-3 py-2.5">
           <UserButton
             appearance={{
-              variables: { colorPrimary: '#FF5C35' },
+              variables: { colorPrimary: '#FF6B35' },
               elements: { avatarBox: 'w-7 h-7' },
             }}
           />

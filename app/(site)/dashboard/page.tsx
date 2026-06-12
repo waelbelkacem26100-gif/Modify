@@ -210,7 +210,7 @@ export default async function DashboardPage() {
           <p className="text-text-muted text-xs mt-2 leading-relaxed">
             Modify analysera à nouveau votre boutique et appliquera les améliorations.
           </p>
-          <Link href="/dashboard/fixes"
+          <Link href="/dashboard/corrections"
             className="inline-flex items-center gap-1.5 text-primary text-sm font-medium mt-4 hover:text-primary-dark transition-colors">
             Voir mes correctifs <ArrowRight className="w-3.5 h-3.5" />
           </Link>

@@ -48,6 +48,6 @@ export async function buildMonthlyReport(store: Store, supabase: SupabaseClient)
     monthRecovered, totalRecovered, fixesApplied, appliedList,
     articles: articles ?? 0, winningProducts: winning ?? 0,
     scoreNow, scoreDelta, pendingList,
-    dashboardUrl: `${appUrl}/dashboard/suivi`,
+    dashboardUrl: `${appUrl}/dashboard/resultats`,
   }
 }

@@ -237,7 +237,7 @@ export default function FixPanel({ issue, auditId, onClose, onApplied }: FixPane
           )}
 
           <a
-            href="/dashboard/fixes"
+            href="/dashboard/corrections"
             className="flex items-center justify-center gap-1.5 text-sm text-text-muted hover:text-text-secondary transition-colors"
           >
             <ExternalLink className="w-3.5 h-3.5" />

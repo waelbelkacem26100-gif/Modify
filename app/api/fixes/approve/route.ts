@@ -9,7 +9,7 @@ export const runtime = 'nodejs'
 export const maxDuration = 300
 
 function page(title: string, message: string): NextResponse {
-  const dash = `${process.env.NEXT_PUBLIC_APP_URL ?? ''}/dashboard/fixes`
+  const dash = `${process.env.NEXT_PUBLIC_APP_URL ?? ''}/dashboard/corrections`
   const html = `<!doctype html><html lang="fr"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1"><title>Modify</title></head>
 <body style="margin:0;background:#f4f4f5;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;">

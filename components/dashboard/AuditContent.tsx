@@ -76,7 +76,7 @@ export default function AuditPage({ isSubscribed }: { isSubscribed: boolean }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ audit_id: audit.id }),
       })
-      if (res.ok) window.location.href = '/dashboard/fixes'
+      if (res.ok) window.location.href = '/dashboard/corrections'
     } catch (e) {
       console.error(e)
     } finally {

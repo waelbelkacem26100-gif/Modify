@@ -32,7 +32,7 @@ const steps: Step[] = [
     icon: Wand2,
     title: 'Appliquer les correctifs',
     description: "Applique les fixes générés et mesure l'uplift",
-    href: '/dashboard/fixes',
+    href: '/dashboard/corrections',
     cta: 'Voir les correctifs',
   },
 ]

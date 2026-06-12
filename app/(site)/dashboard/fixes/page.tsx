@@ -1,5 +1,6 @@
-import FixesContent from '@/components/dashboard/FixesContent'
+import { redirect } from 'next/navigation'
 
+// Navigation v2 : /dashboard/fixes → ⚡ Corrections.
 export default function FixesPage() {
-  return <FixesContent />
+  redirect('/dashboard/corrections')
 }

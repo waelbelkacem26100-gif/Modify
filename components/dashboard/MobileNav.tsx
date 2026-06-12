@@ -2,16 +2,14 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, ScanSearch, Wand2, Bot, BarChart3, Compass } from 'lucide-react'
+import { ScanSearch, Zap, HeartHandshake, BarChart3 } from 'lucide-react'
 
-// Refocused nav: Produits / Contenu SEO are hidden (pages kept intact).
+// Bottom-nav mobile v2 — 4 icônes, touch targets ≥44px.
 const navItems = [
-  { href: '/dashboard', icon: LayoutDashboard, label: 'Accueil' },
-  { href: '/dashboard/agent', icon: Bot, label: 'Assistant' },
-  { href: '/dashboard/audit', icon: ScanSearch, label: 'Audit' },
-  { href: '/dashboard/fixes', icon: Wand2, label: 'Fix' },
-  { href: '/dashboard/suivi', icon: BarChart3, label: 'Suivi' },
-  { href: '/dashboard/guides', icon: Compass, label: 'Guides' },
+  { href: '/dashboard', icon: ScanSearch, label: 'Analyse' },
+  { href: '/dashboard/corrections', icon: Zap, label: 'Corrections' },
+  { href: '/dashboard/accompagnement', icon: HeartHandshake, label: 'Accompagnement' },
+  { href: '/dashboard/resultats', icon: BarChart3, label: 'Résultats' },
 ]
 
 export default function MobileNav() {
@@ -19,7 +17,7 @@ export default function MobileNav() {
 
   return (
     <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-surface/95 backdrop-blur-sm border-t border-border">
-      <div className="flex items-center justify-around px-1 py-1.5">
+      <div className="flex items-center justify-around px-1 py-1">
         {navItems.map((item) => {
           const isActive =
             pathname === item.href ||
@@ -29,7 +27,7 @@ export default function MobileNav() {
               key={item.href}
               href={item.href}
               className={[
-                'flex flex-col items-center gap-0.5 px-2 py-2 rounded-xl transition-colors min-w-0 flex-1',
+                'flex flex-col items-center justify-center gap-0.5 px-2 rounded-xl transition-colors min-w-0 flex-1 min-h-[48px]',
                 isActive ? 'text-primary' : 'text-text-muted',
               ].join(' ')}
             >
