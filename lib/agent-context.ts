@@ -27,7 +27,10 @@ export async function buildAgentContext(store: Store, supabase: SupabaseClient):
     for (const r of [...a.results].sort((x, y) => y.impact_euros - x.impact_euros).slice(0, 10)) {
       const cap = r.capability ?? (r.fix_available ? 'auto' : 'guide')
       const items = r.affected_items?.length ? ` [concerne : ${r.affected_items.slice(0, 3).join(', ')}]` : ''
-      lines.push(`  • ${cap === 'auto' ? '✅' : '👋'} ${r.title} — ${euros(r.impact_euros)}/mois (priorité ${r.priority})${items}`)
+      // Les problèmes 👋 portent leur id : l'agent peut proposer de lancer la
+      // mission Copilot correspondante via [ACTION:generate_content:<id>].
+      const pid = cap === 'guide' ? ` (problem_id=${r.id})` : ''
+      lines.push(`  • ${cap === 'auto' ? '✅' : '👋'} ${r.title} — ${euros(r.impact_euros)}/mois (priorité ${r.priority})${items}${pid}`)
     }
   } else {
     lines.push('\nAucun audit complet récent. (Tu peux proposer d’en lancer une avec [ACTION:launch_audit].)')

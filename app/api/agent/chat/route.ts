@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
   const { userId } = await auth()
   if (!userId) return new NextResponse('Unauthorized', { status: 401 })
 
-  const body = await request.json().catch(() => ({})) as { messages?: AgentMessage[] }
+  const body = await request.json().catch(() => ({})) as { messages?: AgentMessage[]; mission_id?: string }
   const messages = (body.messages ?? [])
     .filter((m) => (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string')
     .slice(-12) // keep the conversation bounded
@@ -44,7 +44,28 @@ export async function POST(request: NextRequest) {
 
   try {
     await getValidAccessToken(store, supabase)
-    const context = await buildAgentContext(store, supabase)
+    let context = await buildAgentContext(store, supabase)
+
+    // Chat contextualisé sur UNE mission Copilot : l'agent sait déjà de quoi
+    // il s'agit (problème d'origine, contenu généré, étapes cochées).
+    if (body.mission_id) {
+      const { data: guide } = await supabase
+        .from('guides').select('id, title, summary, status, steps')
+        .eq('id', body.mission_id).eq('store_id', store.id).maybeSingle()
+      if (guide) {
+        const steps = (Array.isArray(guide.steps) ? guide.steps : []) as { title: string; detail: string; done?: boolean }[]
+        const { data: link } = await supabase
+          .from('audit_logs').select('details').eq('action', 'mission_created')
+          .eq('details->>guide_id', guide.id).limit(1).maybeSingle()
+        context += `\n\n═══ MISSION EN COURS (le marchand te parle DEPUIS cette mission — pas besoin de re-contextualiser) ═══
+Mission : ${guide.title} — ${guide.summary}
+Problème d'origine de l'audit : ${link?.details?.problem_title ?? '(inconnu)'}
+Étapes (${steps.filter((s) => s.done).length}/${steps.length} faites) :
+${steps.map((s, i) => `${s.done ? '✓' : '○'} ${i + 1}. ${s.title}\n   Contenu : ${s.detail.slice(0, 400)}${s.detail.length > 400 ? '…' : ''}`).join('\n')}
+Ton rôle ici : aider à EXÉCUTER ces étapes (adapter un texte, répondre aux questions, débloquer), féliciter quand ça avance, et proposer la prochaine étape non cochée.`
+      }
+    }
+
     const reply = await agentChat(context, messages)
     return NextResponse.json({ reply, isPro, remaining: isPro ? null : Math.max(0, PREVIEW_USER_MESSAGES - userTurns) })
   } catch (e) {

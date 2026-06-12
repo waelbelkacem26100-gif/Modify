@@ -8,13 +8,17 @@ interface Msg { role: 'user' | 'assistant'; content: string }
 
 // Actions inline proposées par l'agent via des marqueurs [ACTION:...] dans sa
 // réponse — transformées en boutons cliquables (avec confirmation).
-type InlineAction = { kind: 'launch_audit' } | { kind: 'apply_fix'; fixId: string }
+type InlineAction =
+  | { kind: 'launch_audit' }
+  | { kind: 'apply_fix'; fixId: string }
+  | { kind: 'generate_content'; problemId: string }
 
 function parseActions(reply: string): { text: string; actions: InlineAction[] } {
   const actions: InlineAction[] = []
   const text = reply
     .replace(/\[ACTION:launch_audit\]/g, () => { actions.push({ kind: 'launch_audit' }); return '' })
     .replace(/\[ACTION:apply_fix:([a-z0-9-]+)\]/gi, (_, id: string) => { actions.push({ kind: 'apply_fix', fixId: id }); return '' })
+    .replace(/\[ACTION:generate_content:([a-z0-9_-]+)\]/gi, (_, id: string) => { actions.push({ kind: 'generate_content', problemId: id }); return '' })
     .replace(/\n{3,}/g, '\n\n')
     .trim()
   return { text, actions: actions.slice(0, 2) }
@@ -27,7 +31,15 @@ const STARTERS = [
   'Pourquoi mes ventes évoluent-elles ainsi ?',
 ]
 
-export default function AgentChat({ isPro }: { isPro: boolean }) {
+interface AgentChatProps {
+  isPro: boolean
+  /** Chat contextualisé sur une mission Copilot (id du guide lié). */
+  missionId?: string
+  /** Hauteur réduite pour l'intégration dans la vue mission. */
+  compact?: boolean
+}
+
+export default function AgentChat({ isPro, missionId, compact }: AgentChatProps) {
   const [messages, setMessages] = useState<Msg[]>([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
@@ -38,14 +50,24 @@ export default function AgentChat({ isPro }: { isPro: boolean }) {
 
   // Exécute une action proposée par l'agent (après confirmation).
   async function runAction(a: InlineAction) {
-    const key = a.kind === 'apply_fix' ? `fix-${a.fixId}` : a.kind
-    const label = a.kind === 'launch_audit' ? 'Lancer une analyse complète de votre boutique ?' : 'Appliquer ce correctif maintenant ? (sauvegarde automatique avant)'
+    const key = a.kind === 'apply_fix' ? `fix-${a.fixId}` : a.kind === 'generate_content' ? `gen-${a.problemId}` : a.kind
+    const label = a.kind === 'launch_audit'
+      ? 'Lancer une analyse complète de votre boutique ?'
+      : a.kind === 'generate_content'
+        ? 'Lancer cette mission ? Le Copilot génère le contenu personnalisé (briefs, emails, scripts…) — environ 30 secondes.'
+        : 'Appliquer ce correctif maintenant ? (sauvegarde automatique avant)'
     if (!window.confirm(label)) return
     setRunningAction(key)
     try {
       const res = a.kind === 'launch_audit'
         ? await fetch('/api/audit/start', { method: 'POST' })
-        : await fetch('/api/fixes/apply', {
+        : a.kind === 'generate_content'
+          ? await fetch('/api/copilot/missions', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ problem_id: a.problemId }),
+            })
+          : await fetch('/api/fixes/apply', {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ fix_id: a.fixId, confirm_high_risk: false }),
@@ -53,7 +75,9 @@ export default function AgentChat({ isPro }: { isPro: boolean }) {
       const ok = res.ok
       const note = a.kind === 'launch_audit'
         ? (ok ? '✅ Analyse lancée ! Suivez la progression sur l’onglet Analyse — je te dirai ce qu’on y trouve.' : '❌ Impossible de lancer l’analyse — réessaie dans un instant.')
-        : (ok ? '✅ Correctif appliqué et vérifié sur ta boutique. Tu peux l’annuler à tout moment depuis Corrections.' : '❌ Le correctif n’a pas pu être appliqué — regarde l’onglet Corrections pour le détail.')
+        : a.kind === 'generate_content'
+          ? (ok ? '✅ Mission préparée ! Le contenu complet t’attend dans l’onglet Missions — chaque étape contient le texte/brief prêt à utiliser.' : '❌ La préparation de la mission a échoué — réessaie dans un instant.')
+          : (ok ? '✅ Correctif appliqué et vérifié sur ta boutique. Tu peux l’annuler à tout moment depuis Corrections.' : '❌ Le correctif n’a pas pu être appliqué — regarde l’onglet Corrections pour le détail.')
       setMessages((m) => [...m, { role: 'assistant', content: note }])
     } catch {
       setMessages((m) => [...m, { role: 'assistant', content: '❌ Une erreur réseau a interrompu l’action.' }])
@@ -76,7 +100,7 @@ export default function AgentChat({ isPro }: { isPro: boolean }) {
       const res = await fetch('/api/agent/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: next }),
+        body: JSON.stringify({ messages: next, ...(missionId ? { mission_id: missionId } : {}) }),
       })
       const d = await res.json() as { reply?: string; error?: string; code?: string }
       if (res.ok && d.reply) {
@@ -99,15 +123,15 @@ export default function AgentChat({ isPro }: { isPro: boolean }) {
   const remaining = isPro ? null : Math.max(0, 3 - userTurns)
 
   return (
-    <div className="flex flex-col h-[calc(100vh-1px)] max-w-3xl mx-auto">
+    <div className={`flex flex-col ${compact ? 'h-[440px] border border-border rounded-2xl bg-surface/40' : 'h-[calc(100vh-1px)]'} max-w-3xl mx-auto w-full`}>
       {/* Header */}
       <div className="px-4 sm:px-6 py-4 border-b border-border flex items-center gap-3">
         <div className="w-9 h-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center">
           <Bot className="w-5 h-5 text-primary" />
         </div>
         <div>
-          <h1 className="font-syne font-bold text-text-primary">Votre conseiller Modify</h1>
-          <p className="text-text-muted text-xs">Il connaît tout de votre boutique · répond en français</p>
+          <h1 className="font-syne font-bold text-text-primary">{missionId ? 'Copilot de cette mission' : 'Votre conseiller Modify'}</h1>
+          <p className="text-text-muted text-xs">{missionId ? 'Il connaît cette mission par cœur · adapte, débloque, motive' : 'Il connaît tout de votre boutique · répond en français'}</p>
         </div>
         {!isPro && remaining != null && (
           <span className="ml-auto text-xs text-text-muted">{remaining} message(s) d’aperçu</span>
@@ -143,14 +167,16 @@ export default function AgentChat({ isPro }: { isPro: boolean }) {
               {actions.length > 0 && (
                 <div className="flex items-center gap-2 mt-2 flex-wrap">
                   {actions.map((a, j) => {
-                    const key = a.kind === 'apply_fix' ? `fix-${a.fixId}` : a.kind
+                    const key = a.kind === 'apply_fix' ? `fix-${a.fixId}` : a.kind === 'generate_content' ? `gen-${a.problemId}` : a.kind
                     const busy = runningAction === key
                     return (
                       <button key={j} onClick={() => runAction(a)} disabled={runningAction != null}
                         className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-primary hover:bg-primary-dark text-white text-xs font-medium transition-colors disabled:opacity-50">
                         {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                          : a.kind === 'launch_audit' ? <ScanSearch className="w-3.5 h-3.5" /> : <CheckCircle className="w-3.5 h-3.5" />}
-                        {a.kind === 'launch_audit' ? 'Lancer l’analyse' : 'Appliquer ce correctif'}
+                          : a.kind === 'launch_audit' ? <ScanSearch className="w-3.5 h-3.5" />
+                          : a.kind === 'generate_content' ? <Sparkles className="w-3.5 h-3.5" /> : <CheckCircle className="w-3.5 h-3.5" />}
+                        {a.kind === 'launch_audit' ? 'Lancer l’analyse'
+                          : a.kind === 'generate_content' ? 'Lancer la mission Copilot' : 'Appliquer ce correctif'}
                       </button>
                     )
                   })}

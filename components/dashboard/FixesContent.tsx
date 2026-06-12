@@ -320,8 +320,9 @@ export default function FixesContent() {
 
                     {cap === 'guide' ? (
                       <p className="text-text-secondary text-xs leading-relaxed">
-                        <span className="text-sky-400 font-medium">À faire vous-même : </span>
-                        Modify ne peut pas créer ça à votre place (avis réels, vidéos, photos produit), mais vous guide pas à pas.
+                        <span className="text-sky-400 font-medium">À faire avec le Copilot : </span>
+                        Modify ne peut pas créer ça à votre place (avis réels, vidéos, photos produit), mais le Copilot
+                        prépare le contenu et vous accompagne étape par étape.
                       </p>
                     ) : (
                       <p className="text-text-secondary text-xs leading-relaxed">
@@ -386,9 +387,9 @@ export default function FixesContent() {
                   {/* Actions */}
                   <div className="flex items-center gap-2 flex-shrink-0">
                     {cap === 'guide' && (
-                      <a href="/dashboard/accompagnement"
+                      <a href={`/dashboard/accompagnement?mission=${encodeURIComponent(fix.title)}`}
                         className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-sky-400/30 text-sky-400 hover:bg-sky-400/10 transition-colors">
-                        Voir le guide →
+                        Lancer la mission avec le Copilot →
                       </a>
                     )}
                     {cap === 'auto' && fix.status === 'pending' && (

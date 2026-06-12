@@ -3,11 +3,11 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
   Camera, LayoutTemplate, Megaphone, Lightbulb, Sparkles, ChevronDown, ChevronUp,
-  CheckCircle2, Circle,
+  CheckCircle2, Circle, Star, Video, MessageSquare,
 } from 'lucide-react'
 import Button from '@/components/ui/Button'
 
-type GuideType = 'photos' | 'theme_ux' | 'marketing' | 'products'
+type GuideType = 'photos' | 'theme_ux' | 'marketing' | 'products' | 'avis' | 'videos' | 'sav'
 
 interface Step { title: string; detail: string; done?: boolean }
 interface Guide {
@@ -26,6 +26,9 @@ const TYPES: { key: GuideType; label: string; desc: string; icon: typeof Camera 
   { key: 'theme_ux', label: 'Design & UX', desc: 'Correctifs exacts à copier', icon: LayoutTemplate },
   { key: 'marketing', label: 'Plan marketing', desc: 'Plan de la semaine', icon: Megaphone },
   { key: 'products', label: 'Nouveaux produits', desc: 'Idées selon les tendances', icon: Lightbulb },
+  { key: 'avis', label: 'Avis clients', desc: 'Emails de collecte prêts', icon: Star },
+  { key: 'videos', label: 'Vidéos produits', desc: 'Scripts Reels/TikTok', icon: Video },
+  { key: 'sav', label: 'Service client', desc: 'Réponses types + FAQ', icon: MessageSquare },
 ]
 
 export default function GuidesContent() {

@@ -1,9 +1,10 @@
 'use client'
 
-import { useState } from 'react'
-import { MessageCircle, ListChecks } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { MessageCircle, ListChecks, Target } from 'lucide-react'
 import AgentChat from '@/components/dashboard/AgentChat'
 import GuidesContent from '@/components/dashboard/GuidesContent'
+import CopilotMissions from '@/components/dashboard/CopilotMissions'
 import SubscribeGate from '@/components/dashboard/SubscribeGate'
 
 interface Props {
@@ -11,18 +12,28 @@ interface Props {
   hasAccess: boolean
 }
 
-// 🤝 Accompagnement — l'agent assistant en interface principale, les guides
-// pas à pas accessibles dans un onglet (et référencés par l'agent lui-même).
+// 🤝 Accompagnement — le Copilot en interface principale : missions issues de
+// l'audit (contenu généré + checklist + chat contextualisé), coach généraliste,
+// et les guides libres en troisième onglet.
 export default function AccompagnementContent({ isPro, hasAccess }: Props) {
-  const [tab, setTab] = useState<'agent' | 'guides'>('agent')
+  const [tab, setTab] = useState<'missions' | 'agent' | 'guides'>('missions')
+  const [missionTitle, setMissionTitle] = useState<string | null>(null)
+
+  // Deep-link depuis ⚡ Corrections : ?mission=<titre du problème> ouvre la
+  // mission correspondante directement (lu côté client, zéro Suspense requis).
+  useEffect(() => {
+    const t = new URLSearchParams(window.location.search).get('mission')
+    if (t) { setMissionTitle(t); setTab('missions') }
+  }, [])
 
   return (
     <div className="flex flex-col h-full min-h-0">
       {/* Tabs */}
       <div className="flex items-center gap-1 px-4 sm:px-6 pt-4 border-b border-border">
         {([
+          { key: 'missions', label: 'Missions', icon: Target },
           { key: 'agent', label: 'Votre coach', icon: MessageCircle },
-          { key: 'guides', label: 'Guides pas à pas', icon: ListChecks },
+          { key: 'guides', label: 'Guides libres', icon: ListChecks },
         ] as const).map((t) => (
           <button
             key={t.key}
@@ -40,7 +51,9 @@ export default function AccompagnementContent({ isPro, hasAccess }: Props) {
         ))}
       </div>
 
-      {tab === 'agent' ? (
+      {tab === 'missions' ? (
+        <CopilotMissions isPro={isPro} hasAccess={hasAccess} initialMissionTitle={missionTitle} />
+      ) : tab === 'agent' ? (
         <AgentChat isPro={isPro} />
       ) : hasAccess ? (
         <GuidesContent />
