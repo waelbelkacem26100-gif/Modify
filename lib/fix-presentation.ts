@@ -19,6 +19,8 @@ export const CATEGORY_PRESENTATION: Record<IssueCategory, { emoji: string; label
   perf_seo: { emoji: '⚡', label: 'Vitesse & visibilité Google' },
   funnel: { emoji: '🛒', label: 'Tunnel d’achat' },
   mobile: { emoji: '📱', label: 'Expérience mobile' },
+  // Audit v3
+  competitive: { emoji: '🏆', label: 'Concurrence & positionnement' },
 }
 
 export function categoryPresentation(category: string) {

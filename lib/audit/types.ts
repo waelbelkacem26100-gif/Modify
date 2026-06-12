@@ -9,7 +9,7 @@ import type { PageSpeedResult } from '@/lib/pagespeed'
  * correctifs, score, emails, agent) continue de fonctionner sans migration,
  * et ajoute la précision v2 (affected_items, capability).
  */
-export type ProblemCategory = 'products' | 'uiux' | 'perf_seo' | 'trust' | 'funnel' | 'mobile'
+export type ProblemCategory = 'products' | 'uiux' | 'perf_seo' | 'trust' | 'funnel' | 'mobile' | 'competitive'
 
 export interface Problem {
   id: string
@@ -43,10 +43,11 @@ export const AUDIT_CATEGORIES: Record<ProblemCategory, {
   trust: { emoji: '🛡️', label: 'Confiance & sécurité', progressLabel: 'Analyse de la confiance et de la sécurité' },
   funnel: { emoji: '🛒', label: 'Tunnel d’achat', progressLabel: 'Analyse du tunnel d’achat' },
   mobile: { emoji: '📱', label: 'Expérience mobile', progressLabel: 'Analyse de l’expérience mobile' },
+  competitive: { emoji: '🏆', label: 'Concurrence & positionnement', progressLabel: 'Analyse de la concurrence' },
 }
 
 /** Ordre d'exécution des agents (1 agent = 1 étape auto-chaînée ≤60s). */
-export const CATEGORY_ORDER: ProblemCategory[] = ['products', 'uiux', 'perf_seo', 'trust', 'funnel', 'mobile']
+export const CATEGORY_ORDER: ProblemCategory[] = ['products', 'uiux', 'perf_seo', 'trust', 'funnel', 'mobile', 'competitive']
 
 // ─── Données réelles collectées avant l'analyse IA ───────────────────────────
 
@@ -59,6 +60,8 @@ export interface ProductForAudit {
   compare_at_price: string | null
   description_words: number
   has_description: boolean
+  /** ~50 premiers mots de la description (texte brut) — pour juger ton, mots risqués, structure. */
+  description_excerpt: string
   image_count: number
   images_missing_alt: number
   variant_count: number
@@ -85,7 +88,16 @@ export interface AuditAgentInput {
   productHtml: string | null
   productUrl: string | null
   cartHtml: string | null
+  /** HTML de la page collection (/collections/all) — filtres, tri. */
+  collectionHtml: string | null
   homeHtmlMobile: string | null
   productHtmlMobile: string | null
   pagespeed: PageSpeedResult | null
+  /** Indexation : robots.txt et sitemap.xml réellement testés (null = non testé). */
+  robotsTxt: { exists: boolean; blocksAll: boolean } | null
+  sitemapExists: boolean | null
+  /** Recherche interne : requêtes réellement exécutées contre /search/suggest.json. */
+  searchTests: { query: string; results: number; topTitles: string[] }[] | null
+  /** Paires de descriptions quasi identiques détectées par Modify (déterministe). */
+  duplicateDescriptionPairs: string[] | null
 }

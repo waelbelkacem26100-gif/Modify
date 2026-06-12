@@ -9,6 +9,7 @@ import { performanceSeoAgent } from './agents/performance-seo'
 import { trustAgent } from './agents/trust'
 import { funnelAgent } from './agents/funnel'
 import { mobileAgent } from './agents/mobile'
+import { competitiveAgent } from './agents/competitive'
 import type { Store } from '@/types'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -21,6 +22,7 @@ const AGENTS: Record<ProblemCategory, AuditAgent> = {
   trust: trustAgent,
   funnel: funnelAgent,
   mobile: mobileAgent,
+  competitive: competitiveAgent,
 }
 
 export interface StepResult {

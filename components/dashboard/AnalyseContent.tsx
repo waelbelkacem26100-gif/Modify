@@ -8,6 +8,7 @@ import {
 import Button from '@/components/ui/Button'
 import Progress from '@/components/ui/Progress'
 import { AUDIT_CATEGORIES, CATEGORY_ORDER, type ProblemCategory } from '@/lib/audit/types'
+import { TOTAL_CHECKS } from '@/lib/audit/checks'
 import { categoryPresentation } from '@/lib/fix-presentation'
 import type { Audit, AuditResult } from '@/types'
 
@@ -164,8 +165,12 @@ export default function AnalyseContent({ isSubscribed, shopDomain, initialAudit,
             </h1>
             <p className="text-text-secondary text-sm mt-2 max-w-xl">
               {results.length > 0
-                ? `${results.length} points à améliorer détectés sur 6 domaines clés de votre boutique.`
-                : '6 analyses spécialisées : fiches produits, apparence, vitesse & Google, confiance, tunnel d’achat, mobile.'}
+                ? `${results.length} points à améliorer détectés sur ${CATEGORY_ORDER.length} domaines clés de votre boutique.`
+                : `${CATEGORY_ORDER.length} analyses spécialisées : fiches produits, apparence, vitesse & Google, confiance, tunnel d’achat, mobile, concurrence.`}
+            </p>
+            <p className="text-text-muted text-xs mt-2 max-w-xl">
+              {TOTAL_CHECKS} points de contrôle analysés sur votre boutique — un audit SEO
+              classique en couvre 15 à 20.
             </p>
             <div className="mt-5 flex items-center gap-3 flex-wrap">
               <Button onClick={startAudit} loading={starting || running} disabled={running}>
@@ -202,9 +207,9 @@ export default function AnalyseContent({ isSubscribed, shopDomain, initialAudit,
             <h2 className="font-syne font-semibold text-text-primary">
               {progress?.current ? `${progress.current}…` : 'Préparation de l’analyse…'}
             </h2>
-            <span className="text-text-muted text-sm">{progress?.done ?? 0}/6</span>
+            <span className="text-text-muted text-sm">{progress?.done ?? 0}/{CATEGORY_ORDER.length}</span>
           </div>
-          <Progress value={((progress?.done ?? 0) / 6) * 100} className="mb-5" />
+          <Progress value={((progress?.done ?? 0) / CATEGORY_ORDER.length) * 100} className="mb-5" />
           <ul className="grid sm:grid-cols-2 gap-2.5">
             {(progress?.categories ?? CATEGORY_ORDER.map((key) => ({
               key, emoji: AUDIT_CATEGORIES[key].emoji, label: AUDIT_CATEGORIES[key].label, done: false, count: 0,
@@ -375,8 +380,8 @@ export default function AnalyseContent({ isSubscribed, shopDomain, initialAudit,
             <ScanSearch className="w-7 h-7 text-text-muted" />
           </div>
           <p className="text-text-secondary text-sm max-w-md mx-auto">
-            Lancez votre première analyse : Modify passe votre boutique au crible sur 6 domaines
-            et vous montre exactement où vous perdez des ventes.
+            Lancez votre première analyse : Modify passe votre boutique au crible sur {CATEGORY_ORDER.length} domaines
+            ({TOTAL_CHECKS} points de contrôle) et vous montre exactement où vous perdez des ventes.
           </p>
         </div>
       )}

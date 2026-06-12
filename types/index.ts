@@ -102,4 +102,4 @@ export type FixStatus = 'pending' | 'applied' | 'rolled_back' | 'failed' | 'prev
 // restent lisibles, les nouveaux utilisent les catégories v2.
 export type IssueCategory =
   | 'theme' | 'product' | 'trust' | 'speed' | 'checkout'
-  | 'products' | 'uiux' | 'perf_seo' | 'funnel' | 'mobile'
+  | 'products' | 'uiux' | 'perf_seo' | 'funnel' | 'mobile' | 'competitive'

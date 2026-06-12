@@ -62,6 +62,8 @@ export function computeRiskGroup(category: string): 'a' | 'b' | 'c' {
     case 'uiux':     return 'c'
     case 'funnel':   return 'c'
     case 'mobile':   return 'c'
+    // v3 : décisions stratégiques — jamais appliquées automatiquement.
+    case 'competitive': return 'c'
     default:         return 'b'
   }
 }

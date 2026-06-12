@@ -9,7 +9,7 @@ import type { Store, Audit } from '@/types'
 export const runtime = 'nodejs'
 export const maxDuration = 60
 
-// 6 agents × ~30s : un audit complet prend ~3 minutes (chaîne auto-propagée).
+// 7 agents × ~30s (le 7e fait de la recherche web) : audit complet ~4 minutes.
 const STALE_AUDIT_MS = 10 * 60_000
 
 // GET — latest audit + live per-category progress (polled by the Analyse page)
@@ -46,10 +46,11 @@ export async function GET() {
       .in('action', ['audit_category_done', 'audit_started'])
       .order('created_at', { ascending: false }).limit(1).maybeSingle()
     const lastActivity = lastLog ? new Date(lastLog.created_at).getTime() : new Date(audit.created_at).getTime()
-    // 110s : au-delà du pire cas d'une étape lente (perf_seo + PageSpeed ~90s),
-    // pour ne pas relancer une étape simplement lente. La garde anti-double
-    // dans runAuditStep couvre le reste.
-    if (Date.now() - lastActivity > 110_000 && progress.done < progress.total) {
+    // 160s : au-delà du pire cas d'une étape lente (perf_seo + PageSpeed ~90s,
+    // concurrence + recherches web ~120s), pour ne JAMAIS relancer une étape
+    // encore en cours (écriture concurrente de results). La garde anti-double
+    // dans runAuditStep couvre la relance d'une étape déjà aboutie.
+    if (Date.now() - lastActivity > 160_000 && progress.done < progress.total) {
       const origin = new URL(
         process.env.NEXT_PUBLIC_APP_URL || 'https://modify-coral.vercel.app'
       ).origin

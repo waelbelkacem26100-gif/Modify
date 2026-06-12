@@ -10,7 +10,7 @@ export interface AuditAgent {
 }
 
 /** Raw item shape each agent's AI must return (orchestrator adds id/category). */
-interface RawProblem {
+export interface RawProblem {
   title: string
   description: string
   impact_euros: number
@@ -22,7 +22,7 @@ interface RawProblem {
 }
 
 /** Calibration € : cohérente, honnête, proportionnée au CA réel. */
-function calibration(revenueMonthly: number | null): string {
+export function calibration(revenueMonthly: number | null): string {
   if (revenueMonthly && revenueMonthly >= 200) {
     return `CA mensuel réel (30 derniers jours) : ${revenueMonthly}€. Calibre les impacts : la SOMME des impact_euros de TES problèmes ne doit pas dépasser ${Math.round(revenueMonthly * 0.25)}€ (25% du CA). Un problème isolé dépasse rarement ${Math.round(revenueMonthly * 0.1)}€.`
   }
@@ -67,7 +67,7 @@ ${data}
 4. capability : "auto" UNIQUEMENT si Modify peut le corriger automatiquement (titres et descriptions Google, textes descriptifs d'images, descriptions produit réécrites, badges de confiance, avis [si réels], urgence [vrai stock], produits complémentaires, données structurées/lisibilité IA, articles de blog). Tout le reste (photos, vidéos, vrais avis à collecter, navigation, design, checkout, mobile, pages légales) = "guide".
 5. risk_group : "a" = via l'API produits/SEO (textes, descriptions, données) ; "b" = bloc ajouté sur la page produit (badges, avis, urgence, produits complémentaires) ; "c" = structure de page / navigation / checkout (risque élevé).
 6. Si un point est correct sur cette boutique, ne le liste pas. Liste TOUS les points réellement faibles de ta spécialité (typiquement 2 à 8).
-7. PAS DE DOUBLE-COMPTAGE : reste STRICTEMENT dans ta spécialité. Le périmètre des autres agents (NE PAS y empiéter) : Fiches produits = titres/descriptions/photos/prix/variantes des produits · Apparence = home/menu/footer · Vitesse & Google = vitesse mesurée, titres/descriptions GOOGLE, données structurées, lisibilité IA · Confiance = avis/garanties/pages légales/contact · Tunnel = panier/paiement/complémentaires · Mobile = rendu mobile uniquement. Un même manque ne doit JAMAIS être facturé en € dans deux catégories.
+7. PAS DE DOUBLE-COMPTAGE : reste STRICTEMENT dans ta spécialité. Le périmètre des autres agents (NE PAS y empiéter) : Fiches produits = titres/descriptions/photos/prix/variantes/ton des produits · Apparence = home/menu/footer/À propos/recherche interne · Vitesse & Google = vitesse mesurée, titres/descriptions GOOGLE, données structurées, duplication, indexation, lisibilité IA · Confiance = avis/garanties/pages légales/livraison/FAQ/contact · Tunnel = chemin d'achat/collection/panier/paiement/complémentaires · Mobile = rendu mobile uniquement · Concurrence = comparaison avec d'autres boutiques uniquement. Un même manque ne doit JAMAIS être facturé en € dans deux catégories.
 
 ═══ FORMAT DE SORTIE ═══
 UNIQUEMENT un tableau JSON valide (aucun markdown, aucun texte autour) :
@@ -86,9 +86,25 @@ UNIQUEMENT un tableau JSON valide (aucun markdown, aucun texte autour) :
 
   const content = message.content[0]
   if (content.type !== 'text') throw new Error('Unexpected response type')
-  const raw = content.text.trim().replace(/^```(?:json)?/i, '').replace(/```$/, '').trim()
-  const items = JSON.parse(raw) as RawProblem[]
+  return mapRawProblems(category, parseProblemsJson(content.text))
+}
 
+/** Extrait le tableau JSON de problèmes d'une réponse IA (tolère le markdown). */
+export function parseProblemsJson(text: string): RawProblem[] {
+  const raw = text.trim().replace(/^```(?:json)?/i, '').replace(/```$/, '').trim()
+  try {
+    return JSON.parse(raw) as RawProblem[]
+  } catch {
+    // La réponse peut contenir du texte autour (ex: agent avec recherche web) :
+    // on récupère le dernier tableau JSON complet.
+    const m = raw.match(/\[[\s\S]*\]/)
+    if (!m) throw new Error('No JSON array in agent response')
+    return JSON.parse(m[0]) as RawProblem[]
+  }
+}
+
+/** Valide et normalise les problèmes bruts d'un agent (id, bornes, types). */
+export function mapRawProblems(category: ProblemCategory, items: RawProblem[]): Problem[] {
   return items
     .filter((it) => it && it.title && Number.isFinite(Number(it.impact_euros)))
     .map((it, i): Problem => ({

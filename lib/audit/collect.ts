@@ -63,6 +63,75 @@ async function getShopPages(shop: string, token: string): Promise<PageForAudit[]
   }
 }
 
+/** Tests réels d'indexation : robots.txt (existe ? bloque tout ?) et sitemap.xml. */
+async function checkIndexation(base: string): Promise<{ robotsTxt: { exists: boolean; blocksAll: boolean }; sitemapExists: boolean }> {
+  const fetchHead = async (url: string) => {
+    try {
+      const controller = new AbortController()
+      const t = setTimeout(() => controller.abort(), 8_000)
+      const res = await fetch(url, { signal: controller.signal, headers: { 'User-Agent': DESKTOP_UA } })
+      clearTimeout(t)
+      return res.ok ? await res.text() : null
+    } catch { return null }
+  }
+  const [robots, sitemap] = await Promise.all([
+    fetchHead(`${base}/robots.txt`),
+    fetchHead(`${base}/sitemap.xml`),
+  ])
+  return {
+    robotsTxt: {
+      exists: robots != null,
+      blocksAll: robots != null && /User-agent:\s*\*\s*[\r\n]+\s*Disallow:\s*\/\s*$/im.test(robots),
+    },
+    sitemapExists: sitemap != null && sitemap.includes('<'),
+  }
+}
+
+/** Recherche interne réellement testée via l'endpoint public Shopify suggest.json. */
+async function runSearchTests(base: string, products: ProductForAudit[]): Promise<{ query: string; results: number; topTitles: string[] }[]> {
+  // Requêtes qu'un vrai client taperait : types de produits + mot significatif d'un titre.
+  const queries = new Set<string>()
+  for (const p of products) {
+    if (p.product_type && queries.size < 2) queries.add(p.product_type.toLowerCase())
+  }
+  for (const p of products) {
+    const word = p.title.split(/\s+/).find((w) => w.length >= 5 && !/^\d/.test(w))
+    if (word && queries.size < 4) queries.add(word.toLowerCase())
+  }
+  const out: { query: string; results: number; topTitles: string[] }[] = []
+  for (const q of [...queries].slice(0, 3)) {
+    try {
+      const controller = new AbortController()
+      const t = setTimeout(() => controller.abort(), 8_000)
+      const res = await fetch(
+        `${base}/search/suggest.json?q=${encodeURIComponent(q)}&resources[type]=product&resources[limit]=5`,
+        { signal: controller.signal, headers: { 'User-Agent': DESKTOP_UA } })
+      clearTimeout(t)
+      if (!res.ok) continue
+      const data = await res.json() as { resources?: { results?: { products?: { title: string }[] } } }
+      const prods = data.resources?.results?.products ?? []
+      out.push({ query: q, results: prods.length, topTitles: prods.slice(0, 3).map((p) => p.title) })
+    } catch { /* requête test ratée → on ne l'inclut pas, jamais de donnée inventée */ }
+  }
+  return out
+}
+
+/** Détection DÉTERMINISTE de descriptions quasi identiques (pénalité contenu dupliqué). */
+function findDuplicateDescriptions(products: ProductForAudit[]): string[] {
+  const norm = (s: string) => s.toLowerCase().replace(/[^a-zà-ÿ0-9\s]/g, '').split(/\s+/).filter(Boolean).slice(0, 40)
+  const pairs: string[] = []
+  const withDesc = products.filter((p) => p.description_excerpt.length > 80)
+  for (let i = 0; i < withDesc.length && pairs.length < 5; i++) {
+    for (let j = i + 1; j < withDesc.length && pairs.length < 5; j++) {
+      const a = norm(withDesc[i].description_excerpt), b = new Set(norm(withDesc[j].description_excerpt))
+      if (a.length < 15) continue
+      const common = a.filter((w) => b.has(w)).length
+      if (common / a.length > 0.8) pairs.push(`${withDesc[i].title} ↔ ${withDesc[j].title}`)
+    }
+  }
+  return pairs
+}
+
 /** Revenue of the last 30 days from the conversions table (real Shopify orders). */
 async function monthlyRevenue(storeId: string, supabase: SupabaseClient): Promise<number | null> {
   const since = new Date(Date.now() - 30 * 864e5).toISOString().split('T')[0]
@@ -74,13 +143,18 @@ async function monthlyRevenue(storeId: string, supabase: SupabaseClient): Promis
 }
 
 /** What each agent actually needs — keeps every step fast (≤60s Vercel). */
-const NEEDS: Record<ProblemCategory, { home?: boolean; product?: boolean; cart?: boolean; mobile?: boolean; pages?: boolean; pagespeed?: boolean }> = {
+const NEEDS: Record<ProblemCategory, {
+  home?: boolean; product?: boolean; cart?: boolean; collection?: boolean
+  mobile?: boolean; pages?: boolean; pagespeed?: boolean
+  indexation?: boolean; search?: boolean; duplicates?: boolean
+}> = {
   products: {},
-  uiux: { home: true },
-  perf_seo: { home: true, product: true, pagespeed: true },
+  uiux: { home: true, product: true, pages: true, search: true },
+  perf_seo: { home: true, product: true, pagespeed: true, indexation: true, duplicates: true },
   trust: { home: true, product: true, pages: true },
-  funnel: { product: true, cart: true },
+  funnel: { home: true, product: true, cart: true, collection: true },
   mobile: { mobile: true },
+  competitive: {},
 }
 
 /**
@@ -100,33 +174,41 @@ export async function collectForCategory(
   ])
   const themeName = (themes.find((t) => t.role === 'main') ?? themes[0])?.name ?? 'Inconnu'
 
-  const products: ProductForAudit[] = rawProducts.map((p) => ({
-    id: p.id,
-    title: p.title,
-    handle: p.handle,
-    product_type: p.product_type ?? '',
-    price: p.variants?.[0]?.price ?? null,
-    compare_at_price: p.variants?.[0]?.compare_at_price ?? null,
-    description_words: (p.body_html ?? '').replace(/<[^>]+>/g, ' ').trim().split(/\s+/).filter(Boolean).length,
-    has_description: Boolean(p.body_html?.trim()),
-    image_count: p.images?.length ?? 0,
-    images_missing_alt: (p.images ?? []).filter((i) => !i.alt?.trim()).length,
-    variant_count: p.variants?.length ?? 0,
-    variant_titles: (p.variants ?? []).slice(0, 4).map((v) => v.title ?? '').filter(Boolean),
-    tags: p.tags ?? '',
-  }))
+  const products: ProductForAudit[] = rawProducts.map((p) => {
+    const text = (p.body_html ?? '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
+    const words = text.split(/\s+/).filter(Boolean)
+    return {
+      id: p.id,
+      title: p.title,
+      handle: p.handle,
+      product_type: p.product_type ?? '',
+      price: p.variants?.[0]?.price ?? null,
+      compare_at_price: p.variants?.[0]?.compare_at_price ?? null,
+      description_words: words.length,
+      has_description: Boolean(text),
+      description_excerpt: words.slice(0, 50).join(' '),
+      image_count: p.images?.length ?? 0,
+      images_missing_alt: (p.images ?? []).filter((i) => !i.alt?.trim()).length,
+      variant_count: p.variants?.length ?? 0,
+      variant_titles: (p.variants ?? []).slice(0, 4).map((v) => v.title ?? '').filter(Boolean),
+      tags: p.tags ?? '',
+    }
+  })
 
   const productHandle = products[0]?.handle ?? null
   const productUrl = productHandle ? `${base}/products/${productHandle}` : null
 
-  const [homeHtml, productHtml, cartHtml, homeHtmlMobile, productHtmlMobile, pages, pagespeed] = await Promise.all([
+  const [homeHtml, productHtml, cartHtml, collectionHtml, homeHtmlMobile, productHtmlMobile, pages, pagespeed, indexation, searchTests] = await Promise.all([
     needs.home ? fetchStorefront(base) : Promise.resolve(null),
     needs.product && productUrl ? fetchStorefront(productUrl) : Promise.resolve(null),
     needs.cart ? fetchStorefront(`${base}/cart`) : Promise.resolve(null),
+    needs.collection ? fetchStorefront(`${base}/collections/all`) : Promise.resolve(null),
     needs.mobile ? fetchStorefront(base, true) : Promise.resolve(null),
     needs.mobile && productUrl ? fetchStorefront(productUrl, true) : Promise.resolve(null),
     needs.pages ? getShopPages(store.shop_domain, store.access_token) : Promise.resolve([]),
     needs.pagespeed ? runPageSpeed(base, 'mobile') : Promise.resolve(null),
+    needs.indexation ? checkIndexation(base) : Promise.resolve(null),
+    needs.search ? runSearchTests(base, products) : Promise.resolve(null),
   ])
 
   return {
@@ -140,8 +222,13 @@ export async function collectForCategory(
     productHtml,
     productUrl,
     cartHtml,
+    collectionHtml,
     homeHtmlMobile,
     productHtmlMobile,
     pagespeed,
+    robotsTxt: indexation?.robotsTxt ?? null,
+    sitemapExists: indexation?.sitemapExists ?? null,
+    searchTests,
+    duplicateDescriptionPairs: needs.duplicates ? findDuplicateDescriptions(products) : null,
   }
 }
