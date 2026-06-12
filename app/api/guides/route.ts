@@ -8,7 +8,7 @@ import type { Store } from '@/types'
 
 export const maxDuration = 120
 
-const VALID_TYPES: GuideType[] = ['photos', 'theme_ux', 'marketing', 'products']
+const VALID_TYPES: GuideType[] = ['photos', 'theme_ux', 'marketing', 'products', 'avis', 'videos', 'sav']
 
 async function getStore(supabase: Awaited<ReturnType<typeof createServiceRoleClient>>, userId: string) {
   const { data } = await supabase

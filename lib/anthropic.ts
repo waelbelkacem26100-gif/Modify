@@ -475,7 +475,7 @@ Règles :
 
 // ─── Guided accompaniment (what Modify can't fully automate) ─────────────────────
 
-export type GuideType = 'photos' | 'theme_ux' | 'marketing' | 'products'
+export type GuideType = 'photos' | 'theme_ux' | 'marketing' | 'products' | 'avis' | 'videos' | 'sav'
 
 export interface GuideStep { title: string; detail: string }
 export interface GeneratedGuide {
@@ -509,6 +509,15 @@ Génère un PLAN MARKETING de la semaine, concret et basé sur ces données : ac
 
   products: (c) => `Tu es analyste tendances e-commerce. Boutique "${c.shopName}" (niche : ${c.niche}). Catalogue actuel : ${c.productExamples.slice(0, 8).join(', ')}.
 Suggère de NOUVEAUX produits à ajouter, alignés sur les tendances de la niche et complémentaires au catalogue. Pour chacun : pourquoi il se vendrait, prix conseillé indicatif.`,
+
+  avis: (c) => `Tu es expert e-réputation e-commerce. Boutique "${c.shopName}" (niche : ${c.niche}). Produits : ${c.productExamples.slice(0, 8).join(', ')}.
+Crée un plan COLLECTE D'AVIS complet et actionnable : comment demander des avis après achat (email, SMS, timing), où les afficher sur la boutique, comment répondre aux avis négatifs. Inclus des modèles de messages prêts à envoyer, personnalisés avec les vrais noms de produits.`,
+
+  videos: (c) => `Tu es expert contenu vidéo e-commerce. Boutique "${c.shopName}" (niche : ${c.niche}). Produits phares : ${c.productExamples.slice(0, 6).join(', ')}.
+Génère un plan VIDÉO concret pour cette boutique : formats (Reels, TikTok, YouTube Shorts), scripts des 3 premières vidéos, plan de tournage réaliste avec un smartphone, stratégie de publication. Chaque script doit utiliser les vrais noms de produits.`,
+
+  sav: (c) => `Tu es expert service client e-commerce. Boutique "${c.shopName}" (niche : ${c.niche}). Produits : ${c.productExamples.slice(0, 8).join(', ')}.
+Crée un SYSTÈME SAV complet pour cette boutique : FAQ à publier sur le site (10 questions/réponses propres à cette niche), modèles de réponses aux situations courantes (retard, retour, produit défectueux), politique de retour claire à copier-coller, et comment afficher tout ça sur Shopify pour maximiser la confiance.`,
 }
 
 export async function generateGuide(type: GuideType, ctx: GuideContext): Promise<GeneratedGuide> {
