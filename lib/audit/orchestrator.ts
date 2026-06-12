@@ -61,6 +61,13 @@ export async function runAuditStep(
   let problems: Problem[] = []
   try {
     const input = await collectForCategory(store, category, supabase)
+    // L'agent concurrentiel ferme la chaîne : il reçoit les constats déjà
+    // facturés pour ne JAMAIS re-compter un même manque (ex: avis absents).
+    if (category === 'competitive') {
+      const { data: soFar } = await supabase.from('audits').select('results').eq('id', auditId).single()
+      const prev: Problem[] = Array.isArray(soFar?.results) ? soFar.results : []
+      input.previousFindings = prev.map((p) => p.title)
+    }
     problems = await AGENTS[category].run(input)
   } catch (e) {
     console.error(`[audit] agent ${category} failed:`, String(e))

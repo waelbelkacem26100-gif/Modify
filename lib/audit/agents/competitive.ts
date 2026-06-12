@@ -45,6 +45,10 @@ ${calibration(input.revenueMonthly)}
 ═══ POINTS DE CONTRÔLE ═══
 ${checklistFor('competitive')}
 
+═══ DÉJÀ FACTURÉ PAR LES AUTRES ANALYSES (NE PAS RE-COMPTER) ═══
+${input.previousFindings?.length ? input.previousFindings.map((t) => `- ${t}`).join('\n') : '(aucun)'}
+Si un manque ci-dessus existe AUSSI chez toi en version concurrentielle (ex: "aucun avis affiché" déjà compté → ne crée PAS "les concurrents ont des avis"), tu peux le MENTIONNER dans la description d'un autre constat mais tu ne crées PAS de problème séparé avec des € pour lui. Tes constats doivent apporter une information NOUVELLE (prix du marché, avantages affichés ailleurs, contenu des concurrents).
+
 ═══ RÈGLES ABSOLUES ═══
 1. HONNÊTETÉ TOTALE : chaque constat doit citer le concurrent EXACT (nom + domaine) et le fait observé. Si tes recherches ne trouvent PAS de concurrent fiable ou de donnée vérifiable, retourne un tableau JSON vide [] — n'invente JAMAIS un concurrent, un prix ou une politique.
 2. "affected_items" contient les concurrents cités, format "Nom (domaine.com) — fait observé".
