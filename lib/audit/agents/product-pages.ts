@@ -13,6 +13,7 @@ export const productPagesAgent: AuditAgent = {
 - Photos : minimum 3 par produit, textes descriptifs des images présents
 - Prix psychologique : 49,90€ plutôt que 50€ ; prix barré pour montrer l'économie
 - Variantes : noms clairs pour un client ("Bleu océan / Taille L", pas "Default Title")
+- Guide des tailles / compatibilité : pour des produits techniques, une aide au choix manque-t-elle ? (déduis-le des types de produits)
 - Vidéo de démonstration présente ou non (tu ne peux pas le vérifier ici → ne le liste PAS sauf si une autre donnée le prouve)`
     const data = `PRODUITS (données réelles complètes) :\n${productTable(input)}`
     return runAgentPrompt('products', mission, checklist, data, input)

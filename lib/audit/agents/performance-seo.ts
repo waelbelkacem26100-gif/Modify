@@ -12,7 +12,8 @@ export const performanceSeoAgent: AuditAgent = {
 - Visibilité Google : titres et descriptions Google uniques par page, textes descriptifs des images
 - Données structurées produit (prix, stock, avis) présentes dans le HTML → marqueur <!--JSONLD
 - GEO (lisibilité IA) : contenu descriptif riche, questions/réponses, politiques claires en texte (livraison, retours)
-- Plan du site / maillage interne (si décelable)`
+- Plan du site / maillage interne (si décelable)
+- ATTENTION : la LONGUEUR des descriptions produit appartient à l'agent Fiches produits — toi, tu juges uniquement les titres/descriptions GOOGLE (méta) et la lisibilité par les IA, pas le contenu commercial.`
     const ps = input.pagespeed
     const speedBlock = ps
       ? `MESURE RÉELLE GOOGLE (mobile) : score ${ps.score}/100 · premier affichage ${Math.round(ps.fcpMs / 100) / 10}s · affichage complet ${Math.round(ps.lcpMs / 100) / 10}s\nOpportunités mesurées : ${ps.opportunities.map((o) => `${o.title} (~${Math.round(o.savingsMs / 100) / 10}s)`).join(' · ') || 'aucune majeure'}`

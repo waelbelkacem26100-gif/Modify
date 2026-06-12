@@ -67,6 +67,7 @@ ${data}
 4. capability : "auto" UNIQUEMENT si Modify peut le corriger automatiquement (titres et descriptions Google, textes descriptifs d'images, descriptions produit réécrites, badges de confiance, avis [si réels], urgence [vrai stock], produits complémentaires, données structurées/lisibilité IA, articles de blog). Tout le reste (photos, vidéos, vrais avis à collecter, navigation, design, checkout, mobile, pages légales) = "guide".
 5. risk_group : "a" = via l'API produits/SEO (textes, descriptions, données) ; "b" = bloc ajouté sur la page produit (badges, avis, urgence, produits complémentaires) ; "c" = structure de page / navigation / checkout (risque élevé).
 6. Si un point est correct sur cette boutique, ne le liste pas. Liste TOUS les points réellement faibles de ta spécialité (typiquement 2 à 8).
+7. PAS DE DOUBLE-COMPTAGE : reste STRICTEMENT dans ta spécialité. Le périmètre des autres agents (NE PAS y empiéter) : Fiches produits = titres/descriptions/photos/prix/variantes des produits · Apparence = home/menu/footer · Vitesse & Google = vitesse mesurée, titres/descriptions GOOGLE, données structurées, lisibilité IA · Confiance = avis/garanties/pages légales/contact · Tunnel = panier/paiement/complémentaires · Mobile = rendu mobile uniquement. Un même manque ne doit JAMAIS être facturé en € dans deux catégories.
 
 ═══ FORMAT DE SORTIE ═══
 UNIQUEMENT un tableau JSON valide (aucun markdown, aucun texte autour) :
