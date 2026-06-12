@@ -31,8 +31,8 @@ export default function SuiviContent({ d }: { d: SuiviData }) {
   return (
     <div className="p-4 sm:p-8 max-w-4xl">
       <div className="mb-6">
-        <h1 className="font-syne font-bold text-xl sm:text-2xl text-text-primary mb-1">Votre suivi Modify</h1>
-        <p className="text-text-secondary text-sm">Ce que Modify vous a rapporté, en toute transparence.</p>
+        <h1 className="font-syne font-bold text-xl sm:text-2xl text-text-primary mb-1">Vos résultats</h1>
+        <p className="text-text-secondary text-sm">Ce que Modify vous a rapporté, en toute transparence — chiffres réels de votre boutique.</p>
       </div>
 
       {/* ROI hero */}

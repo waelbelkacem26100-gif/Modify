@@ -134,7 +134,7 @@ export default function SeoContent() {
         <div className="bg-surface border border-border rounded-2xl p-5">
           <p className="text-text-primary font-medium text-sm mb-2 flex items-center gap-2"><Bot className="w-4 h-4 text-primary" /> Optimisation pour les IA (GEO)</p>
           <p className="text-text-secondary text-xs leading-relaxed">
-            Données structurées Schema.org sur vos produits + FAQ — pour être cité par ChatGPT et Perplexity, et apparaître en rich snippets Google.
+            Données produit lisibles par les moteurs et les IA + FAQ — pour être cité par ChatGPT et Perplexity, et apparaître en rich snippets Google.
           </p>
         </div>
       </div>

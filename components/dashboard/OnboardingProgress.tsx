@@ -24,7 +24,7 @@ const steps: Step[] = [
     icon: ScanSearch,
     title: 'Lancer le scan',
     description: "L'IA analyse 50+ points de friction en < 2 min",
-    href: '/dashboard/audit',
+    href: '/dashboard',
     cta: 'Scanner',
   },
   {
