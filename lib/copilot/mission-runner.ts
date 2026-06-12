@@ -124,7 +124,15 @@ Règles :
   const content = message.content[0]
   if (content.type !== 'text') throw new Error('Unexpected response type')
   const raw = content.text.trim().replace(/^```(?:json)?/i, '').replace(/```$/, '').trim()
-  const parsed = JSON.parse(raw) as GeneratedMission
+  let parsed: GeneratedMission
+  try {
+    parsed = JSON.parse(raw) as GeneratedMission
+  } catch {
+    // Tolérance : du texte peut entourer le JSON — on extrait le dernier objet complet.
+    const m = raw.match(/\{[\s\S]*\}/)
+    if (!m) throw new Error('No JSON object in mission content')
+    parsed = JSON.parse(m[0]) as GeneratedMission
+  }
   if (!parsed.title || !Array.isArray(parsed.steps) || parsed.steps.length === 0) {
     throw new Error('Mission content incomplete')
   }
