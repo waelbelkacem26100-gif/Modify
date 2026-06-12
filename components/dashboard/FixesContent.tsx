@@ -54,7 +54,9 @@ export default function FixesContent() {
   useEffect(() => {
     if (applyingAll && !fixes.some((f) => f.status === 'pending' && fixCapability(f) === 'auto')) {
       setApplyingAll(false)
-      setConfirmation('Tous les correctifs automatiques')
+      // Bannière honnête : pas de "tout appliqué" si un correctif a échoué.
+      const failed = fixes.filter((f) => f.status === 'failed' && fixCapability(f) === 'auto').length
+      if (failed === 0) setConfirmation('Tous les correctifs automatiques')
     }
   }, [fixes, applyingAll])
 

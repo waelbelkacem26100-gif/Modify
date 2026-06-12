@@ -46,6 +46,16 @@ export async function runAuditStep(
   const category = CATEGORY_ORDER[stepIndex]
   if (!category) return { ok: false, category: 'products', count: 0, nextIndex: null, error: 'invalid step' }
 
+  // Garde anti-double-exécution : si le watchdog a relancé une étape qui avait
+  // en fait abouti (lenteur, pas mort), on la saute et on enchaîne directement.
+  const { data: doneLog } = await supabase
+    .from('audit_logs').select('id').eq('action', 'audit_category_done')
+    .eq('details->>audit_id', auditId).eq('details->>category', category).limit(1).maybeSingle()
+  if (doneLog) {
+    const isLastDone = stepIndex >= CATEGORY_ORDER.length - 1
+    return { ok: true, category, count: 0, nextIndex: isLastDone ? null : stepIndex + 1 }
+  }
+
   let problems: Problem[] = []
   try {
     const input = await collectForCategory(store, category, supabase)
