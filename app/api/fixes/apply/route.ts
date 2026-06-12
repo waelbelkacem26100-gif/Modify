@@ -211,16 +211,21 @@ export async function PATCH(request: NextRequest) {
     return applyGroupA(store, supabase, fix_id, typedFix.type, typedFix.title)
   }
 
-  console.log('[PATCH /fixes/apply] → taking GROUP B/C path (Liquid injection)')
+  console.log('[PATCH /fixes/apply] → taking GROUP B/C path')
+
+  // App-block fixes (badges, avis, urgence, cross-sell) n'ont besoin NI de
+  // Liquid NI de file_path : ils s'activent via templates/product.json. Le
+  // fallback Groupe A ne doit donc s'appliquer qu'aux fixes SANS bloc app.
+  const appBlock = riskGroup === 'b' ? appBlockForFix(typedFix) : null
 
   // ── Fallback: null liquid fields = product description fix slipped through ──
-  if (!typedFix.liquid_before || !typedFix.liquid_after) {
+  if (!appBlock && (!typedFix.liquid_before || !typedFix.liquid_after)) {
     console.log('[PATCH /fixes/apply] Fallback: null liquid fields — routing to Products API')
     return applyGroupA(store, supabase, fix_id, typedFix.type, typedFix.title)
   }
 
   // ── Group B/C: require file_path (theme_id resolved live below) ─────────
-  if (!typedFix.file_path) {
+  if (!appBlock && !typedFix.file_path) {
     return NextResponse.json({ error: 'Correctif incomplet — régénérez-le depuis le panel' }, { status: 400 })
   }
 
@@ -242,12 +247,11 @@ export async function PATCH(request: NextRequest) {
       { backup_theme_id: backupThemeId }, 'success', fix_id)
 
     // ── Step 1c: App-block path (Group B) ──────────────────────────────────
-    // For trust-badges / social-proof / urgency, ENABLE the matching app block
-    // in templates/product.json instead of injecting Liquid into a section file.
-    // Required on theme-blocks themes (Horizon), where section writes are
-    // rejected (422). Falls through to Liquid injection if the block can't be
-    // enabled (e.g. classic theme where the extension isn't available).
-    const appBlock = riskGroup === 'b' ? appBlockForFix(typedFix) : null
+    // For trust-badges / social-proof / urgency / cross-sell, ENABLE the
+    // matching app block in templates/product.json instead of injecting Liquid
+    // into a section file. Required on theme-blocks themes (Horizon), where
+    // section writes are rejected (422). Falls through to Liquid injection if
+    // the block can't be enabled AND the fix has Liquid to inject.
     if (appBlock) {
       // Cross-sell : l'IA choisit les produits complémentaires RÉELS du
       // catalogue et les écrit dans les réglages du bloc.
@@ -281,17 +285,32 @@ export async function PATCH(request: NextRequest) {
         console.log('[B] app block not enabled:', appBlock.handle, '-', r.reason, '→ Liquid fallback')
         await logAction(supabase, store.id, 'app_block_unavailable',
           { block: appBlock.handle, reason: r.reason }, 'warning', fix_id)
+        // Sans Liquid de secours, on s'arrête ici avec la vraie raison
+        // (jamais de faux "Corrigé").
+        if (!typedFix.liquid_before || !typedFix.liquid_after || !typedFix.file_path) {
+          await supabase.from('fixes').update({ status: 'failed', verification_status: 'failed' }).eq('id', fix_id)
+          return NextResponse.json({ error: `Le bloc n'a pas pu être activé : ${r.reason}`, code: 'APP_BLOCK_UNAVAILABLE' }, { status: 502 })
+        }
       }
+    }
+
+    // À ce stade, le chemin Liquid est garanti complet (les fixes app-block
+    // sans Liquid ont déjà retourné) — narrowing explicite pour TypeScript.
+    const filePath = typedFix.file_path
+    const liquidBefore = typedFix.liquid_before
+    const liquidAfter = typedFix.liquid_after
+    if (!filePath || !liquidBefore || !liquidAfter) {
+      return NextResponse.json({ error: 'Correctif incomplet — régénérez-le depuis le panel' }, { status: 400 })
     }
 
     // ── Step 2: Read current file from active theme ────────────────────────
     const asset = await getThemeAsset(
-      store.shop_domain, store.access_token, activeThemeId, typedFix.file_path
+      store.shop_domain, store.access_token, activeThemeId, filePath
     )
 
     if (!asset?.value) {
       await logAction(supabase, store.id, 'file_read_failed',
-        { file: typedFix.file_path }, 'failed', fix_id)
+        { file: filePath }, 'failed', fix_id)
       return NextResponse.json({ error: 'Impossible de lire le fichier thème Shopify' }, { status: 502 })
     }
     const fileContent: string = asset.value
@@ -303,28 +322,28 @@ export async function PATCH(request: NextRequest) {
     const isSchemaAnchor = (a: string) => /schema\s*-?%\}/.test(a) || /\{%-?\s*schema/.test(a)
 
     // If the DB-stored anchor is a schema tag (stale/bad data), don't even try it
-    let updatedCode = isSchemaAnchor(typedFix.liquid_before)
+    let updatedCode = isSchemaAnchor(liquidBefore)
       ? null
-      : applyAnchorInjection(fileContent, typedFix.liquid_before, typedFix.liquid_after)
-    let usedAnchor = typedFix.liquid_before
+      : applyAnchorInjection(fileContent, liquidBefore, liquidAfter)
+    let usedAnchor = liquidBefore
 
     if (updatedCode === null) {
       // Primary anchor unusable — extract real anchors from the live file,
       // excluding ALL schema/endschema variants
       const realAnchors = extractRealAnchors(fileContent).filter(
-        (a) => a !== typedFix.liquid_before && !isSchemaAnchor(a) && a.length >= 10
+        (a) => a !== liquidBefore && !isSchemaAnchor(a) && a.length >= 10
       )
-      console.log('[B/C] Primary anchor not found:', JSON.stringify(typedFix.liquid_before))
+      console.log('[B/C] Primary anchor not found:', JSON.stringify(liquidBefore))
       console.log('[B/C] Real anchors available:', realAnchors.slice(0, 5))
 
       for (const candidate of realAnchors) {
-        const attempt = applyAnchorInjection(fileContent, candidate, typedFix.liquid_after)
+        const attempt = applyAnchorInjection(fileContent, candidate, liquidAfter)
         if (attempt !== null && attempt !== fileContent) {
           updatedCode = attempt
           usedAnchor = candidate
           console.log('[B/C] Auto-healed anchor:', JSON.stringify(candidate))
           await logAction(supabase, store.id, 'anchor_auto_healed',
-            { file: typedFix.file_path, stale: typedFix.liquid_before, healed: candidate }, 'warning', fix_id)
+            { file: filePath, stale: liquidBefore, healed: candidate }, 'warning', fix_id)
           // Persist working anchor so next apply succeeds on first try
           await supabase.from('fixes').update({ liquid_before: candidate }).eq('id', fix_id)
           break
@@ -338,12 +357,12 @@ export async function PATCH(request: NextRequest) {
       // structurally: just before the {% schema %} block (safe end-of-body
       // position), or before the file's last line if there's no schema at all.
       // This always yields a valid placement, so Group B/C fixes still apply.
-      const structural = injectBeforeSchemaOrEnd(fileContent, typedFix.liquid_after)
+      const structural = injectBeforeSchemaOrEnd(fileContent, liquidAfter)
       updatedCode = structural
       usedAnchor = '(structural: before {% schema %} / end of file)'
-      console.log('[B/C] Structural fallback injection for', typedFix.file_path)
+      console.log('[B/C] Structural fallback injection for', filePath)
       await logAction(supabase, store.id, 'anchor_structural_fallback',
-        { file: typedFix.file_path, stale: typedFix.liquid_before }, 'warning', fix_id)
+        { file: filePath, stale: liquidBefore }, 'warning', fix_id)
     }
 
     // Idempotency — injected code already present, nothing to write
@@ -374,10 +393,10 @@ export async function PATCH(request: NextRequest) {
 
       // Write the modified file onto the PREVIEW theme only
       await updateThemeAsset(
-        store.shop_domain, store.access_token, previewThemeId!, typedFix.file_path, updatedCode
+        store.shop_domain, store.access_token, previewThemeId!, filePath, updatedCode
       )
       await logAction(supabase, store.id, 'preview_fix_applied',
-        { file: typedFix.file_path, preview_theme_id: previewThemeId }, 'success', fix_id)
+        { file: filePath, preview_theme_id: previewThemeId }, 'success', fix_id)
 
       const previewUrl = `https://${store.shop_domain}/admin/themes/${previewThemeId}/editor`
 
@@ -402,25 +421,25 @@ export async function PATCH(request: NextRequest) {
     // ── Step 4: Snapshot to backup theme (Group B) ────────────────────────
     if (backupThemeId) {
       await updateThemeAsset(
-        store.shop_domain, store.access_token, backupThemeId, typedFix.file_path, fileContent
+        store.shop_domain, store.access_token, backupThemeId, filePath, fileContent
       )
       await logAction(supabase, store.id, 'file_snapshot_saved',
-        { file: typedFix.file_path, backup_theme: backupThemeId }, 'success', fix_id)
+        { file: filePath, backup_theme: backupThemeId }, 'success', fix_id)
     }
 
     // ── Step 5: Apply fix to active theme ─────────────────────────────────
     console.log('[PUT] writing to theme:', activeThemeId, '| active:', activeThemeId, '| backup:', backupThemeId)
     await updateThemeAsset(
-      store.shop_domain, store.access_token, activeThemeId, typedFix.file_path, updatedCode
+      store.shop_domain, store.access_token, activeThemeId, filePath, updatedCode
     )
     await logAction(supabase, store.id, 'fix_applied_to_theme',
-      { file: typedFix.file_path, theme_id: activeThemeId, group: riskGroup }, 'success', fix_id)
+      { file: filePath, theme_id: activeThemeId, group: riskGroup }, 'success', fix_id)
 
     // ── Step 6: Post-modification verification ─────────────────────────────
     await new Promise((resolve) => setTimeout(resolve, 2000))
 
     const freshAsset = await getThemeAsset(
-      store.shop_domain, store.access_token, activeThemeId, typedFix.file_path
+      store.shop_domain, store.access_token, activeThemeId, filePath
     )
     const freshContent = freshAsset?.value ?? ''
 
@@ -428,14 +447,14 @@ export async function PATCH(request: NextRequest) {
 
     if (!verified) {
       await logAction(supabase, store.id, 'verification_failed',
-        { file: typedFix.file_path, reason: freshContent === fileContent ? 'content_unchanged' : 'empty_response' },
+        { file: filePath, reason: freshContent === fileContent ? 'content_unchanged' : 'empty_response' },
         'failed', fix_id)
 
       await updateThemeAsset(
-        store.shop_domain, store.access_token, activeThemeId, typedFix.file_path, fileContent
+        store.shop_domain, store.access_token, activeThemeId, filePath, fileContent
       )
       await logAction(supabase, store.id, 'auto_rollback_executed',
-        { file: typedFix.file_path }, 'warning', fix_id)
+        { file: filePath }, 'warning', fix_id)
 
       await supabase.from('fixes').update({
         status: 'failed',
@@ -443,7 +462,7 @@ export async function PATCH(request: NextRequest) {
       }).eq('id', fix_id)
 
       return NextResponse.json({
-        error: `Rollback automatique exécuté — le fichier ${typedFix.file_path} n'a pas changé après l'écriture Shopify.`,
+        error: `Rollback automatique exécuté — le fichier ${filePath} n'a pas changé après l'écriture Shopify.`,
         code: 'VERIFICATION_FAILED',
       }, { status: 422 })
     }
@@ -458,7 +477,7 @@ export async function PATCH(request: NextRequest) {
     }).eq('id', fix_id)
 
     await logAction(supabase, store.id, 'verification_passed',
-      { file: typedFix.file_path, group: riskGroup }, 'success', fix_id)
+      { file: filePath, group: riskGroup }, 'success', fix_id)
 
     // PROOF (2/2) : screenshot APRÈS la modification vérifiée.
     after(async () => {
