@@ -67,6 +67,16 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ ok: res.ok, status: res.status, body: await res.json().catch(() => null) })
   }
 
+  // Génère + publie un article SEO avec illustration (pipeline réel).
+  if (action === 'blogtest') {
+    const { data: full } = await supabase.from('stores').select('*').eq('id', store.id).single()
+    const { getValidAccessToken } = await import('@/lib/shopify-token')
+    const { generateAndPublishArticle } = await import('@/lib/blog-generator')
+    await getValidAccessToken(full, supabase)
+    const r = await generateAndPublishArticle(full, supabase)
+    return NextResponse.json(r)
+  }
+
   // Lance la chaîne "Tout appliquer" (1 correctif/étape, auto-propagée).
   if (action === 'applyall') {
     const auditId = request.nextUrl.searchParams.get('audit_id')
