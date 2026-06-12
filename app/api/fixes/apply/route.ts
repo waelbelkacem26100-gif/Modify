@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest, NextResponse, after } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { createServiceRoleClient } from '@/lib/supabase-server'
 import { getValidAccessToken } from '@/lib/shopify-token'
@@ -25,6 +25,8 @@ const THEME_WRITE_FORBIDDEN_MSG =
 import { getOrCreateSessionBackup, classifyRiskGroup } from '@/lib/theme-backup'
 import { logAction } from '@/lib/audit-log'
 import { fixCapability } from '@/lib/fix-capability'
+import { saveGroupABackup, snapshotProductsContent, snapshotProductsAlt } from '@/lib/fix-pipeline'
+import { captureFixScreenshot } from '@/lib/screenshot'
 import type { Store, Audit, AuditResult, Fix, RiskGroup } from '@/types'
 
 export const maxDuration = 300 // theme duplication for Group C previews can be slow
@@ -186,6 +188,12 @@ export async function PATCH(request: NextRequest) {
     }, { status: 422 })
   }
 
+  // ── PROOF (1/2) : screenshot AVANT — capturé côté serveur, donc valable pour
+  // le clic marchand, "Tout appliquer" ET le cron. Best-effort, jamais bloquant.
+  if (!typedFix.screenshot_before) {
+    try { await captureFixScreenshot(store, fix_id, 'before', supabase) } catch { /* tolerant */ }
+  }
+
   const riskGroup: RiskGroup = classifyRiskGroup(typedFix.type, typedFix.title, typedFix.risk_group)
   console.log('[apply] fix', typedFix.id, '→ group', riskGroup, '(db:', typedFix.risk_group, ')')
 
@@ -241,8 +249,19 @@ export async function PATCH(request: NextRequest) {
     // enabled (e.g. classic theme where the extension isn't available).
     const appBlock = riskGroup === 'b' ? appBlockForFix(typedFix) : null
     if (appBlock) {
+      // Cross-sell : l'IA choisit les produits complémentaires RÉELS du
+      // catalogue et les écrit dans les réglages du bloc.
+      let blockSettings: Record<string, unknown> = {}
+      if (appBlock.handle === 'cross-sell') {
+        try {
+          const { pickCrossSellSettings } = await import('@/lib/cross-sell')
+          blockSettings = await pickCrossSellSettings(store)
+          await logAction(supabase, store.id, 'cross_sell_products_picked',
+            { settings: blockSettings }, 'success', fix_id)
+        } catch (e) { console.error('[cross-sell] pick failed:', String(e)) }
+      }
       const r = await enableProductAppBlock(
-        store.shop_domain, store.access_token, activeThemeId, appBlock
+        store.shop_domain, store.access_token, activeThemeId, appBlock, blockSettings
       )
       if (r.status === 'applied' || r.status === 'already') {
         await logAction(supabase, store.id, 'app_block_enabled',
@@ -250,6 +269,11 @@ export async function PATCH(request: NextRequest) {
         await supabase.from('fixes').update({
           status: 'applied', verification_status: 'verified', theme_id: activeThemeId,
         }).eq('id', fix_id)
+        // PROOF (2/2) : screenshot APRÈS, une fois le bloc réellement actif.
+        after(async () => {
+          await new Promise((r2) => setTimeout(r2, 4000))
+          try { await captureFixScreenshot(store, fix_id, 'after', supabase) } catch { /* tolerant */ }
+        })
         return NextResponse.json({ success: true, group: 'b', method: 'app_block', block: appBlock.handle, note: r.status })
       } else {
         // Couldn't enable the app block — record why, then fall through to the
@@ -436,6 +460,12 @@ export async function PATCH(request: NextRequest) {
     await logAction(supabase, store.id, 'verification_passed',
       { file: typedFix.file_path, group: riskGroup }, 'success', fix_id)
 
+    // PROOF (2/2) : screenshot APRÈS la modification vérifiée.
+    after(async () => {
+      await new Promise((r2) => setTimeout(r2, 4000))
+      try { await captureFixScreenshot(store, fix_id, 'after', supabase) } catch { /* tolerant */ }
+    })
+
     return NextResponse.json({ success: true, group: riskGroup })
 
   } catch (e) {
@@ -494,6 +524,15 @@ async function applyGroupA(
   }
 }
 
+// PROOF (2/2) pour les correctifs Groupe A à effet visible (descriptions).
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function scheduleAfterScreenshot(store: Store, supabase: any, fixId: string) {
+  after(async () => {
+    await new Promise((r) => setTimeout(r, 4000))
+    try { await captureFixScreenshot(store, fixId, 'after', supabase) } catch { /* tolerant */ }
+  })
+}
+
 // ── Group A · descriptions (existing behaviour — unchanged) ──────────────────
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function applyGroupADescriptions(store: Store, supabase: any, fix_id: string): Promise<NextResponse> {
@@ -507,6 +546,12 @@ async function applyGroupADescriptions(store: Store, supabase: any, fix_id: stri
       await supabase.from('fixes').update({ status: 'applied', verification_status: 'verified' }).eq('id', fix_id)
       return NextResponse.json({ success: true, group: 'a', updated: 0, note: 'all_already_described' })
     }
+
+    // BACKUP : snapshot exact des valeurs qui vont changer (rollback fiable).
+    try {
+      const backup = await snapshotProductsContent(store, productsWithoutDesc.slice(0, 10).map((p) => p.id))
+      await saveGroupABackup(supabase, fix_id, store.id, backup)
+    } catch (e) { console.error('[Group A] backup failed (continuing):', String(e)) }
 
     let updatedCount = 0
     for (const product of productsWithoutDesc.slice(0, 10)) {
@@ -553,6 +598,7 @@ async function applyGroupADescriptions(store: Store, supabase: any, fix_id: stri
     await logAction(supabase, store.id, 'product_descriptions_applied',
       { updated: updatedCount, total: productsWithoutDesc.length }, 'success', fix_id)
     await supabase.from('fixes').update({ status: 'applied', verification_status: 'verified' }).eq('id', fix_id)
+    scheduleAfterScreenshot(store, supabase, fix_id)
     return NextResponse.json({ success: true, group: 'a', updated: updatedCount })
   } catch (e) {
     console.error('[Group A] fatal error (GET products failed?):', e)
@@ -569,6 +615,17 @@ async function applyGroupAAltText(store: Store, supabase: any, fix_id: string): 
     const products = await getProducts(store.shop_domain, store.access_token, 50)
     let updated = 0
     let scanned = 0
+
+    // BACKUP : snapshot des alt actuels des images qui vont changer.
+    try {
+      const toTouch = products.slice(0, 25)
+        .map((p) => ({ productId: p.id, imageIds: (p.images ?? []).filter((i) => !i.alt?.trim()).map((i) => i.id) }))
+        .filter((x) => x.imageIds.length > 0)
+      if (toTouch.length > 0) {
+        const backup = await snapshotProductsAlt(store, toTouch)
+        await saveGroupABackup(supabase, fix_id, store.id, backup)
+      }
+    } catch (e) { console.error('[Group A · alt] backup failed (continuing):', String(e)) }
 
     for (const product of products.slice(0, 25)) {
       // images missing alt text
@@ -612,6 +669,16 @@ async function applyGroupAMeta(store: Store, supabase: any, fix_id: string): Pro
   try {
     const products = await getProducts(store.shop_domain, store.access_token, 50)
     let updated = 0
+
+    // BACKUP : snapshot des titres/descriptions Google actuels.
+    try {
+      const backup = await snapshotProductsContent(store, products.slice(0, 15).map((p) => p.id))
+      // Meta-only fix: drop body_html from the snapshot so rollback only
+      // restores the SEO fields (not the descriptions).
+      backup.products = backup.products.map(({ id, title, seo_title, meta_description }) =>
+        ({ id, title, seo_title, meta_description }))
+      await saveGroupABackup(supabase, fix_id, store.id, backup)
+    } catch (e) { console.error('[Group A · meta] backup failed (continuing):', String(e)) }
 
     for (const product of products.slice(0, 15)) {
       try {

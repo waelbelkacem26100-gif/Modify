@@ -4,6 +4,7 @@ import { createServiceRoleClient } from '@/lib/supabase-server'
 import { getValidAccessToken } from '@/lib/shopify-token'
 import { getThemes, getThemeAsset, updateThemeAsset } from '@/lib/shopify'
 import { logAction } from '@/lib/audit-log'
+import { parseGroupABackup, restoreGroupABackup } from '@/lib/fix-pipeline'
 import type { Fix, Audit, Store } from '@/types'
 
 export async function POST(request: NextRequest) {
@@ -30,8 +31,30 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Ce correctif n\'est pas appliqué' }, { status: 400 })
   }
 
+  // ── Rollback Groupe A : restaure les valeurs produit exactes du snapshot
+  // (descriptions, titres/descriptions Google, textes d'images) via l'API.
+  const groupABackup = parseGroupABackup(typedFix)
+  if (groupABackup) {
+    try {
+      const r = await restoreGroupABackup(store, groupABackup)
+      if (r.restored === 0) {
+        await logAction(supabase, store.id, 'rollback_failed',
+          { reason: 'group_a_restore_all_failed', failed: r.failed }, 'failed', fix_id)
+        return NextResponse.json({ error: 'La restauration a échoué — aucune valeur remise.' }, { status: 502 })
+      }
+      await supabase.from('fixes').update({ status: 'rolled_back' }).eq('id', fix_id)
+      await logAction(supabase, store.id, 'rollback_group_a',
+        { restored: r.restored, failed: r.failed }, 'success', fix_id)
+      return NextResponse.json({ success: true, restored: r.restored })
+    } catch (e) {
+      console.error('Group A rollback failed:', e)
+      await logAction(supabase, store.id, 'rollback_failed', { error: String(e) }, 'failed', fix_id)
+      return NextResponse.json({ error: "Erreur de communication avec l'API Shopify" }, { status: 502 })
+    }
+  }
+
   if (!typedFix.file_path) {
-    return NextResponse.json({ error: 'Informations de thème manquantes' }, { status: 400 })
+    return NextResponse.json({ error: 'Aucune sauvegarde disponible pour ce correctif' }, { status: 400 })
   }
 
   try {

@@ -35,19 +35,32 @@ export async function POST(request: NextRequest) {
   const store = (audit as unknown as { stores: Store }).stores
   const origin = request.nextUrl.origin
 
+  // Trace de réception : permet de diagnostiquer une chaîne qui meurt (le POST
+  // suivant est-il arrivé ?).
+  await logAction(supabase, store.id, 'audit_step_received', { audit_id: auditId, step }, 'success')
+
   after(async () => {
     try {
       await getValidAccessToken(store, supabase)
       const r = await runAuditStep(store, auditId, step, supabase)
       if (r.nextIndex !== null) {
-        await fetch(`${origin}/api/audit/step`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'x-modify-internal': process.env.CRON_SECRET ?? '' },
-          body: JSON.stringify({ audit_id: auditId, step: r.nextIndex }),
-        }).catch((e) => console.error('[audit/step] chain trigger failed', String(e)))
+        try {
+          const res = await fetch(`${origin}/api/audit/step`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'x-modify-internal': process.env.CRON_SECRET ?? '' },
+            body: JSON.stringify({ audit_id: auditId, step: r.nextIndex }),
+          })
+          await logAction(supabase, store.id, 'audit_chain_sent',
+            { audit_id: auditId, from: step, to: r.nextIndex, http: res.status }, res.ok ? 'success' : 'failed')
+        } catch (e) {
+          await logAction(supabase, store.id, 'audit_chain_sent',
+            { audit_id: auditId, from: step, to: r.nextIndex, error: String(e).slice(0, 200) }, 'failed')
+        }
       }
     } catch (e) {
       console.error('[audit/step] step failed', step, String(e))
+      await logAction(supabase, store.id, 'audit_step_crashed',
+        { audit_id: auditId, step, error: String(e).slice(0, 300) }, 'failed')
       await supabase.from('audits').update({ status: 'failed' }).eq('id', auditId)
     }
   })

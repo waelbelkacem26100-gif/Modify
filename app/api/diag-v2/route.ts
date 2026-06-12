@@ -29,6 +29,28 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ started: res.ok, status: res.status, body: await res.json().catch(() => null) })
   }
 
+  // Relance manuelle d'une étape de chaîne morte (watchdog manuel).
+  if (action === 'kick') {
+    const auditId = request.nextUrl.searchParams.get('audit_id')
+    const step = Number(request.nextUrl.searchParams.get('step') ?? 0)
+    const res = await fetch(`${request.nextUrl.origin}/api/audit/step`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-modify-internal': process.env.CRON_SECRET ?? '' },
+      body: JSON.stringify({ audit_id: auditId, step }),
+    })
+    return NextResponse.json({ kicked: res.ok, status: res.status, body: await res.json().catch(() => null) })
+  }
+
+  // Trace de chaîne : logs de réception/envoi pour un audit.
+  if (action === 'trace') {
+    const auditId = request.nextUrl.searchParams.get('audit_id')
+    const { data: trace } = await supabase
+      .from('audit_logs').select('action, details, status, created_at')
+      .eq('details->>audit_id', auditId ?? '')
+      .order('created_at', { ascending: true }).limit(60)
+    return NextResponse.json({ trace })
+  }
+
   // status — latest audit + progress + compact results
   const { data: audit } = await supabase
     .from('audits').select('*').eq('store_id', store.id)

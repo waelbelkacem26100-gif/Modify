@@ -44,6 +44,9 @@ export function appBlockForFix(fix: { type?: string | null; title?: string | nul
   if (/urgen|scarcit|stock|countdown|compte\s*à\s*rebours/.test(hay)) {
     return { handle: 'urgency', blockKey: 'modify_urgency' }
   }
+  if (/cross[\s-]?sell|upsell|complémentaire|souvent achet|bundle|panier moyen|recommand/.test(hay)) {
+    return { handle: 'cross-sell', blockKey: 'modify_cross_sell' }
+  }
   return null
 }
 
@@ -99,7 +102,8 @@ export async function enableProductAppBlock(
   shop: string,
   accessToken: string,
   themeId: string,
-  spec: AppBlockSpec
+  spec: AppBlockSpec,
+  settings: Record<string, unknown> = {}
 ): Promise<EnableResult> {
   const appHandle = APP_HANDLE_OVERRIDE || (await getAppHandle(shop, accessToken))
   if (!appHandle) return { status: 'error', reason: 'app handle introuvable (currentAppInstallation)' }
@@ -126,7 +130,7 @@ export async function enableProductAppBlock(
     return { status: 'already' }
   }
 
-  section.blocks[spec.blockKey] = { type, settings: {} }
+  section.blocks[spec.blockKey] = { type, settings }
   section.block_order = Array.isArray(section.block_order) ? section.block_order : []
   if (!section.block_order.includes(spec.blockKey)) section.block_order.push(spec.blockKey)
 
