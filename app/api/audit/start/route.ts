@@ -43,7 +43,7 @@ export async function GET() {
     // l'étape suivante. Inactivité = pas de catégorie terminée depuis 2 min.
     const { data: lastLog } = await supabase
       .from('audit_logs').select('created_at').eq('details->>audit_id', audit.id)
-      .in('action', ['audit_category_done', 'audit_started'])
+      .in('action', ['audit_category_done', 'audit_started', 'audit_watchdog_kick'])
       .order('created_at', { ascending: false }).limit(1).maybeSingle()
     const lastActivity = lastLog ? new Date(lastLog.created_at).getTime() : new Date(audit.created_at).getTime()
     // 160s : au-delà du pire cas d'une étape lente (perf_seo + PageSpeed ~90s,
@@ -51,6 +51,11 @@ export async function GET() {
     // encore en cours (écriture concurrente de results). La garde anti-double
     // dans runAuditStep couvre la relance d'une étape déjà aboutie.
     if (Date.now() - lastActivity > 160_000 && progress.done < progress.total) {
+      // Le coup de watchdog est journalisé COMME une activité : plusieurs polls
+      // dans la même fenêtre d'inactivité ne relancent qu'UNE chaîne (vu en
+      // réel : competitive exécuté 2× lors d'un déploiement en plein audit).
+      await logAction(supabase, store.id, 'audit_watchdog_kick',
+        { audit_id: audit.id, step: progress.done }, 'success')
       const origin = new URL(
         process.env.NEXT_PUBLIC_APP_URL || 'https://modify-coral.vercel.app'
       ).origin
