@@ -504,9 +504,11 @@ type GroupASubtype = 'description' | 'alt' | 'json-ld' | 'meta'
 // Order matters: alt → json-ld → meta → description (default).
 function classifyGroupASubtype(type: string, title: string): GroupASubtype {
   const t = `${type} ${title}`.toLowerCase()
-  if (/alt[\s-]?text|alt attribute|texte alternatif|image alt/.test(t)) return 'alt'
-  if (/json[\s-]?ld|structured data|données structurées|rich snippet|schema\.org/.test(t)) return 'json-ld'
-  if (/meta[\s-]?(title|description|tag)|balise meta|title tag|meta seo/.test(t)) return 'meta'
+  if (/alt[\s-]?text|alt attribute|texte alternatif|image alt|texte descriptif des images|image.{0,12}texte descriptif/.test(t)) return 'alt'
+  // Inclut les formulations v2 sans jargon : « données produit invisibles pour
+  // Google et les IA », « lisible par les IA / ChatGPT » (= données structurées).
+  if (/json[\s-]?ld|structured data|données structurées|rich snippet|schema\.org|invisibles? pour google|lisible.{0,15}(ia|chatgpt)|données produit.{0,20}(google|ia)/.test(t)) return 'json-ld'
+  if (/meta[\s-]?(title|description|tag)|balise meta|title tag|meta seo|titres? et descriptions? google|description google/.test(t)) return 'meta'
   return 'description'
 }
 
@@ -538,10 +540,14 @@ function scheduleAfterScreenshot(store: Store, supabase: any, fixId: string) {
 async function applyGroupADescriptions(store: Store, supabase: any, fix_id: string): Promise<NextResponse> {
   try {
     const products = await getProducts(store.shop_domain, store.access_token, 50)
-    const productsWithoutDesc = products.filter((p) => !p.body_html?.trim())
-    console.log('[Group A] descriptions —', productsWithoutDesc.length, 'of', products.length, 'need one')
+    // Cible : descriptions ABSENTES ou TROP COURTES (<100 mots) — c'est le
+    // constat réel de l'audit ; le backup permet de tout restaurer à l'exact.
+    const wordCount = (html: string | null | undefined) =>
+      (html ?? '').replace(/<[^>]+>/g, ' ').trim().split(/\s+/).filter(Boolean).length
+    const productsWithoutDesc = products.filter((p) => wordCount(p.body_html) < 100)
+    console.log('[Group A] descriptions —', productsWithoutDesc.length, 'of', products.length, 'missing or too short')
 
-    // All products already described — idempotent success
+    // All products already well described — idempotent success
     if (productsWithoutDesc.length === 0) {
       await supabase.from('fixes').update({ status: 'applied', verification_status: 'verified' }).eq('id', fix_id)
       return NextResponse.json({ success: true, group: 'a', updated: 0, note: 'all_already_described' })
