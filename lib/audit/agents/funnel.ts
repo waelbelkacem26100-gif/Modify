@@ -15,10 +15,10 @@ export const funnelAgent: AuditAgent = {
 - Champ code promo visible
 - Récupération de panier abandonné (tu ne peux pas le vérifier ici → ne le liste PAS)`
     const data = `HTML RÉEL fiche produit :
-${input.productHtml ?? '(non disponible)'}
+${(input.productHtml ?? '').slice(0, 8000) || '(non disponible)'}
 
 HTML RÉEL page panier :
-${input.cartHtml ?? '(non disponible)'}
+${(input.cartHtml ?? '').slice(0, 6000) || '(non disponible)'}
 
 PRODUITS et prix (pour juger les complémentaires possibles) :
 ${input.products.slice(0, 15).map((p) => `- ${p.title} (${p.price ?? '?'}€, type: ${p.product_type || '—'})`).join('\n')}`

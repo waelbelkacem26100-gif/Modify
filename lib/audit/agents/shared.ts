@@ -43,7 +43,7 @@ export async function runAgentPrompt(
   const meta = AUDIT_CATEGORIES[category]
   const message = await anthropic.messages.create({
     model: 'claude-opus-4-8',
-    max_tokens: 4000,
+    max_tokens: 3000,
     messages: [{
       role: 'user',
       content: `Tu es l'agent « ${meta.label} » ${meta.emoji} de Modify, l'auditeur de conversion Shopify le plus rigoureux au monde. Tu analyses UNIQUEMENT ta spécialité, à partir de DONNÉES RÉELLES de la boutique.

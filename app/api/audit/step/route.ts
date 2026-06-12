@@ -5,7 +5,9 @@ import { runAuditStep } from '@/lib/audit/orchestrator'
 import type { Store } from '@/types'
 
 export const runtime = 'nodejs'
-export const maxDuration = 60
+// 300s : l'appel IA d'un agent peut dépasser 60s (gros HTML). Vercel accepte
+// maxDuration 300 (Fluid) — seule la fréquence des crons est limitée en Hobby.
+export const maxDuration = 300
 
 // Maillon interne de la chaîne d'audit : exécute UNE catégorie (≤60s Vercel
 // Hobby) dans after() — donc APRÈS avoir répondu — puis déclenche la catégorie

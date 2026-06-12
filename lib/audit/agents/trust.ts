@@ -22,10 +22,10 @@ export const trustAgent: AuditAgent = {
 ${pagesList}
 
 HTML RÉEL fiche produit (réassurance visible ?) :
-${input.productHtml ?? '(non disponible)'}
+${(input.productHtml ?? '').slice(0, 8000) || '(non disponible)'}
 
 HTML RÉEL accueil (footer, contact, badges) :
-${(input.homeHtml ?? '').slice(-5000) || '(non disponible)'}`
+${(input.homeHtml ?? '').slice(-4000) || '(non disponible)'}`
     return runAgentPrompt('trust', mission, checklist, data, input)
   },
 }

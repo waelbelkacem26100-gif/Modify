@@ -1,0 +1,70 @@
+{%- liquid
+  assign picked = ''
+  if block.settings.product_1 != blank
+    assign picked = picked | append: block.settings.product_1 | append: ','
+  endif
+  if block.settings.product_2 != blank
+    assign picked = picked | append: block.settings.product_2 | append: ','
+  endif
+  if block.settings.product_3 != blank
+    assign picked = picked | append: block.settings.product_3 | append: ','
+  endif
+  assign picked_handles = picked | split: ','
+-%}
+<div class="modify-cross-sell" style="box-sizing:border-box; width:100%; margin:1.25rem 0 0; padding-top:1rem; border-top:1px solid #ececec; font-family:inherit;" {{ block.shopify_attributes }}>
+  <p style="font-size:.78rem; text-transform:uppercase; letter-spacing:.06em; opacity:.55; margin:0 0 .75rem;">{{ block.settings.heading }}</p>
+  <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(110px, 1fr)); gap:.75rem;">
+    {%- assign shown = 0 -%}
+    {%- comment -%} 1) Produits choisis par Modify (réglages du bloc) {%- endcomment -%}
+    {%- for handle in picked_handles -%}
+      {%- if shown >= 3 -%}{%- break -%}{%- endif -%}
+      {%- assign rec = all_products[handle] -%}
+      {%- if rec and rec.id != product.id and rec.available -%}
+        {%- assign shown = shown | plus: 1 -%}
+        <a href="{{ rec.url }}" style="display:block; text-decoration:none; color:inherit;">
+          {%- if rec.featured_image -%}
+            <img src="{{ rec.featured_image | image_url: width: 240 }}" alt="{{ rec.featured_image.alt | default: rec.title | escape }}" loading="lazy" width="240" height="240" style="width:100%; aspect-ratio:1; object-fit:cover; border-radius:10px; display:block;">
+          {%- endif -%}
+          <p style="font-size:.82rem; line-height:1.25; margin:.45rem 0 .1rem; font-weight:500;">{{ rec.title }}</p>
+          <p style="font-size:.8rem; opacity:.7; margin:0;">{{ rec.price | money }}</p>
+        </a>
+      {%- endif -%}
+    {%- endfor -%}
+    {%- comment -%} 2) Complément automatique : produits de la même collection {%- endcomment -%}
+    {%- if shown < 3 and product.collections.first -%}
+      {%- for rec in product.collections.first.products -%}
+        {%- if shown >= 3 -%}{%- break -%}{%- endif -%}
+        {%- if rec.id != product.id and rec.available -%}
+          {%- assign already = false -%}
+          {%- for handle in picked_handles -%}
+            {%- if handle == rec.handle -%}{%- assign already = true -%}{%- endif -%}
+          {%- endfor -%}
+          {%- unless already -%}
+            {%- assign shown = shown | plus: 1 -%}
+            <a href="{{ rec.url }}" style="display:block; text-decoration:none; color:inherit;">
+              {%- if rec.featured_image -%}
+                <img src="{{ rec.featured_image | image_url: width: 240 }}" alt="{{ rec.featured_image.alt | default: rec.title | escape }}" loading="lazy" width="240" height="240" style="width:100%; aspect-ratio:1; object-fit:cover; border-radius:10px; display:block;">
+              {%- endif -%}
+              <p style="font-size:.82rem; line-height:1.25; margin:.45rem 0 .1rem; font-weight:500;">{{ rec.title }}</p>
+              <p style="font-size:.8rem; opacity:.7; margin:0;">{{ rec.price | money }}</p>
+            </a>
+          {%- endunless -%}
+        {%- endif -%}
+      {%- endfor -%}
+    {%- endif -%}
+  </div>
+</div>
+
+{% schema %}
+{
+  "name": "Modify Cross-sell",
+  "target": "section",
+  "enabled_on": { "templates": ["product"] },
+  "settings": [
+    { "type": "text", "id": "heading", "label": "Titre", "default": "Souvent achetés ensemble" },
+    { "type": "product", "id": "product_1", "label": "Produit complémentaire 1" },
+    { "type": "product", "id": "product_2", "label": "Produit complémentaire 2" },
+    { "type": "product", "id": "product_3", "label": "Produit complémentaire 3" }
+  ]
+}
+{% endschema %}

@@ -37,6 +37,26 @@ export async function GET() {
       return NextResponse.json({ audit: { ...audit, status: 'failed' }, timedOut: true })
     }
     const progress = await auditProgress(audit.id, supabase)
+
+    // WATCHDOG auto-réparant : si la chaîne est morte en route (étape tuée par
+    // le runtime sans marquer l'échec), le polling de l'UI la relance à
+    // l'étape suivante. Inactivité = pas de catégorie terminée depuis 2 min.
+    const { data: lastLog } = await supabase
+      .from('audit_logs').select('created_at').eq('details->>audit_id', audit.id)
+      .in('action', ['audit_category_done', 'audit_started'])
+      .order('created_at', { ascending: false }).limit(1).maybeSingle()
+    const lastActivity = lastLog ? new Date(lastLog.created_at).getTime() : new Date(audit.created_at).getTime()
+    if (Date.now() - lastActivity > 120_000 && progress.done < progress.total) {
+      const origin = new URL(
+        process.env.NEXT_PUBLIC_APP_URL || 'https://modify-coral.vercel.app'
+      ).origin
+      fetch(`${origin}/api/audit/step`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-modify-internal': process.env.CRON_SECRET ?? '' },
+        body: JSON.stringify({ audit_id: audit.id, step: progress.done }),
+      }).catch(() => {})
+    }
+
     return NextResponse.json({ audit, progress })
   }
 
