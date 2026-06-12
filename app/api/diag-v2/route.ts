@@ -67,6 +67,45 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ ok: res.ok, status: res.status, body: await res.json().catch(() => null) })
   }
 
+  // T10 : l'agent répond-il avec les vraies données + action inline ?
+  if (action === 'agenttest') {
+    const { data: full } = await supabase.from('stores').select('*').eq('id', store.id).single()
+    const { buildAgentContext } = await import('@/lib/agent-context')
+    const { agentChat } = await import('@/lib/anthropic')
+    const ctx = await buildAgentContext(full, supabase)
+    const reply = await agentChat(ctx, [{ role: 'user', content: 'Quel est le problème le plus urgent de ma boutique et peux-tu t’en occuper ?' }])
+    return NextResponse.json({
+      context_has_audit: ctx.includes('Dernier audit'),
+      context_has_fix_ids: /id=[a-f0-9-]{36}/.test(ctx),
+      reply,
+      has_action_marker: /\[ACTION:(launch_audit|apply_fix:[a-z0-9-]+)\]/i.test(reply),
+    })
+  }
+
+  // T11 : checklist par étape — création guide + coche + relecture (persistance).
+  if (action === 'guidetest') {
+    const { data: g } = await supabase.from('guides').insert({
+      store_id: store.id, type: 'photos', title: 'TEST — Brief photos produit',
+      impact_euros: 50, summary: 'Guide de test checklist.',
+      steps: [
+        { title: 'Étape 1 — Préparer le fond blanc', detail: 'Installez un drap blanc près d’une fenêtre.' },
+        { title: 'Étape 2 — Photographier 3 angles', detail: 'Face, profil, détail matière.' },
+      ],
+      status: 'todo',
+    }).select().single()
+    if (!g) return NextResponse.json({ error: 'insert failed' })
+    // Coche l'étape 0 comme le ferait le PATCH UI
+    const steps = g.steps as { title: string; detail: string; done?: boolean }[]
+    steps[0] = { ...steps[0], done: true }
+    await supabase.from('guides').update({ steps }).eq('id', g.id)
+    // Relecture (équivalent reload)
+    const { data: re } = await supabase.from('guides').select('steps, status').eq('id', g.id).single()
+    const persisted = Array.isArray(re?.steps) && re.steps[0]?.done === true && re.steps[1]?.done !== true
+    // Nettoyage du guide de test
+    await supabase.from('guides').delete().eq('id', g.id)
+    return NextResponse.json({ guide_id: g.id, step0_done_persisted: persisted, status_after: re?.status })
+  }
+
   // Génère + publie un article SEO avec illustration (pipeline réel).
   if (action === 'blogtest') {
     const { data: full } = await supabase.from('stores').select('*').eq('id', store.id).single()
