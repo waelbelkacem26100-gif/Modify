@@ -1,15 +1,18 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse, after } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { createServiceRoleClient } from '@/lib/supabase-server'
 import { getValidAccessToken } from '@/lib/shopify-token'
-import { runStoreAudit } from '@/lib/run-audit'
+import { runAuditStep, auditProgress } from '@/lib/audit/orchestrator'
+import { logAction } from '@/lib/audit-log'
 import type { Store, Audit } from '@/types'
 
-export const maxDuration = 300
+export const runtime = 'nodejs'
+export const maxDuration = 60
 
-const STALE_AUDIT_MS = 120_000 // 2 minutes
+// 6 agents × ~30s : un audit complet prend ~3 minutes (chaîne auto-propagée).
+const STALE_AUDIT_MS = 10 * 60_000
 
-// GET — fetch latest audit, auto-fail stale ones
+// GET — latest audit + live per-category progress (polled by the Analyse page)
 export async function GET() {
   const { userId } = await auth()
   if (!userId) return new NextResponse('Unauthorized', { status: 401 })
@@ -17,76 +20,88 @@ export async function GET() {
   const supabase = await createServiceRoleClient()
 
   const { data: store } = await supabase
-    .from('stores')
-    .select('*')
-    .eq('user_id', userId)
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .single()
-
+    .from('stores').select('*').eq('user_id', userId)
+    .order('created_at', { ascending: false }).limit(1).single()
   if (!store) return NextResponse.json({ audit: null })
 
   const { data: audit } = await supabase
-    .from('audits')
-    .select('*')
-    .eq('store_id', store.id)
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .single()
-
+    .from('audits').select('*').eq('store_id', store.id)
+    .order('created_at', { ascending: false }).limit(1).single()
   if (!audit) return NextResponse.json({ audit: null })
 
-  // Auto-fail audits stuck in 'running' for more than 2 minutes
+  // Auto-fail audits stuck in 'running' (chain died) after 10 minutes.
   if (audit.status === 'running') {
     const ageMs = Date.now() - new Date(audit.created_at).getTime()
     if (ageMs > STALE_AUDIT_MS) {
-      await supabase
-        .from('audits')
-        .update({ status: 'failed' })
-        .eq('id', audit.id)
+      await supabase.from('audits').update({ status: 'failed' }).eq('id', audit.id)
       return NextResponse.json({ audit: { ...audit, status: 'failed' }, timedOut: true })
     }
+    const progress = await auditProgress(audit.id, supabase)
+    return NextResponse.json({ audit, progress })
   }
 
   return NextResponse.json({ audit })
 }
 
-// POST — launch new audit
-export async function POST() {
-  const { userId } = await auth()
-  if (!userId) return new NextResponse('Unauthorized', { status: 401 })
+// POST — launch a new audit (kicks the self-chaining 6-agent pipeline)
+export async function POST(request: NextRequest) {
+  // Merchant (Clerk) or Modify itself (agent inline action / cron) via secret.
+  const internal = request.headers.get('x-modify-internal')
+  const isInternal = Boolean(process.env.CRON_SECRET) && internal === process.env.CRON_SECRET
+  const { userId } = isInternal ? { userId: null } : await auth()
+  if (!isInternal && !userId) return new NextResponse('Unauthorized', { status: 401 })
 
   const supabase = await createServiceRoleClient()
 
-  const { data: store } = await supabase
-    .from('stores')
-    .select('*')
-    .eq('user_id', userId)
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .single()
-
-  if (!store) {
-    return NextResponse.json({ error: 'No store connected' }, { status: 404 })
+  let storeQuery = supabase.from('stores').select('*').order('created_at', { ascending: false }).limit(1)
+  if (!isInternal) storeQuery = storeQuery.eq('user_id', userId)
+  else {
+    const body = await request.json().catch(() => ({})) as { store_id?: string }
+    if (body.store_id) storeQuery = storeQuery.eq('id', body.store_id)
   }
+  const { data: store } = await storeQuery.single()
+  if (!store) return NextResponse.json({ error: 'No store connected' }, { status: 404 })
 
   const typedStore = store as Store
-  // Refresh the expiring offline token before the background audit uses it.
   await getValidAccessToken(typedStore, supabase)
+
+  // Refuse a second concurrent audit (the chain is single-track per audit).
+  const { data: running } = await supabase
+    .from('audits').select('id, created_at').eq('store_id', typedStore.id).eq('status', 'running')
+    .order('created_at', { ascending: false }).limit(1).maybeSingle()
+  if (running && Date.now() - new Date(running.created_at).getTime() < STALE_AUDIT_MS) {
+    return NextResponse.json({ audit: { id: running.id, status: 'running' }, note: 'already_running' })
+  }
 
   const { data: audit, error: createError } = await supabase
     .from('audits')
-    .insert({ store_id: typedStore.id, status: 'running' })
+    .insert({ store_id: typedStore.id, status: 'running', results: [] })
     .select()
     .single()
-
   if (createError || !audit) {
     return NextResponse.json({ error: 'Failed to create audit' }, { status: 500 })
   }
 
   const typedAudit = audit as Audit
+  await logAction(supabase, typedStore.id, 'audit_started', { audit_id: typedAudit.id }, 'success')
 
-  runStoreAudit(typedStore, typedAudit.id, supabase).catch(console.error)
+  const origin = request.nextUrl.origin
+  // Step 0 runs after the response; each step chains the next one server-side.
+  after(async () => {
+    try {
+      const r = await runAuditStep(typedStore, typedAudit.id, 0, supabase)
+      if (r.nextIndex !== null) {
+        await fetch(`${origin}/api/audit/step`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-modify-internal': process.env.CRON_SECRET ?? '' },
+          body: JSON.stringify({ audit_id: typedAudit.id, step: r.nextIndex }),
+        }).catch((e) => console.error('[audit/start] chain trigger failed', String(e)))
+      }
+    } catch (e) {
+      console.error('[audit/start] step 0 failed', String(e))
+      await supabase.from('audits').update({ status: 'failed' }).eq('id', typedAudit.id)
+    }
+  })
 
   return NextResponse.json({ audit: typedAudit })
 }

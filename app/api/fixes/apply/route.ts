@@ -782,7 +782,20 @@ function injectBeforeSchemaOrEnd(fileContent: string, code: string): string {
   return lines.join('\n')
 }
 
-function findRelevantFile(category: string, fileKeys: string[]): string | null {
+// Audit v2 categories map onto the legacy file-targeting buckets.
+function legacyFileCategory(category: string): string {
+  switch (category) {
+    case 'uiux':
+    case 'mobile':   return 'theme'
+    case 'perf_seo': return 'speed'
+    case 'funnel':   return 'checkout'
+    case 'products': return 'product'
+    default:         return category
+  }
+}
+
+function findRelevantFile(rawCategory: string, fileKeys: string[]): string | null {
+  const category = legacyFileCategory(rawCategory)
   // B5 fix: sync with generate/route.ts — add templates/product.liquid for theme,
   // remove 'product' (always Group A, never reaches this code path)
   const patterns: Record<string, string[]> = {

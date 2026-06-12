@@ -56,6 +56,12 @@ export function computeRiskGroup(category: string): 'a' | 'b' | 'c' {
     case 'product':  return 'a'
     case 'trust':    return 'b'
     case 'speed':    return 'b'
+    // Audit v2 categories (6 agents)
+    case 'products': return 'a'
+    case 'perf_seo': return 'a'
+    case 'uiux':     return 'c'
+    case 'funnel':   return 'c'
+    case 'mobile':   return 'c'
     default:         return 'b'
   }
 }
@@ -81,7 +87,7 @@ export function classifyRiskGroup(
   title: string,
   claudeRiskGroup?: string | null
 ): 'a' | 'b' | 'c' {
-  if (category === 'product' || PRODUCT_DESC_RE.test(title) || GROUP_A_CONTENT_RE.test(title)) return 'a'
+  if (category === 'product' || category === 'products' || PRODUCT_DESC_RE.test(title) || GROUP_A_CONTENT_RE.test(title)) return 'a'
   if (claudeRiskGroup === 'a' || claudeRiskGroup === 'b' || claudeRiskGroup === 'c') {
     return claudeRiskGroup
   }

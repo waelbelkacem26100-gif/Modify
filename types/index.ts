@@ -26,7 +26,7 @@ export interface Audit {
 
 export interface AuditResult {
   id: string
-  category: 'theme' | 'product' | 'trust' | 'speed' | 'checkout'
+  category: IssueCategory
   title: string
   description: string
   impact_euros: number
@@ -34,6 +34,10 @@ export interface AuditResult {
   fix_available: boolean
   recommendation: string
   risk_group?: RiskGroup
+  /** Audit v2 — éléments exacts concernés (noms de produits, pages…). */
+  affected_items?: string[]
+  /** Audit v2 — ✅ auto (Modify s'en occupe) ou 👋 guide (pas à pas). */
+  capability?: 'auto' | 'guide'
 }
 
 export interface Fix {
@@ -94,4 +98,8 @@ export type RiskGroup = 'a' | 'b' | 'c'
 export type PriorityLevel = 'high' | 'medium' | 'low'
 export type AuditStatus = 'pending' | 'running' | 'completed' | 'failed'
 export type FixStatus = 'pending' | 'applied' | 'rolled_back' | 'failed' | 'preview'
-export type IssueCategory = 'theme' | 'product' | 'trust' | 'speed' | 'checkout'
+// Legacy (5) + audit v2 (6 agents). Les deux coexistent : les anciens audits
+// restent lisibles, les nouveaux utilisent les catégories v2.
+export type IssueCategory =
+  | 'theme' | 'product' | 'trust' | 'speed' | 'checkout'
+  | 'products' | 'uiux' | 'perf_seo' | 'funnel' | 'mobile'

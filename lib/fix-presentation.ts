@@ -10,9 +10,15 @@ import type { RiskGroup, IssueCategory, PriorityLevel } from '@/types'
 export const CATEGORY_PRESENTATION: Record<IssueCategory, { emoji: string; label: string }> = {
   theme: { emoji: '🎨', label: 'Apparence de la boutique' },
   product: { emoji: '📦', label: 'Fiches produits' },
-  trust: { emoji: '🛡️', label: 'Confiance & réassurance' },
+  trust: { emoji: '🛡️', label: 'Confiance & sécurité' },
   speed: { emoji: '⚡', label: 'Rapidité des pages' },
   checkout: { emoji: '🛒', label: 'Tunnel d’achat' },
+  // Audit v2 (6 agents)
+  products: { emoji: '🛍️', label: 'Fiches produits' },
+  uiux: { emoji: '🎨', label: 'Apparence & navigation' },
+  perf_seo: { emoji: '⚡', label: 'Vitesse & visibilité Google' },
+  funnel: { emoji: '🛒', label: 'Tunnel d’achat' },
+  mobile: { emoji: '📱', label: 'Expérience mobile' },
 }
 
 export function categoryPresentation(category: string) {
