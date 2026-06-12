@@ -67,6 +67,17 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ ok: res.ok, status: res.status, body: await res.json().catch(() => null) })
   }
 
+  // Annule un correctif (restauration du backup, pipeline réel).
+  if (action === 'rollbackfix') {
+    const fixId = request.nextUrl.searchParams.get('fix_id')
+    const res = await fetch(`${request.nextUrl.origin}/api/fixes/rollback`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-modify-internal': process.env.CRON_SECRET ?? '' },
+      body: JSON.stringify({ fix_id: fixId }),
+    })
+    return NextResponse.json({ ok: res.ok, status: res.status, body: await res.json().catch(() => null) })
+  }
+
   // Liste les correctifs d'un audit avec l'état du backup.
   if (action === 'fixes') {
     const auditId = request.nextUrl.searchParams.get('audit_id')

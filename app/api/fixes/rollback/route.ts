@@ -8,8 +8,11 @@ import { parseGroupABackup, restoreGroupABackup } from '@/lib/fix-pipeline'
 import type { Fix, Audit, Store } from '@/types'
 
 export async function POST(request: NextRequest) {
-  const { userId } = await auth()
-  if (!userId) return new NextResponse('Unauthorized', { status: 401 })
+  // Merchant (Clerk) or Modify itself (internal secret — diag/agent actions).
+  const internal = request.headers.get('x-modify-internal')
+  const isInternal = Boolean(process.env.CRON_SECRET) && internal === process.env.CRON_SECRET
+  const { userId } = isInternal ? { userId: null } : await auth()
+  if (!isInternal && !userId) return new NextResponse('Unauthorized', { status: 401 })
 
   const body = await request.json() as { fix_id: string }
   const { fix_id } = body
@@ -25,7 +28,7 @@ export async function POST(request: NextRequest) {
   const store = typedFix.audits.stores
   await getValidAccessToken(store, supabase)
 
-  if (store.user_id !== userId) return new NextResponse('Forbidden', { status: 403 })
+  if (!isInternal && store.user_id !== userId) return new NextResponse('Forbidden', { status: 403 })
 
   if (!['applied', 'preview'].includes(typedFix.status)) {
     return NextResponse.json({ error: 'Ce correctif n\'est pas appliqué' }, { status: 400 })
