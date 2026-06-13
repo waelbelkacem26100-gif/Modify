@@ -32,6 +32,20 @@ export interface Problem {
   risk_group?: 'a' | 'b' | 'c'
 }
 
+/**
+ * Point FORT détecté (v5) — un audit crédible valorise aussi ce qui marche.
+ * Dérivés DÉTERMINISTIQUEMENT des données réelles collectées (jamais par LLM),
+ * stockés via audit_logs (action 'audit_strengths') — zéro migration, et
+ * audits.results reste un Problem[] pur (aucun consommateur existant ne casse).
+ */
+export interface Strength {
+  category: ProblemCategory
+  /** ex "Vos pages se chargent rapidement sur mobile" */
+  title: string
+  /** ex "Score de performance Google : 87/100 — mesure réelle" */
+  detail: string
+}
+
 export const AUDIT_CATEGORIES: Record<ProblemCategory, {
   emoji: string
   label: string
@@ -92,7 +106,11 @@ export interface AuditAgentInput {
   collectionHtml: string | null
   homeHtmlMobile: string | null
   productHtmlMobile: string | null
+  /** PSI mobile de la page d'accueil — null si indisponible OU vitrine protégée
+   * (on ne mesure JAMAIS la page de mot de passe en la faisant passer pour la boutique). */
   pagespeed: PageSpeedResult | null
+  /** PSI mobile d'une page produit représentative (v5) — mêmes règles d'honnêteté. */
+  pagespeedProduct: PageSpeedResult | null
   /** Indexation : robots.txt et sitemap.xml réellement testés (null = non testé). */
   robotsTxt: { exists: boolean; blocksAll: boolean } | null
   sitemapExists: boolean | null

@@ -1,7 +1,9 @@
 import { logAction } from '@/lib/audit-log'
 import { snapshotStoreScore } from '@/lib/store-score'
 import { collectForCategory } from './collect'
-import { CATEGORY_ORDER, AUDIT_CATEGORIES, type Problem, type ProblemCategory } from './types'
+import { deriveStrengths } from './strengths'
+import { runAccessibilityChecks } from './accessibility'
+import { CATEGORY_ORDER, AUDIT_CATEGORIES, type Problem, type ProblemCategory, type Strength } from './types'
 import type { AuditAgent } from './agents/shared'
 import { productPagesAgent } from './agents/product-pages'
 import { uiUxAgent } from './agents/ui-ux'
@@ -69,6 +71,32 @@ export async function runAuditStep(
       input.previousFindings = prev.map((p) => p.title)
     }
     problems = await AGENTS[category].run(input)
+
+    // Points forts v5 — dérivés des MÊMES données réelles, jamais inventés.
+    const strengths: Strength[] = deriveStrengths(category, input)
+
+    // Module ACCESSIBILITÉ v5 (déterministe) — rattaché à 🎨 UI/UX : contraste
+    // WCAG depuis les couleurs réelles du thème + structure HTML si disponible.
+    if (category === 'uiux') {
+      try {
+        const a11y = await runAccessibilityChecks(store, input.homeHtml)
+        problems.push(...a11y.problems.map((p, i): Problem => ({
+          ...p, id: `uiux-a11y-${i + 1}`, category: 'uiux',
+        })))
+        strengths.push(...a11y.strengths.map((s) => ({ ...s, category: 'uiux' as const })))
+        await logAction(supabase, store.id, 'audit_module_checks',
+          { audit_id: auditId, module: 'accessibility', checks: a11y.checksRun }, 'success')
+      } catch (e) {
+        console.error('[audit] accessibility module failed:', String(e))
+      }
+    }
+
+    try {
+      if (strengths.length) {
+        await logAction(supabase, store.id, 'audit_strengths',
+          { audit_id: auditId, category, strengths }, 'success')
+      }
+    } catch { /* best-effort : un point fort raté ne touche pas l'audit */ }
   } catch (e) {
     console.error(`[audit] agent ${category} failed:`, String(e))
     // Un agent qui échoue ne tue pas l'audit : on continue avec 0 problème
@@ -110,6 +138,18 @@ export async function runFullAuditSequential(store: Store, auditId: string, supa
   for (let i = 0; i < CATEGORY_ORDER.length; i++) {
     await runAuditStep(store, auditId, i, supabase)
   }
+}
+
+/** Points forts d'un audit, agrégés depuis audit_logs (zéro-DDL). */
+export async function auditStrengths(auditId: string, supabase: SupabaseClient): Promise<Strength[]> {
+  const { data } = await supabase
+    .from('audit_logs').select('details')
+    .eq('action', 'audit_strengths').eq('details->>audit_id', auditId)
+  const out: Strength[] = []
+  for (const row of (data ?? []) as { details: { strengths?: Strength[] } }[]) {
+    if (Array.isArray(row.details?.strengths)) out.push(...row.details.strengths)
+  }
+  return out
 }
 
 /** Progress of a running audit, computed from audit_logs (zero-DDL). */

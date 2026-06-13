@@ -198,7 +198,17 @@ export async function collectForCategory(
   const productHandle = products[0]?.handle ?? null
   const productUrl = productHandle ? `${base}/products/${productHandle}` : null
 
-  const [homeHtml, productHtml, cartHtml, collectionHtml, homeHtmlMobile, productHtmlMobile, pages, pagespeed, indexation, searchTests] = await Promise.all([
+  // v5 — honnêteté PSI : vitrine protégée ⇒ Lighthouse mesurerait la page de
+  // MOT DE PASSE, pas la boutique. On saute la mesure plutôt que de mentir.
+  let psiAllowed = false
+  if (needs.pagespeed) {
+    try {
+      const res = await fetch(base, { redirect: 'follow', headers: { 'User-Agent': DESKTOP_UA } })
+      psiAllowed = !/\/password/.test(res.url)
+    } catch { psiAllowed = false }
+  }
+
+  const [homeHtml, productHtml, cartHtml, collectionHtml, homeHtmlMobile, productHtmlMobile, pages, pagespeed, pagespeedProduct, indexation, searchTests] = await Promise.all([
     needs.home ? fetchStorefront(base) : Promise.resolve(null),
     needs.product && productUrl ? fetchStorefront(productUrl) : Promise.resolve(null),
     needs.cart ? fetchStorefront(`${base}/cart`) : Promise.resolve(null),
@@ -206,7 +216,8 @@ export async function collectForCategory(
     needs.mobile ? fetchStorefront(base, true) : Promise.resolve(null),
     needs.mobile && productUrl ? fetchStorefront(productUrl, true) : Promise.resolve(null),
     needs.pages ? getShopPages(store.shop_domain, store.access_token) : Promise.resolve([]),
-    needs.pagespeed ? runPageSpeed(base, 'mobile') : Promise.resolve(null),
+    needs.pagespeed && psiAllowed ? runPageSpeed(base, 'mobile') : Promise.resolve(null),
+    needs.pagespeed && psiAllowed && productUrl ? runPageSpeed(productUrl, 'mobile') : Promise.resolve(null),
     needs.indexation ? checkIndexation(base) : Promise.resolve(null),
     needs.search ? runSearchTests(base, products) : Promise.resolve(null),
   ])
@@ -226,6 +237,7 @@ export async function collectForCategory(
     homeHtmlMobile,
     productHtmlMobile,
     pagespeed,
+    pagespeedProduct,
     robotsTxt: indexation?.robotsTxt ?? null,
     sitemapExists: indexation?.sitemapExists ?? null,
     searchTests,
