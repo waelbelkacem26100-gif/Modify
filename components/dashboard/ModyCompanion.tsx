@@ -85,7 +85,8 @@ export default function ModyCompanion({ isPro, hasAccess }: Props) {
         <button
           onClick={openGeneric}
           aria-label="Ouvrir Mody, votre copilote"
-          className="fixed bottom-5 right-5 md:bottom-6 md:right-6 z-50 flex items-center gap-2.5 pl-2 pr-4 py-2 rounded-full bg-surface border border-mody/40 shadow-lg shadow-mody-glow hover:border-mody/70 hover:shadow-mody/30 transition-all duration-200 group"
+          /* bottom-[72px] sur mobile : au-dessus de la bottom-nav (≈52px) ; bottom-6 sur desktop */
+          className="fixed bottom-[72px] right-4 md:bottom-6 md:right-6 z-50 flex items-center gap-2.5 pl-2 pr-4 py-2 rounded-full bg-surface border border-mody/40 shadow-lg shadow-mody-glow hover:border-mody/70 hover:shadow-mody/30 transition-all duration-200 group"
         >
           <span className="relative">
             <ModyAvatar size={36} glow />

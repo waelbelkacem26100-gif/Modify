@@ -6,6 +6,7 @@ import { isAdmin } from '@/lib/config'
 import StoreConnect from '@/components/dashboard/StoreConnect'
 import OnboardingProgress from '@/components/dashboard/OnboardingProgress'
 import AnalyseContent from '@/components/dashboard/AnalyseContent'
+import ModyAvatar from '@/components/brand/ModyAvatar'
 import type { Store, Audit } from '@/types'
 
 // 🔍 Analyse — le point d'entrée : audit complet + score, fusionnés en UNE page.
@@ -22,11 +23,18 @@ export default async function DashboardPage() {
   if (!store) {
     return (
       <div className="p-4 sm:p-8">
-        <div className="mb-6 sm:mb-8">
-          <h1 className="font-syne font-bold text-2xl text-text-primary mb-1">Bienvenue sur Modify</h1>
-          <p className="text-text-secondary text-sm">
-            Connectez votre boutique : Modify s’occupe du reste.
-          </p>
+        {/* Accueil Mody — l'identité v6 dès le premier écran, avant tout audit */}
+        <div className="flex items-start gap-4 mb-6 sm:mb-8">
+          <ModyAvatar size={52} glow />
+          <div className="min-w-0 pt-1">
+            <h1 className="font-display font-bold text-2xl sm:text-3xl text-text-primary mb-1 tracking-tight">
+              Bienvenue — moi c’est Mody
+            </h1>
+            <p className="text-text-secondary text-sm max-w-md">
+              Connectez votre boutique et je m’occupe du reste : j’analyse, je corrige,
+              et je vous montre exactement ce que ça rapporte.
+            </p>
+          </div>
         </div>
         <OnboardingProgress hasStore={false} hasCompletedAudit={false} hasAppliedFix={false} />
         <StoreConnect />
