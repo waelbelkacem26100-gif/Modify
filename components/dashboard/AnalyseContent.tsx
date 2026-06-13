@@ -11,8 +11,16 @@ import { AUDIT_CATEGORIES, CATEGORY_ORDER, type ProblemCategory, type Strength }
 import { TOTAL_CHECKS } from '@/lib/audit/checks'
 import RecentActivityFeed from '@/components/analyse/RecentActivityFeed'
 import ModyBanner from '@/components/dashboard/ModyBanner'
+import ProofCard from '@/components/proofs/ProofCard'
+import { openMody } from '@/lib/mody-companion'
 import { categoryPresentation } from '@/lib/fix-presentation'
 import type { Audit, AuditResult } from '@/types'
+import type { ProofRecord } from '@/lib/proofs/types'
+
+/** Clé de rapprochement preuve ↔ problème : titre normalisé (insensible casse/accents/ponctuation). */
+function normTitle(s: string): string {
+  return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, ' ').trim()
+}
 
 const POLL_MS = 3000
 const POLL_TIMEOUT_MS = 8 * 60_000 // la chaîne 6 agents prend ~3 min
@@ -61,6 +69,10 @@ export default function AnalyseContent({ isSubscribed, shopDomain, initialAudit,
   const [openProblem, setOpenProblem] = useState<string | null>(null)
   const [strengths, setStrengths] = useState<Strength[]>([])
   const [checksRun, setChecksRun] = useState<number | null>(null)
+  // Preuves des corrections appliquées, indexées par titre normalisé (v6) — une
+  // carte problème dont le titre matche affiche sa preuve EN PLACE.
+  const [proofs, setProofs] = useState<Map<string, ProofRecord>>(new Map())
+  const [proofShop, setProofShop] = useState('')
   const pollStart = useRef(0)
 
   const running = audit?.status === 'running'
@@ -76,9 +88,22 @@ export default function AnalyseContent({ isSubscribed, shopDomain, initialAudit,
     } catch { /* best-effort */ }
   }, [])
 
+  // Fetch applied-fix proofs and key them by normalized title for in-card display.
+  const fetchProofs = useCallback(async () => {
+    try {
+      const res = await fetch('/api/proofs?limit=50')
+      if (!res.ok) return
+      const d = await res.json() as { proofs?: ProofRecord[]; shopDomain?: string }
+      const m = new Map<string, ProofRecord>()
+      for (const p of d.proofs ?? []) m.set(normTitle(p.title), p)
+      setProofs(m)
+      setProofShop(d.shopDomain ?? shopDomain ?? '')
+    } catch { /* best-effort */ }
+  }, [shopDomain])
+
   useEffect(() => {
-    if (audit?.status === 'completed') fetchStrengths()
-  }, [audit?.status, fetchStrengths])
+    if (audit?.status === 'completed') { fetchStrengths(); fetchProofs() }
+  }, [audit?.status, fetchStrengths, fetchProofs])
 
   const poll = useCallback(async () => {
     const res = await fetch('/api/audit/start')
@@ -86,7 +111,7 @@ export default function AnalyseContent({ isSubscribed, shopDomain, initialAudit,
     const d = await res.json() as { audit: Audit | null; progress?: ProgressInfo; timedOut?: boolean }
     if (d.audit) {
       setAudit(d.audit)
-      if (d.audit.status === 'completed') fetchStrengths()
+      if (d.audit.status === 'completed') { fetchStrengths(); fetchProofs() }
     }
     setProgress(d.progress ?? null)
     if (d.timedOut) setError("L'analyse a pris trop de temps — relancez-la.")
@@ -153,6 +178,15 @@ export default function AnalyseContent({ isSubscribed, shopDomain, initialAudit,
   const sortedIds = [...results].sort((a, b) => b.impact_euros - a.impact_euros).map((r) => r.id)
   const isLocked = (r: AuditResult) => !isSubscribed && sortedIds.indexOf(r.id) >= visibleLimit
 
+  // v6 — preuve appliquée pour un problème (rapprochement par titre normalisé).
+  const proofFor = (r: AuditResult): ProofRecord | undefined => proofs.get(normTitle(r.title))
+  // Catégorie auto-dépliée si elle contient ≥1 correction prouvée (preuve sans clic).
+  const catHasProof = (cat: string) => results.some((r) => r.category === cat && proofFor(r))
+  // Nombre de corrections automatiques pas encore appliquées (pour le bouton « Tout corriger »).
+  const correctableCount = results.filter(
+    (r) => (r.capability ?? (r.fix_available ? 'auto' : 'guide')) === 'auto' && !proofFor(r)
+  ).length
+
   const scoreColor = initialScore >= 80 ? '#22c55e' : initialScore >= 50 ? '#f59e0b' : '#ef4444'
 
   return (
@@ -200,11 +234,7 @@ export default function AnalyseContent({ isSubscribed, shopDomain, initialAudit,
                 <ScanSearch className="w-4 h-4" />
                 {running ? 'Analyse en cours…' : results.length > 0 ? 'Relancer une analyse' : 'Analyser ma boutique'}
               </Button>
-              {results.length > 0 && isSubscribed && (
-                <Button variant="secondary" onClick={fixAll} loading={fixing}>
-                  Corriger tous les problèmes <ArrowRight className="w-4 h-4" />
-                </Button>
-              )}
+              {/* « Tout corriger » vit désormais en tête de la liste de problèmes (v6) */}
             </div>
             {error && <p className="text-danger text-sm mt-3">{error}</p>}
           </div>
@@ -264,30 +294,21 @@ export default function AnalyseContent({ isSubscribed, shopDomain, initialAudit,
         </div>
       )}
 
-      {/* ✅ Points forts v5 — ce que la boutique fait déjà bien (déterministe) */}
-      {strengths.length > 0 && !running && (
-        <div className="bg-success/5 border border-success/20 rounded-2xl p-5 mb-6">
-          <div className="flex items-center gap-2 mb-3">
-            <ThumbsUp className="w-4 h-4 text-success flex-shrink-0" />
-            <h2 className="font-syne font-semibold text-success text-sm">Ce que vous faites déjà bien</h2>
-          </div>
-          <ul className="space-y-3">
-            {strengths.map((s, i) => (
-              <li key={i} className="flex items-start gap-2.5">
-                <CheckCircle2 className="w-4 h-4 text-success mt-0.5 flex-shrink-0" />
-                <div>
-                  <p className="text-text-primary text-sm font-medium">{s.title}</p>
-                  <p className="text-text-muted text-xs mt-0.5">{s.detail}</p>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
       {/* Résultats par catégorie */}
       {results.length > 0 && !running && (
         <>
+          {/* Bouton persistant « Tout corriger » — en haut de la liste (v6) */}
+          {isSubscribed && correctableCount > 0 && (
+            <div className="flex items-center justify-between gap-3 bg-surface border border-border rounded-2xl px-4 py-3 mb-4">
+              <p className="text-sm text-text-secondary min-w-0">
+                <span className="text-text-primary font-medium">{correctableCount} correction{correctableCount > 1 ? 's' : ''}</span> que Modify peut appliquer pour vous, automatiquement.
+              </p>
+              <Button onClick={fixAll} loading={fixing} className="flex-shrink-0">
+                Tout corriger <ArrowRight className="w-4 h-4" />
+              </Button>
+            </div>
+          )}
+
           {/* Filtres */}
           <div className="flex items-center gap-2 flex-wrap mb-4">
             {([
@@ -317,7 +338,10 @@ export default function AnalyseContent({ isSubscribed, shopDomain, initialAudit,
               if (items.length === 0) return null
               const meta = catMeta(cat)
               const catLoss = items.reduce((s, r) => s + r.impact_euros, 0)
-              const open = openCats.has(cat)
+              const fixedCount = items.filter((r) => proofFor(r)).length
+              // Auto-déplié si la catégorie contient une correction prouvée :
+              // la preuve doit être visible sans clic (v6).
+              const open = openCats.has(cat) || catHasProof(cat)
               return (
                 <div key={cat} className="bg-surface border border-border rounded-2xl overflow-hidden">
                   <button onClick={() => setOpenCats((prev) => {
@@ -327,7 +351,10 @@ export default function AnalyseContent({ isSubscribed, shopDomain, initialAudit,
                     <span className="text-xl">{meta.emoji}</span>
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-text-primary text-sm">{meta.label}</p>
-                      <p className="text-text-muted text-xs">{items.length} point{items.length > 1 ? 's' : ''} à améliorer</p>
+                      <p className="text-text-muted text-xs">
+                        {fixedCount > 0 && <span className="text-success">{fixedCount} corrigé{fixedCount > 1 ? 's' : ''} · </span>}
+                        {items.length - fixedCount} point{items.length - fixedCount > 1 ? 's' : ''} à améliorer
+                      </p>
                     </div>
                     {isSubscribed ? (
                       <span className="text-danger text-sm font-semibold flex-shrink-0">−{euros(catLoss)}/mois</span>
@@ -344,6 +371,21 @@ export default function AnalyseContent({ isSubscribed, shopDomain, initialAudit,
                         const cap = r.capability ?? (r.fix_available ? 'auto' : 'guide')
                         const pr = PRIORITY_META[r.priority] ?? PRIORITY_META.medium
                         const expanded = openProblem === r.id
+                        const proof = proofFor(r)
+                        // ✅ CORRIGÉ — preuve avant/après EN PLACE, fond/bordure verts,
+                        // visible sans clic. Le cycle de vie du problème au même endroit (v6).
+                        if (proof && !locked) {
+                          return (
+                            <li key={r.id} className="bg-success/[0.06] border-l-2 border-success p-3 sm:p-4 animate-[fadeUp_0.4s_ease-out]">
+                              <div className="flex items-center gap-2 mb-2">
+                                <CheckCircle2 className="w-4 h-4 text-success flex-shrink-0" />
+                                <span className="text-success text-sm font-semibold">Corrigé par Modify</span>
+                                <span className="text-success text-xs font-semibold ml-auto">+{euros(proof.monthlyImpactEur)}/mois récupérés</span>
+                              </div>
+                              <ProofCard proof={proof} shopDomain={proofShop} />
+                            </li>
+                          )
+                        }
                         if (locked) {
                           return (
                             <li key={r.id} className="p-4 flex items-center gap-3">
@@ -389,10 +431,17 @@ export default function AnalyseContent({ isSubscribed, shopDomain, initialAudit,
                                 <p className="text-text-secondary text-xs mb-3">
                                   <span className="text-text-muted font-medium">Recommandation : </span>{r.recommendation}
                                 </p>
-                                <a href={cap === 'auto' ? '/dashboard/corrections' : '/dashboard/accompagnement'}
-                                  className="inline-flex items-center gap-1.5 text-primary text-sm font-medium hover:text-primary-dark transition-colors">
-                                  {cap === 'auto' ? 'Voir le correctif' : 'Voir le guide'} <ArrowRight className="w-3.5 h-3.5" />
-                                </a>
+                                {cap === 'auto' ? (
+                                  <a href="/dashboard/corrections"
+                                    className="inline-flex items-center gap-1.5 text-primary text-sm font-medium hover:text-primary-dark transition-colors">
+                                    Voir le correctif <ArrowRight className="w-3.5 h-3.5" />
+                                  </a>
+                                ) : (
+                                  <button onClick={() => openMody(r.title)}
+                                    className="inline-flex items-center gap-1.5 text-mody-bright text-sm font-medium hover:text-mody transition-colors">
+                                    Demander à Mody <ArrowRight className="w-3.5 h-3.5" />
+                                  </button>
+                                )}
                               </div>
                             )}
                           </li>
@@ -421,6 +470,27 @@ export default function AnalyseContent({ isSubscribed, shopDomain, initialAudit,
             </div>
           )}
         </>
+      )}
+
+      {/* ✅ Points forts v5 — position secondaire : APRÈS les problèmes (v6) */}
+      {strengths.length > 0 && !running && (
+        <div className="bg-success/5 border border-success/20 rounded-2xl p-5 mt-6">
+          <div className="flex items-center gap-2 mb-3">
+            <ThumbsUp className="w-4 h-4 text-success flex-shrink-0" />
+            <h2 className="font-display font-semibold text-success text-sm">Ce que vous faites déjà bien</h2>
+          </div>
+          <ul className="space-y-3">
+            {strengths.map((s, i) => (
+              <li key={i} className="flex items-start gap-2.5">
+                <CheckCircle2 className="w-4 h-4 text-success mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="text-text-primary text-sm font-medium">{s.title}</p>
+                  <p className="text-text-muted text-xs mt-0.5">{s.detail}</p>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
 
       {/* État vide élégant */}
