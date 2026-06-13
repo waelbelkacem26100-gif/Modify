@@ -3,7 +3,10 @@ import { createServiceRoleClient } from '@/lib/supabase-server'
 import Sidebar from '@/components/dashboard/Sidebar'
 import MobileNav from '@/components/dashboard/MobileNav'
 import TokenGuard from '@/components/dashboard/TokenGuard'
+import ModyCompanion from '@/components/dashboard/ModyCompanion'
 import { getValidAccessToken, needsReconnect } from '@/lib/shopify-token'
+import { getUserSubscription, planFor, hasActiveAccess } from '@/lib/subscription'
+import { isAdmin } from '@/lib/config'
 import type { Store } from '@/types'
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -30,6 +33,12 @@ export default async function DashboardLayout({ children }: { children: React.Re
     }
   }
 
+  // Accès Mody — calculé une fois ici, partagé au compagnon flottant global.
+  const admin = userId ? isAdmin(userId) : false
+  const subscription = admin || !userId ? null : await getUserSubscription(userId)
+  const isPro = admin || planFor(subscription) === 'pro'
+  const hasAccess = admin || hasActiveAccess(subscription)
+
   return (
     <div className="flex min-h-screen bg-background">
       <Sidebar shopDomain={shopDomain} />
@@ -38,6 +47,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
         {children}
       </main>
       <MobileNav />
+      {/* Compagnon Mody — présent sur 🏠 et 📊, persiste à travers la navigation */}
+      {shopDomain && <ModyCompanion isPro={isPro} hasAccess={hasAccess} />}
     </div>
   )
 }
