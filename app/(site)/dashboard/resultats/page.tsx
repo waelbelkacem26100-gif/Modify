@@ -5,6 +5,7 @@ import { getUserSubscription, planFor } from '@/lib/subscription'
 import { planById } from '@/lib/pricing'
 import { isAdmin } from '@/lib/config'
 import SuiviContent, { type SuiviData } from '@/components/dashboard/SuiviContent'
+import ProofsContent from '@/components/proofs/ProofsContent'
 import type { Store, Conversion, Fix } from '@/types'
 
 // 📊 Résultats — ROI, suivi conversion, rapports.
@@ -83,5 +84,14 @@ export default async function ResultatsPage() {
     appliedFixes,
   }
 
-  return <SuiviContent d={data} />
+  // 📊 Impact & Résultats (v6) — ROI + graphique + timeline (SuiviContent), puis
+  // la Galerie Impact (ex-page Preuves) embarquée comme section finale.
+  return (
+    <>
+      <SuiviContent d={data} />
+      <div className="px-4 sm:px-8 pb-8 -mt-2">
+        <ProofsContent embedded />
+      </div>
+    </>
+  )
 }

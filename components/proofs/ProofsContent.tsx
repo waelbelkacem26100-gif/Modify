@@ -15,8 +15,12 @@ interface ApiResponse {
   shopDomain?: string
 }
 
-/** 📸 Preuves — tout ce que Modify a réellement changé, avec preuve par type. */
-export default function ProofsContent() {
+/**
+ * 📸 Galerie Impact — tout ce que Modify a réellement changé, avec preuve par type.
+ * `embedded` : rendu comme section de la page 📊 Impact & Résultats (pas de
+ * back-link, grille dense, ancre #galerie-impact) plutôt qu'une page autonome.
+ */
+export default function ProofsContent({ embedded = false }: { embedded?: boolean }) {
   const [data, setData] = useState<ApiResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [shown, setShown] = useState(PAGE_SIZE)
@@ -41,13 +45,17 @@ export default function ProofsContent() {
   const eur = Math.round(data?.totalEur ?? 0)
 
   return (
-    <div className="p-4 sm:p-8 max-w-4xl">
-      <a href="/dashboard/resultats" className="inline-flex items-center gap-1.5 text-text-secondary hover:text-text-primary text-sm mb-5 transition-colors">
-        <ArrowLeft className="w-4 h-4" /> Vos résultats
-      </a>
+    <div id={embedded ? 'galerie-impact' : undefined} className={embedded ? 'max-w-4xl scroll-mt-6' : 'p-4 sm:p-8 max-w-4xl'}>
+      {!embedded && (
+        <a href="/dashboard/resultats" className="inline-flex items-center gap-1.5 text-text-secondary hover:text-text-primary text-sm mb-5 transition-colors">
+          <ArrowLeft className="w-4 h-4" /> Vos résultats
+        </a>
+      )}
 
       <div className="mb-6 sm:mb-8">
-        <h1 className="font-syne font-bold text-xl sm:text-2xl text-text-primary mb-1">📸 Preuves</h1>
+        {embedded
+          ? <h2 className="font-display font-bold text-lg sm:text-xl text-text-primary mb-1">📸 Galerie Impact</h2>
+          : <h1 className="font-display font-bold text-xl sm:text-2xl text-text-primary mb-1">📸 Preuves</h1>}
         {total > 0 ? (
           <p className="text-text-secondary text-sm max-w-2xl">
             Modify a appliqué <span className="text-text-primary font-semibold">{total} correction{total > 1 ? 's' : ''} vérifiée{total > 1 ? 's' : ''}</span> sur
@@ -71,7 +79,7 @@ export default function ProofsContent() {
         </div>
       ) : (
         <>
-          <div className="space-y-4">
+          <div className={embedded ? 'grid gap-4 lg:grid-cols-2' : 'space-y-4'}>
             {proofs.slice(0, shown).map((p) => (
               <ProofCard key={p.id} proof={p} shopDomain={data?.shopDomain ?? ''} />
             ))}

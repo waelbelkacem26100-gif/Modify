@@ -35,7 +35,7 @@ export default function SuiviContent({ d }: { d: SuiviData }) {
           <h1 className="font-syne font-bold text-xl sm:text-2xl text-text-primary mb-1">Vos résultats</h1>
           <p className="text-text-secondary text-sm">Ce que Modify vous a rapporté, en toute transparence — chiffres réels de votre boutique.</p>
         </div>
-        <a href="/dashboard/resultats/preuves"
+        <a href="#galerie-impact"
           className="inline-flex items-center gap-2 px-4 py-2.5 bg-primary hover:bg-primary-dark text-white text-sm font-medium rounded-xl transition-colors flex-shrink-0">
           📸 Voir ce que Modify a changé →
         </a>
