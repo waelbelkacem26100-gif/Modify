@@ -10,6 +10,7 @@ import Progress from '@/components/ui/Progress'
 import { AUDIT_CATEGORIES, CATEGORY_ORDER, type ProblemCategory, type Strength } from '@/lib/audit/types'
 import { TOTAL_CHECKS } from '@/lib/audit/checks'
 import RecentActivityFeed from '@/components/analyse/RecentActivityFeed'
+import ModyBanner from '@/components/dashboard/ModyBanner'
 import { categoryPresentation } from '@/lib/fix-presentation'
 import type { Audit, AuditResult } from '@/types'
 
@@ -221,6 +222,9 @@ export default function AnalyseContent({ isSubscribed, shopDomain, initialAudit,
           </div>
         </div>
       </div>
+
+      {/* 💜 Bandeau d'activité Mody — juste sous le hero (v6) */}
+      <ModyBanner />
 
       {/* 🛠️ Dernières actions prouvées — juste après le hero, avant les catégories */}
       <RecentActivityFeed />
