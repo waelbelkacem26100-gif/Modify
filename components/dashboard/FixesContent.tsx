@@ -358,7 +358,7 @@ export default function FixesContent() {
                         {isExpanded && (
                           <div className="mt-2">
                             <p className="text-text-muted text-[11px] mb-1.5">Glissez pour comparer votre page avant / après :</p>
-                            <BeforeAfterSlider before={fix.screenshot_before} after={fix.screenshot_after} />
+                            <BeforeAfterSlider beforeUrl={fix.screenshot_before ?? undefined} afterUrl={fix.screenshot_after ?? undefined} unavailableReason="Boutique protégée par mot de passe" />
                           </div>
                         )}
                       </div>

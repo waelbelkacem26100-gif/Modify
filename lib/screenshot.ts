@@ -59,7 +59,7 @@ async function uploadScreenshot(supabase: SupabaseClient, bytes: ArrayBuffer, pa
 
 /** True when the storefront is password-protected (a screenshot would only show
  * the password page — never store that as "proof"). */
-async function storefrontIsGated(url: string): Promise<boolean> {
+export async function storefrontIsGated(url: string): Promise<boolean> {
   try {
     const res = await fetch(url, { redirect: 'follow', headers: { 'User-Agent': 'Mozilla/5.0' } })
     return /\/password/.test(res.url)
