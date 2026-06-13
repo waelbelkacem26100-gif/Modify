@@ -81,6 +81,8 @@ export interface MonthlyReportData {
   scoreDelta: number | null
   pendingList: { title: string; impact_euros: number }[]
   dashboardUrl: string
+  /** Impact Visible — 1-2 preuves texte du mois (avant/après réels, ex. titre Google). */
+  proofExamples?: { title: string; before: string; after: string }[]
 }
 
 export function renderMonthlyReportHtml(d: MonthlyReportData): string {
@@ -114,6 +116,12 @@ export function renderMonthlyReportHtml(d: MonthlyReportData): string {
           ${li('Produits gagnants suggérés', String(d.winningProducts))}
           ${li('Score de votre boutique', score)}
         </table>
+        ${(d.proofExamples?.length ? `<p style="margin:22px 0 8px;color:#18181b;font-size:15px;font-weight:700;">La preuve, concrètement</p>
+        ${d.proofExamples.map((p) => `<div style="border:1px solid #ececec;border-radius:10px;padding:12px 14px;margin-bottom:10px;">
+          <p style="margin:0 0 6px;color:#18181b;font-size:13px;font-weight:600;">${p.title}</p>
+          <p style="margin:0 0 4px;color:#71717a;font-size:12px;"><span style="font-weight:700;text-transform:uppercase;font-size:10px;margin-right:6px;">Avant</span>${p.before}</p>
+          <p style="margin:0;color:#18181b;font-size:12px;"><span style="color:#FF6B35;font-weight:700;text-transform:uppercase;font-size:10px;margin-right:6px;">Après</span>${p.after}</p>
+        </div>`).join('')}` : '')}
         ${pendingRows ? `<p style="margin:22px 0 8px;color:#18181b;font-size:15px;font-weight:700;">Ce qui reste à gagner</p>
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0">${pendingRows}</table>` : ''}
         <div style="text-align:center;margin-top:28px;">

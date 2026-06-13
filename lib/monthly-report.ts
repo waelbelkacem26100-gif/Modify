@@ -1,8 +1,26 @@
 import type { Store } from '@/types'
 import type { MonthlyReportData } from '@/lib/email'
+import { buildProofRecords } from '@/lib/proofs/build-proof'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type SupabaseClient = any
+
+/** 1-2 preuves texte du mois (avant/après Google réels) pour l'email — best-effort. */
+async function monthProofExamples(store: Store, supabase: SupabaseClient, since: string) {
+  try {
+    const { proofs } = await buildProofRecords(store, supabase, { limit: 20 })
+    return proofs
+      .filter((p) => p.proofType === 'google_preview' && p.after.text && new Date(p.appliedAt) >= new Date(since))
+      .slice(0, 2)
+      .map((p) => ({
+        title: p.title,
+        before: p.before.text || 'Aucun titre Google personnalisé',
+        after: p.after.text!,
+      }))
+  } catch {
+    return [] // l'email part sans preuves plutôt que de ne pas partir
+  }
+}
 
 /** Gathers a store's last-30-day activity into a monthly report. */
 export async function buildMonthlyReport(store: Store, supabase: SupabaseClient): Promise<MonthlyReportData> {
@@ -49,5 +67,6 @@ export async function buildMonthlyReport(store: Store, supabase: SupabaseClient)
     articles: articles ?? 0, winningProducts: winning ?? 0,
     scoreNow, scoreDelta, pendingList,
     dashboardUrl: `${appUrl}/dashboard/resultats`,
+    proofExamples: await monthProofExamples(store, supabase, monthSince),
   }
 }
