@@ -1,4 +1,5 @@
 import type { PageSpeedResult } from '@/lib/pagespeed'
+import type { GeoSignals } from './geo'
 
 /**
  * Audit v2 — 6 catégories, 6 agents IA spécialisés.
@@ -118,6 +119,9 @@ export interface AuditAgentInput {
   searchTests: { query: string; results: number; topTitles: string[] }[] | null
   /** Paires de descriptions quasi identiques détectées par Modify (déterministe). */
   duplicateDescriptionPairs: string[] | null
+  /** Signaux GEO déterministes v5 (guides, FAQ, densité descriptions) — null si
+   * les pages n'ont pas été collectées pour cette catégorie. */
+  geoSignals: GeoSignals | null
   /** Titres des problèmes DÉJÀ détectés par les agents précédents de ce même
    * audit — fourni au seul agent concurrentiel (dernier de la chaîne) pour
    * qu'un même manque ne soit jamais facturé deux fois. */

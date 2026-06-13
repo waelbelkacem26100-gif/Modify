@@ -91,6 +91,16 @@ export async function runAuditStep(
       }
     }
 
+    // Module GEO simulation v5 (déterministe) — rattaché à ⚡ Vitesse & Google.
+    // Les signaux ont déjà été calculés dans collectForCategory ; on les journalise
+    // ici pour le score de précision dynamique.
+    if (category === 'perf_seo' && input.geoSignals) {
+      try {
+        await logAction(supabase, store.id, 'audit_module_checks',
+          { audit_id: auditId, module: 'geo_simulation', checks: input.geoSignals.checksRun }, 'success')
+      } catch { /* best-effort */ }
+    }
+
     try {
       if (strengths.length) {
         await logAction(supabase, store.id, 'audit_strengths',
@@ -138,6 +148,19 @@ export async function runFullAuditSequential(store: Store, auditId: string, supa
   for (let i = 0; i < CATEGORY_ORDER.length; i++) {
     await runAuditStep(store, auditId, i, supabase)
   }
+}
+
+/** Nombre total de points de contrôle réellement exécutés pour un audit v5.
+ * = TOTAL_CHECKS (checklists LLM) + checks déterministes (accessibilité, GEO…)
+ * loggés via audit_module_checks. */
+export async function checksRunTotal(auditId: string, supabase: SupabaseClient): Promise<number> {
+  const { TOTAL_CHECKS } = await import('./checks')
+  const { data } = await supabase
+    .from('audit_logs').select('details')
+    .eq('action', 'audit_module_checks').eq('details->>audit_id', auditId)
+  const extra = ((data ?? []) as { details: { checks?: number } }[])
+    .reduce((s, row) => s + (Number(row.details?.checks) || 0), 0)
+  return TOTAL_CHECKS + extra
 }
 
 /** Points forts d'un audit, agrégés depuis audit_logs (zéro-DDL). */

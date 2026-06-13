@@ -1,6 +1,7 @@
 import type { AuditAgent } from './shared'
 import { runAgentPrompt, productTable } from './shared'
 import { checklistFor } from '../checks'
+import { geoBlock } from '../geo'
 
 // ⚡ Performance & SEO + GEO — vitesse mesurée + visibilité Google + lisibilité IA.
 export const performanceSeoAgent: AuditAgent = {
@@ -42,6 +43,9 @@ DESCRIPTIONS QUASI IDENTIQUES détectées par Modify (comparaison déterministe 
 ${dupBlock}
 
 DONNÉES STRUCTURÉES détectées dans le HTML : ${jsonld ? 'OUI (marqueurs présents)' : 'NON détectées sur home/produit'}
+
+GEO SIMULATION v5 — signaux déterministes (mesurés, pas devinés) :
+${input.geoSignals ? geoBlock(input.geoSignals, input.products.length) : 'Pages non disponibles → ne pas inventer de problème GEO sans données.'}
 
 PRODUITS (couverture descriptions + textes d'images) :
 ${productTable(input, 'seo')}

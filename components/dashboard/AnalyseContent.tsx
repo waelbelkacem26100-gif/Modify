@@ -3,11 +3,11 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import {
   ScanSearch, ExternalLink, ChevronDown, ChevronUp, ArrowRight, Lock,
-  CheckCircle2, Loader2, Circle,
+  CheckCircle2, Loader2, Circle, ThumbsUp,
 } from 'lucide-react'
 import Button from '@/components/ui/Button'
 import Progress from '@/components/ui/Progress'
-import { AUDIT_CATEGORIES, CATEGORY_ORDER, type ProblemCategory } from '@/lib/audit/types'
+import { AUDIT_CATEGORIES, CATEGORY_ORDER, type ProblemCategory, type Strength } from '@/lib/audit/types'
 import { TOTAL_CHECKS } from '@/lib/audit/checks'
 import RecentActivityFeed from '@/components/analyse/RecentActivityFeed'
 import { categoryPresentation } from '@/lib/fix-presentation'
@@ -58,15 +58,35 @@ export default function AnalyseContent({ isSubscribed, shopDomain, initialAudit,
   const [filter, setFilter] = useState<Filter>('all')
   const [openCats, setOpenCats] = useState<Set<string>>(new Set())
   const [openProblem, setOpenProblem] = useState<string | null>(null)
+  const [strengths, setStrengths] = useState<Strength[]>([])
+  const [checksRun, setChecksRun] = useState<number | null>(null)
   const pollStart = useRef(0)
 
   const running = audit?.status === 'running'
+
+  // Fetch strengths + dynamic checks count once audit is completed.
+  const fetchStrengths = useCallback(async () => {
+    try {
+      const res = await fetch('/api/audit/strengths')
+      if (!res.ok) return
+      const d = await res.json() as { strengths: Strength[]; checksRun: number | null }
+      setStrengths(d.strengths ?? [])
+      if (d.checksRun != null) setChecksRun(d.checksRun)
+    } catch { /* best-effort */ }
+  }, [])
+
+  useEffect(() => {
+    if (audit?.status === 'completed') fetchStrengths()
+  }, [audit?.status, fetchStrengths])
 
   const poll = useCallback(async () => {
     const res = await fetch('/api/audit/start')
     if (!res.ok) return
     const d = await res.json() as { audit: Audit | null; progress?: ProgressInfo; timedOut?: boolean }
-    if (d.audit) setAudit(d.audit)
+    if (d.audit) {
+      setAudit(d.audit)
+      if (d.audit.status === 'completed') fetchStrengths()
+    }
     setProgress(d.progress ?? null)
     if (d.timedOut) setError("L'analyse a pris trop de temps — relancez-la.")
   }, [])
@@ -166,12 +186,13 @@ export default function AnalyseContent({ isSubscribed, shopDomain, initialAudit,
             </h1>
             <p className="text-text-secondary text-sm mt-2 max-w-xl">
               {results.length > 0
-                ? `${results.length} points à améliorer détectés sur ${CATEGORY_ORDER.length} domaines clés de votre boutique.`
-                : `${CATEGORY_ORDER.length} analyses spécialisées : fiches produits, apparence, vitesse & Google, confiance, tunnel d’achat, mobile, concurrence.`}
+                ? <>{results.length} points à améliorer détectés sur {CATEGORY_ORDER.length} domaines clés{strengths.length > 0 && <> &middot; {strengths.length} point{strengths.length > 1 ? 's' : ''} fort{strengths.length > 1 ? 's' : ''} identifié{strengths.length > 1 ? 's' : ''}</>}.</>
+                : <>{CATEGORY_ORDER.length} analyses spécialisées : fiches produits, apparence, vitesse &amp; Google, confiance, tunnel d&apos;achat, mobile, concurrence.</>
+              }
             </p>
             <p className="text-text-muted text-xs mt-2 max-w-xl">
-              {TOTAL_CHECKS} points de contrôle analysés sur votre boutique — un audit SEO
-              classique en couvre 15 à 20.
+              {checksRun != null ? checksRun : TOTAL_CHECKS} points de contrôle analysés sur votre boutique
+              {checksRun != null && checksRun > TOTAL_CHECKS ? <> (dont {checksRun - TOTAL_CHECKS} vérifications déterministes v5)</> : null} — un audit SEO classique en couvre 15 à 20.
             </p>
             <div className="mt-5 flex items-center gap-3 flex-wrap">
               <Button onClick={startAudit} loading={starting || running} disabled={running}>
@@ -235,6 +256,27 @@ export default function AnalyseContent({ isSubscribed, shopDomain, initialAudit,
                 </li>
               )
             })}
+          </ul>
+        </div>
+      )}
+
+      {/* ✅ Points forts v5 — ce que la boutique fait déjà bien (déterministe) */}
+      {strengths.length > 0 && !running && (
+        <div className="bg-success/5 border border-success/20 rounded-2xl p-5 mb-6">
+          <div className="flex items-center gap-2 mb-3">
+            <ThumbsUp className="w-4 h-4 text-success flex-shrink-0" />
+            <h2 className="font-syne font-semibold text-success text-sm">Ce que vous faites déjà bien</h2>
+          </div>
+          <ul className="space-y-3">
+            {strengths.map((s, i) => (
+              <li key={i} className="flex items-start gap-2.5">
+                <CheckCircle2 className="w-4 h-4 text-success mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="text-text-primary text-sm font-medium">{s.title}</p>
+                  <p className="text-text-muted text-xs mt-0.5">{s.detail}</p>
+                </div>
+              </li>
+            ))}
           </ul>
         </div>
       )}
@@ -385,7 +427,7 @@ export default function AnalyseContent({ isSubscribed, shopDomain, initialAudit,
           </div>
           <p className="text-text-secondary text-sm max-w-md mx-auto">
             Lancez votre première analyse : Modify passe votre boutique au crible sur {CATEGORY_ORDER.length} domaines
-            ({TOTAL_CHECKS} points de contrôle) et vous montre exactement où vous perdez des ventes.
+            ({TOTAL_CHECKS}+ points de contrôle) et vous montre exactement où vous perdez des ventes.
           </p>
         </div>
       )}

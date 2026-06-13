@@ -71,6 +71,23 @@ export function deriveStrengths(category: ProblemCategory, input: AuditAgentInpu
           detail: `${products.length} fiches comparées deux à deux — chaque produit a son propre texte (Google apprécie).`,
         })
       }
+      // GEO signals v5 — déterministe
+      const geo = input.geoSignals
+      if (geo) {
+        if (geo.guidePages.length >= 1) {
+          s.push({
+            category,
+            title: 'Votre boutique a du contenu que ChatGPT peut recommander',
+            detail: `${geo.guidePages.length} page(s) de guide détectée(s) (${geo.guidePages.map((p) => `« ${p.title} »`).join(', ')}) — les IA citent les boutiques avec ce type de contenu expert.`,
+          })
+        } else if (geo.geoScore >= 50 && geo.deepDescriptionCount >= Math.ceil(products.length * 0.7)) {
+          s.push({
+            category,
+            title: 'Vos descriptions produits sont riches en contenu',
+            detail: `${geo.deepDescriptionCount}/${products.length} produits avec 200+ mots — suffisant pour que les IA recommandent vos produits en contexte.`,
+          })
+        }
+      }
       break
     }
     case 'trust': {

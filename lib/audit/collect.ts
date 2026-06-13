@@ -1,5 +1,6 @@
 import { getThemes, getProductsDetailed, SHOPIFY_API_VERSION } from '@/lib/shopify'
 import { runPageSpeed } from '@/lib/pagespeed'
+import { deriveGeoSignals } from './geo'
 import type { Store } from '@/types'
 import type { AuditAgentInput, ProductForAudit, PageForAudit, ProblemCategory } from './types'
 
@@ -150,7 +151,7 @@ const NEEDS: Record<ProblemCategory, {
 }> = {
   products: {},
   uiux: { home: true, product: true, pages: true, search: true },
-  perf_seo: { home: true, product: true, pagespeed: true, indexation: true, duplicates: true },
+  perf_seo: { home: true, product: true, pages: true, pagespeed: true, indexation: true, duplicates: true },
   trust: { home: true, product: true, pages: true },
   funnel: { home: true, product: true, cart: true, collection: true },
   mobile: { mobile: true },
@@ -222,6 +223,12 @@ export async function collectForCategory(
     needs.search ? runSearchTests(base, products) : Promise.resolve(null),
   ])
 
+  // v5 — signaux GEO déterministes : dérivés des pages + produits déjà collectés,
+  // zéro appel API supplémentaire.
+  const geoSignals = (needs.pages && pages.length >= 0)
+    ? deriveGeoSignals(pages, products, homeHtml)
+    : null
+
   return {
     shopDomain: store.shop_domain,
     shopName: store.shop_name ?? store.shop_domain,
@@ -242,5 +249,6 @@ export async function collectForCategory(
     sitemapExists: indexation?.sitemapExists ?? null,
     searchTests,
     duplicateDescriptionPairs: needs.duplicates ? findDuplicateDescriptions(products) : null,
+    geoSignals,
   }
 }
