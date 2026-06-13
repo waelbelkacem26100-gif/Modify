@@ -10,6 +10,47 @@ import BeforeAfterSlider from '@/components/dashboard/BeforeAfterSlider'
 import { fixMode, whatChanged, beforeAfter } from '@/lib/fix-presentation'
 import { fixCapability, CAPABILITY_META } from '@/lib/fix-capability'
 import type { Fix } from '@/types'
+import type { ProofRecord } from '@/lib/proofs/types'
+
+/**
+ * Bloc preuve COMPACT (≤120px) affiché directement dans la carte d'un correctif
+ * "Corrigé", sans clic. Rien n'est affiché si aucune preuve n'est disponible —
+ * jamais de bloc vide ni de visuel factice.
+ */
+function CompactProof({ proof }: { proof: ProofRecord }) {
+  if (proof.proofType === 'google_preview' && (proof.after.text || proof.after.description)) {
+    return (
+      <div className="mt-3 rounded-xl border border-border bg-surface-2 p-3 space-y-1.5 max-h-[120px] overflow-hidden">
+        <p className="text-xs truncate">
+          <span className="text-text-muted font-semibold uppercase text-[10px] mr-1.5">Avant</span>
+          <span className="text-text-secondary">{proof.before.text || 'Aucun titre Google personnalisé'}</span>
+        </p>
+        <p className="text-xs truncate">
+          <span className="text-primary font-semibold uppercase text-[10px] mr-1.5">Après</span>
+          <span className="text-text-primary">{proof.after.text}</span>
+        </p>
+      </div>
+    )
+  }
+  if (proof.proofType === 'structured_data' && proof.after.hasStructuredData) {
+    return (
+      <p className="mt-3 text-xs text-success">
+        ✓ {(proof.fieldsAdded ?? []).join(', ')} maintenant visibles par Google
+      </p>
+    )
+  }
+  if (proof.proofType === 'visual' && proof.before.screenshotUrl && proof.after.screenshotUrl) {
+    return (
+      <div className="mt-3 grid grid-cols-2 gap-2 max-h-[120px]">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={proof.before.screenshotUrl} alt="Avant" className="rounded-lg border border-border object-cover object-top h-[110px] w-full" />
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={proof.after.screenshotUrl} alt="Après" className="rounded-lg border border-primary/40 object-cover object-top h-[110px] w-full" />
+      </div>
+    )
+  }
+  return null
+}
 
 type StoreMode = 'auto' | 'approval'
 type Tab = 'auto' | 'guides'
@@ -27,7 +68,19 @@ export default function FixesContent() {
   const [mode, setMode] = useState<StoreMode>('auto')
   const [confirmation, setConfirmation] = useState<string | null>(null)
   const [expanded, setExpanded] = useState<string | null>(null)
+  const [proofsById, setProofsById] = useState<Record<string, ProofRecord>>({})
   const auditIdRef = useRef<string | null>(null)
+
+  // Preuves compactes pour les correctifs "Corrigé" (Impact Visible).
+  useEffect(() => {
+    fetch('/api/proofs?limit=50', { cache: 'no-store' })
+      .then((r) => r.ok ? r.json() : null)
+      .then((d: { proofs?: ProofRecord[] } | null) => {
+        if (!d?.proofs) return
+        setProofsById(Object.fromEntries(d.proofs.map((p) => [p.id, p])))
+      })
+      .catch(() => {})
+  }, [])
 
   const fetchFixes = useCallback(async () => {
     const res = await fetch('/api/fixes/apply')
@@ -347,6 +400,9 @@ export default function FixesContent() {
                         </div>
                       )
                     })()}
+
+                    {/* Preuve compacte visible SANS clic (Impact Visible) */}
+                    {applied && proofsById[fix.id] && <CompactProof proof={proofsById[fix.id]} />}
 
                     {/* Preuve visuelle — slider avant/après (screenshots réels) */}
                     {fix.screenshot_before && fix.screenshot_after && (

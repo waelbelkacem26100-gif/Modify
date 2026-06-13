@@ -9,6 +9,7 @@ import Button from '@/components/ui/Button'
 import Progress from '@/components/ui/Progress'
 import { AUDIT_CATEGORIES, CATEGORY_ORDER, type ProblemCategory } from '@/lib/audit/types'
 import { TOTAL_CHECKS } from '@/lib/audit/checks'
+import RecentActivityFeed from '@/components/analyse/RecentActivityFeed'
 import { categoryPresentation } from '@/lib/fix-presentation'
 import type { Audit, AuditResult } from '@/types'
 
@@ -200,7 +201,10 @@ export default function AnalyseContent({ isSubscribed, shopDomain, initialAudit,
         </div>
       </div>
 
-      {/* Progression temps réel — 6 agents */}
+      {/* 🛠️ Dernières actions prouvées — juste après le hero, avant les catégories */}
+      <RecentActivityFeed />
+
+      {/* Progression temps réel */}
       {running && (
         <div className="bg-surface border border-border rounded-2xl p-6 mb-8">
           <div className="flex items-center justify-between mb-4">
