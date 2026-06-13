@@ -17,6 +17,12 @@ const config: Config = {
         primary: '#FF6B35',
         'primary-dark': '#E55622',
         'primary-glow': 'rgba(255, 107, 53, 0.15)',
+        // Mody — 2e couleur de marque (v6). Tout ce qui est violet = Mody parle :
+        // bouton flottant, bandeau, panneau de chat, avatar. Signature visuelle.
+        mody: '#8B7BFF',
+        'mody-dark': '#6D5CE6',
+        'mody-bright': '#A99BFF',
+        'mody-glow': 'rgba(139, 123, 255, 0.16)',
         'text-primary': '#FAFAFA',
         'text-secondary': '#A1A1AA',
         'text-muted': '#71717A',
@@ -26,9 +32,11 @@ const config: Config = {
         info: '#3B82F6',
       },
       fontFamily: {
-        // Inter everywhere — `syne` kept as an alias so existing components
-        // (font-syne headings) pick up Inter without edits.
-        syne: ['var(--font-inter)', 'sans-serif'],
+        // v6 — police d'accroche : Space Grotesk (géométrique, du caractère) sur
+        // tous les titres/gros chiffres via l'alias `font-syne` déjà en place.
+        // Inter (`font-sans`) reste sur le corps de texte.
+        syne: ['var(--font-display)', 'var(--font-inter)', 'sans-serif'],
+        display: ['var(--font-display)', 'var(--font-inter)', 'sans-serif'],
         sans: ['var(--font-inter)', 'sans-serif'],
       },
       animation: {
