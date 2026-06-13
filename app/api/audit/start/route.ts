@@ -59,7 +59,9 @@ export async function GET() {
       const origin = new URL(
         process.env.NEXT_PUBLIC_APP_URL || 'https://modify-coral.vercel.app'
       ).origin
-      fetch(`${origin}/api/audit/step`, {
+      // AWAIT obligatoire : un fetch non attendu peut être tué avec la lambda
+      // avant d'être parti (vu en prod : kick journalisé mais jamais reçu).
+      await fetch(`${origin}/api/audit/step`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-modify-internal': process.env.CRON_SECRET ?? '' },
         body: JSON.stringify({ audit_id: audit.id, step: progress.done }),

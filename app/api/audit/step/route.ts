@@ -43,10 +43,10 @@ export async function POST(request: NextRequest) {
   after(async () => {
     try {
       await getValidAccessToken(store, supabase)
-      const r = await runAuditStep(store, auditId, step, supabase)
-      if (r.nextIndex !== null) {
-        // Double tentative : un maillon qui meurt ici serait rattrapé par le
-        // watchdog du GET (polling UI), mais autant éviter la pause de 75s.
+      let r = await runAuditStep(store, auditId, step, supabase)
+      while (r.nextIndex !== null) {
+        // Double tentative de propagation HTTP : un maillon qui meurt ici
+        // serait rattrapé par le watchdog du GET (polling UI).
         let sent = false
         for (let attempt = 1; attempt <= 2 && !sent; attempt++) {
           try {
@@ -64,6 +64,13 @@ export async function POST(request: NextRequest) {
           }
           if (!sent && attempt === 1) await new Promise((r2) => setTimeout(r2, 5000))
         }
+        if (sent) break
+        // FALLBACK SÉQUENTIEL (vu en prod : Vercel répond 508 "loop detected"
+        // après plusieurs auto-appels). La chaîne HTTP refusée, ce maillon
+        // continue LUI-MÊME l'étape suivante — maxDuration 300 le permet.
+        await logAction(supabase, store.id, 'audit_chain_inline_fallback',
+          { audit_id: auditId, step: r.nextIndex }, 'success')
+        r = await runAuditStep(store, auditId, r.nextIndex, supabase)
       }
     } catch (e) {
       console.error('[audit/step] step failed', step, String(e))
