@@ -32,6 +32,32 @@ export const GUIDE_TYPE_TO_MISSION: Record<string, MissionType> = {
   sav: 'sav',
 }
 
+/**
+ * Mody — les 4 métiers du copilote. Chaque type de mission appartient à
+ * EXACTEMENT un métier (mapping complet, aucune 5e catégorie nécessaire :
+ * photos rejoint Vidéo & Social en tant que contenu visuel, sav rejoint
+ * Réputation en tant que relation client).
+ */
+export type Metier = 'contenu' | 'reputation' | 'video_social' | 'strategie'
+
+export const MISSION_TO_METIER: Record<MissionType, Metier> = {
+  contenu: 'contenu',
+  avis: 'reputation',
+  sav: 'reputation',
+  videos: 'video_social',
+  photos: 'video_social',
+  strategie: 'strategie',
+}
+
+export const METIER_META: Record<Metier, { emoji: string; label: string; desc: string }> = {
+  contenu: { emoji: '🖋️', label: 'Contenu', desc: 'Descriptions, pages, FAQ — textes prêts à coller' },
+  reputation: { emoji: '⭐', label: 'Réputation', desc: 'Avis clients, SAV, réponses — emails prêts à envoyer' },
+  video_social: { emoji: '🎬', label: 'Vidéo & Social', desc: 'Scripts vidéo, briefs photo, idées réseaux' },
+  strategie: { emoji: '📊', label: 'Stratégie', desc: 'Plans d’action face à vos concurrents' },
+}
+
+export const METIER_ORDER: Metier[] = ['contenu', 'reputation', 'video_social', 'strategie']
+
 export const MISSION_META: Record<MissionType, { emoji: string; label: string; generates: string }> = {
   photos: { emoji: '📸', label: 'Photos produit', generates: 'Brief photo détaillé par produit (angles, lumière, mise en scène)' },
   avis: { emoji: '⭐', label: 'Avis clients', generates: 'Séquence de 3 emails post-achat prête à copier + réponses aux avis négatifs' },

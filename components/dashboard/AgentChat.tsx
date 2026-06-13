@@ -31,6 +31,14 @@ const STARTERS = [
   'Pourquoi mes ventes évoluent-elles ainsi ?',
 ]
 
+// Dans une mission, Mody démarre sur le concret de CETTE mission.
+const MISSION_STARTERS = [
+  'Par quelle étape je commence ?',
+  'Adapte ce contenu à mon ton de marque',
+  'Je bloque sur une étape, aide-moi',
+  'Pourquoi cette mission rapporte ce montant ?',
+]
+
 interface AgentChatProps {
   isPro: boolean
   /** Chat contextualisé sur une mission Copilot (id du guide lié). */
@@ -130,8 +138,8 @@ export default function AgentChat({ isPro, missionId, compact }: AgentChatProps)
           <Bot className="w-5 h-5 text-primary" />
         </div>
         <div>
-          <h1 className="font-syne font-bold text-text-primary">{missionId ? 'Copilot de cette mission' : 'Votre conseiller Modify'}</h1>
-          <p className="text-text-muted text-xs">{missionId ? 'Il connaît cette mission par cœur · adapte, débloque, motive' : 'Il connaît tout de votre boutique · répond en français'}</p>
+          <h1 className="font-syne font-bold text-text-primary">{missionId ? 'Mody — cette mission' : 'Mody, votre copilote'}</h1>
+          <p className="text-text-muted text-xs">{missionId ? 'Il connaît cette mission par cœur · adapte, débloque, motive' : 'Contenu · Réputation · Vidéo & Social · Stratégie'}</p>
         </div>
         {!isPro && remaining != null && (
           <span className="ml-auto text-xs text-text-muted">{remaining} message(s) d’aperçu</span>
@@ -145,9 +153,11 @@ export default function AgentChat({ isPro, missionId, compact }: AgentChatProps)
             <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-3">
               <Sparkles className="w-6 h-6 text-primary" />
             </div>
-            <p className="text-text-secondary text-sm mb-5">Posez-moi n’importe quelle question sur votre boutique.</p>
+            <p className="text-text-secondary text-sm mb-5">
+              {missionId ? 'Posez-moi n’importe quelle question sur cette mission.' : 'Posez-moi n’importe quelle question sur votre boutique.'}
+            </p>
             <div className="grid sm:grid-cols-2 gap-2 max-w-lg mx-auto">
-              {STARTERS.map((s) => (
+              {(missionId ? MISSION_STARTERS : STARTERS).map((s) => (
                 <button key={s} onClick={() => send(s)}
                   className="text-left text-sm px-3 py-2.5 rounded-xl border border-border bg-surface hover:border-primary/40 hover:bg-primary/5 transition-colors text-text-secondary">
                   {s}

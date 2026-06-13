@@ -7,6 +7,7 @@ import {
 } from 'lucide-react'
 import AgentChat from '@/components/dashboard/AgentChat'
 import SubscribeButton from '@/components/dashboard/SubscribeButton'
+import { MISSION_TO_METIER, METIER_META, METIER_ORDER, type Metier, type MissionType } from '@/lib/copilot/mission-types'
 
 /** Miroir de lib/copilot/missions.ts (shape renvoyée par /api/copilot/missions). */
 interface Mission {
@@ -62,6 +63,7 @@ export default function CopilotMissions({ isPro, hasAccess, initialMissionTitle 
   const [guide, setGuide] = useState<GuideDetail | null>(null)
   const [openStep, setOpenStep] = useState<number | null>(null)
   const [deepLinkDone, setDeepLinkDone] = useState(false)
+  const [metier, setMetier] = useState<Metier | 'all'>('all')
 
   const fetchMissions = useCallback(async (): Promise<Mission[]> => {
     try {
@@ -221,17 +223,19 @@ export default function CopilotMissions({ isPro, hasAccess, initialMissionTitle 
     )
   }
 
-  // ── Liste des missions, groupées par priorité ──────────────────────────────
+  // ── Liste des missions : 4 métiers Mody + groupes par priorité ─────────────
   const totalEuros = missions.reduce((s, m) => s + m.impact_euros, 0)
+  const metierOf = (m: Mission): Metier => MISSION_TO_METIER[m.type as MissionType] ?? 'contenu'
+  const countByMetier = METIER_ORDER.map((k) => ({ key: k, ...METIER_META[k], count: missions.filter((m) => metierOf(m) === k).length }))
+  const visible = metier === 'all' ? missions : missions.filter((m) => metierOf(m) === metier)
 
   return (
     <div className="p-4 sm:p-8 max-w-4xl">
-      <div className="mb-6 sm:mb-8">
-        <h1 className="font-syne font-bold text-xl sm:text-2xl text-text-primary mb-1">Vos missions avec le Copilot</h1>
+      <div className="mb-5">
+        <h1 className="font-syne font-bold text-xl sm:text-2xl text-text-primary mb-1">Mody, votre copilote e-commerce</h1>
         <p className="text-text-secondary text-sm max-w-2xl">
-          Ce que Modify ne peut pas faire à votre place (vraies photos, vrais avis, décisions),
-          le Copilot le prépare avec vous : contenu prêt à utiliser, étapes à cocher, et il répond
-          à vos questions à chaque étape.
+          Mody transforme chaque problème que Modify détecte mais ne peut pas corriger
+          automatiquement en contenu prêt à l’emploi.
         </p>
         {missions.length > 0 && (
           <p className="text-text-muted text-xs mt-2">
@@ -239,6 +243,29 @@ export default function CopilotMissions({ isPro, hasAccess, initialMissionTitle 
           </p>
         )}
       </div>
+
+      {/* Les 4 métiers de Mody — cartes cliquables qui filtrent la liste */}
+      {missions.length > 0 && (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 mb-6">
+          {countByMetier.map((c) => {
+            const active = metier === c.key
+            return (
+              <button key={c.key} onClick={() => setMetier(active ? 'all' : c.key)}
+                className={[
+                  'text-left rounded-2xl border p-3.5 transition-colors',
+                  active ? 'border-primary bg-primary/10' : 'border-border bg-surface hover:border-primary/40',
+                ].join(' ')}>
+                <p className="text-lg leading-none mb-1.5">{c.emoji}</p>
+                <p className={`text-sm font-medium ${active ? 'text-primary' : 'text-text-primary'}`}>{c.label}</p>
+                <p className="text-text-muted text-[11px] mt-0.5 leading-snug">{c.desc}</p>
+                <p className={`text-xs font-semibold mt-1.5 ${active ? 'text-primary' : 'text-text-secondary'}`}>
+                  {c.count} mission{c.count > 1 ? 's' : ''}
+                </p>
+              </button>
+            )
+          })}
+        </div>
+      )}
 
       {error && <p className="text-danger text-sm mb-4">{error}</p>}
 
@@ -257,7 +284,7 @@ export default function CopilotMissions({ isPro, hasAccess, initialMissionTitle 
       ) : (
         <div className="space-y-6">
           {PRIORITY_SECTIONS.map(({ key, label }) => {
-            const items = missions.filter((m) => m.priority === key)
+            const items = visible.filter((m) => m.priority === key)
             if (items.length === 0) return null
             return (
               <div key={key}>

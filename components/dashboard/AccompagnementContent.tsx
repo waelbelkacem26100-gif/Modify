@@ -1,8 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { MessageCircle, ListChecks, Target } from 'lucide-react'
-import AgentChat from '@/components/dashboard/AgentChat'
+import { ListChecks, Target } from 'lucide-react'
 import GuidesContent from '@/components/dashboard/GuidesContent'
 import CopilotMissions from '@/components/dashboard/CopilotMissions'
 import SubscribeGate from '@/components/dashboard/SubscribeGate'
@@ -12,11 +11,11 @@ interface Props {
   hasAccess: boolean
 }
 
-// 🤝 Accompagnement — le Copilot en interface principale : missions issues de
-// l'audit (contenu généré + checklist + chat contextualisé), coach généraliste,
-// et les guides libres en troisième onglet.
+// 🤝 Accompagnement — Mody, le copilote 4 métiers. Le chat n'existe QUE depuis
+// une mission (contextualisé) : le mode "chat libre" a été retiré en v4.1 —
+// Mody travaille toujours sur un sujet précis, jamais dans le vide.
 export default function AccompagnementContent({ isPro, hasAccess }: Props) {
-  const [tab, setTab] = useState<'missions' | 'agent' | 'guides'>('missions')
+  const [tab, setTab] = useState<'missions' | 'guides'>('missions')
   const [missionTitle, setMissionTitle] = useState<string | null>(null)
 
   // Deep-link depuis ⚡ Corrections : ?mission=<titre du problème> ouvre la
@@ -31,8 +30,7 @@ export default function AccompagnementContent({ isPro, hasAccess }: Props) {
       {/* Tabs */}
       <div className="flex items-center gap-1 px-4 sm:px-6 pt-4 border-b border-border">
         {([
-          { key: 'missions', label: 'Missions', icon: Target },
-          { key: 'agent', label: 'Votre coach', icon: MessageCircle },
+          { key: 'missions', label: 'Missions Mody', icon: Target },
           { key: 'guides', label: 'Guides libres', icon: ListChecks },
         ] as const).map((t) => (
           <button
@@ -53,8 +51,6 @@ export default function AccompagnementContent({ isPro, hasAccess }: Props) {
 
       {tab === 'missions' ? (
         <CopilotMissions isPro={isPro} hasAccess={hasAccess} initialMissionTitle={missionTitle} />
-      ) : tab === 'agent' ? (
-        <AgentChat isPro={isPro} />
       ) : hasAccess ? (
         <GuidesContent />
       ) : (
