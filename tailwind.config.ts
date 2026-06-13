@@ -41,6 +41,8 @@ const config: Config = {
       },
       animation: {
         'fade-up': 'fadeUp 0.5s ease-out forwards',
+        // v6 — révélation marquante d'une preuve au passage « Corrigé »
+        'proof-reveal': 'proofReveal 0.55s cubic-bezier(0.16, 1, 0.3, 1) forwards',
         pulse: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
         spin: 'spin 1s linear infinite',
       },
@@ -48,6 +50,11 @@ const config: Config = {
         fadeUp: {
           '0%': { opacity: '0', transform: 'translateY(16px)' },
           '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+        proofReveal: {
+          '0%': { opacity: '0', transform: 'translateY(-10px) scale(0.97)', maxHeight: '0' },
+          '60%': { opacity: '1' },
+          '100%': { opacity: '1', transform: 'translateY(0) scale(1)', maxHeight: '1200px' },
         },
       },
     },

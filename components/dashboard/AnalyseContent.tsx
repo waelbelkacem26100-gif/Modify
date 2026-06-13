@@ -376,7 +376,7 @@ export default function AnalyseContent({ isSubscribed, shopDomain, initialAudit,
                         // visible sans clic. Le cycle de vie du problème au même endroit (v6).
                         if (proof && !locked) {
                           return (
-                            <li key={r.id} className="bg-success/[0.06] border-l-2 border-success p-3 sm:p-4 animate-[fadeUp_0.4s_ease-out]">
+                            <li key={r.id} className="bg-success/[0.06] border-l-2 border-success p-3 sm:p-4 overflow-hidden animate-proof-reveal">
                               <div className="flex items-center gap-2 mb-2">
                                 <CheckCircle2 className="w-4 h-4 text-success flex-shrink-0" />
                                 <span className="text-success text-sm font-semibold">Corrigé par Modify</span>
@@ -398,10 +398,14 @@ export default function AnalyseContent({ isSubscribed, shopDomain, initialAudit,
                             </li>
                           )
                         }
+                        // Hiérarchie visuelle par priorité (v6) : 🔴 plus proéminent que 🟡.
+                        const accent = r.priority === 'high'
+                          ? 'border-l-2 border-danger/50'
+                          : r.priority === 'medium' ? 'border-l-2 border-warning/40' : 'border-l-2 border-transparent'
                         return (
-                          <li key={r.id}>
+                          <li key={r.id} className={accent}>
                             <button onClick={() => setOpenProblem(expanded ? null : r.id)}
-                              className="w-full p-4 text-left hover:bg-surface-2 transition-colors duration-150">
+                              className={['w-full text-left hover:bg-surface-2 transition-colors duration-150', r.priority === 'high' ? 'p-4 sm:p-5' : 'p-4'].join(' ')}>
                               <div className="flex items-center gap-2 flex-wrap mb-1">
                                 <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium border ${pr.cls}`}>
                                   {pr.emoji} {pr.label}
@@ -411,7 +415,7 @@ export default function AnalyseContent({ isSubscribed, shopDomain, initialAudit,
                                 </span>
                                 <span className="text-danger text-xs font-semibold ml-auto">−{euros(r.impact_euros)}/mois</span>
                               </div>
-                              <p className="text-text-primary text-sm font-medium">{r.title}</p>
+                              <p className={['text-text-primary font-medium', r.priority === 'high' ? 'text-[15px]' : 'text-sm'].join(' ')}>{r.title}</p>
                               {(r.affected_items?.length ?? 0) > 0 && (
                                 <p className="text-text-muted text-xs mt-1 truncate">
                                   Concerne : {r.affected_items!.slice(0, 3).join(' · ')}{r.affected_items!.length > 3 ? ` +${r.affected_items!.length - 3}` : ''}
