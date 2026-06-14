@@ -20,14 +20,14 @@
     "semantic_hash": "fe63861f8640a3c2e5af80f314b36384"
   },
   "/Users/bendou/Modify.io/modify/app/(site)/(auth)/sign-in/[[...sign-in]]/page.tsx": {
-    "mtime": 1781268677.1878603,
-    "ast_hash": "7d5012a4fcf7768e297feb133e29b362",
-    "semantic_hash": "7d5012a4fcf7768e297feb133e29b362"
+    "mtime": 1781432872.3208416,
+    "ast_hash": "7e5cad950cb727ed31c027ae434924fe",
+    "semantic_hash": ""
   },
   "/Users/bendou/Modify.io/modify/app/(site)/(auth)/sign-up/[[...sign-up]]/page.tsx": {
-    "mtime": 1781268677.1859777,
-    "ast_hash": "a5bcc26c0a08ceddd3832ad55cce1ee7",
-    "semantic_hash": "a5bcc26c0a08ceddd3832ad55cce1ee7"
+    "mtime": 1781432872.3205624,
+    "ast_hash": "655268eb606a3297fe32655732120857",
+    "semantic_hash": ""
   },
   "/Users/bendou/Modify.io/modify/app/(site)/contact/page.tsx": {
     "mtime": 1780606708.179191,
@@ -95,8 +95,8 @@
     "semantic_hash": "72db4a69397944ae0846fd5815c73bb3"
   },
   "/Users/bendou/Modify.io/modify/app/(site)/dashboard/resultats/page.tsx": {
-    "mtime": 1781346219.308426,
-    "ast_hash": "08d416de7f945c202fec5ecfa18ff3bb",
+    "mtime": 1781432804.9275072,
+    "ast_hash": "156886f2f7a37777e3428be374a5a6e3",
     "semantic_hash": ""
   },
   "/Users/bendou/Modify.io/modify/app/(site)/dashboard/seo/page.tsx": {
@@ -385,14 +385,14 @@
     "semantic_hash": "d98dde5fcc9de47da6809dc3a5c7e3ed"
   },
   "/Users/bendou/Modify.io/modify/app/layout.tsx": {
-    "mtime": 1781345511.9393628,
-    "ast_hash": "42a324d5d7c13e8ce39638b039248973",
+    "mtime": 1781432380.1382003,
+    "ast_hash": "f207f49eaeafbb1e9fbd246207a776c5",
     "semantic_hash": ""
   },
   "/Users/bendou/Modify.io/modify/app/shopify/AppBridgeRefresh.tsx": {
-    "mtime": 1781268677.180111,
-    "ast_hash": "8d27e27b25d555cc407ed3eee1b469eb",
-    "semantic_hash": "8d27e27b25d555cc407ed3eee1b469eb"
+    "mtime": 1781432360.8116205,
+    "ast_hash": "0e7ce531d68f698f798c70514926fb52",
+    "semantic_hash": ""
   },
   "/Users/bendou/Modify.io/modify/app/shopify/page.tsx": {
     "mtime": 1780847158.6140285,
@@ -415,8 +415,8 @@
     "semantic_hash": ""
   },
   "/Users/bendou/Modify.io/modify/components/dashboard/AnalyseContent.tsx": {
-    "mtime": 1781404248.0171118,
-    "ast_hash": "2b0c247b166b122a41d2724cc8b129a5",
+    "mtime": 1781432643.4730306,
+    "ast_hash": "8242b891f298f1d0c82218a94b2db1e5",
     "semantic_hash": ""
   },
   "/Users/bendou/Modify.io/modify/components/dashboard/AuditContent.tsx": {
@@ -435,9 +435,9 @@
     "semantic_hash": "4af7d047dfd190a798ab4db83fa7632d"
   },
   "/Users/bendou/Modify.io/modify/components/dashboard/ConversionChart.tsx": {
-    "mtime": 1781268677.1899774,
-    "ast_hash": "fa11aeeb72f636530542efd14a1fd73b",
-    "semantic_hash": "fa11aeeb72f636530542efd14a1fd73b"
+    "mtime": 1781432872.3171942,
+    "ast_hash": "a06aeeb59e2163836a6c4077545ce035",
+    "semantic_hash": ""
   },
   "/Users/bendou/Modify.io/modify/components/dashboard/DisconnectStoreButton.tsx": {
     "mtime": 1780432801.2449362,
@@ -515,8 +515,8 @@
     "semantic_hash": "87d3a7f2329bc5c831158da272d7c29c"
   },
   "/Users/bendou/Modify.io/modify/components/dashboard/Sidebar.tsx": {
-    "mtime": 1781404239.4398801,
-    "ast_hash": "e4cda39fb13add5c4a6d501a700d6ca2",
+    "mtime": 1781432440.4710894,
+    "ast_hash": "a3510a96992b1bcf19100d6c336f2b16",
     "semantic_hash": ""
   },
   "/Users/bendou/Modify.io/modify/components/dashboard/StoreConnect.tsx": {
@@ -535,8 +535,8 @@
     "semantic_hash": "71b7802387d3244b04a70ca3047b5373"
   },
   "/Users/bendou/Modify.io/modify/components/dashboard/SuiviContent.tsx": {
-    "mtime": 1781404213.8403072,
-    "ast_hash": "e29fb7b63b9a71b4adee7b76b2def9ff",
+    "mtime": 1781432872.3169234,
+    "ast_hash": "e28c7435f4b3009b3a032eef5a5f71dc",
     "semantic_hash": ""
   },
   "/Users/bendou/Modify.io/modify/components/dashboard/TokenGuard.tsx": {
@@ -995,8 +995,8 @@
     "semantic_hash": "e9bafa2ab5227aed38a2c290a2a43b57"
   },
   "/Users/bendou/Modify.io/modify/tailwind.config.ts": {
-    "mtime": 1781346299.4823365,
-    "ast_hash": "05c75ae7e38a6e19cee6a2275a38c6cc",
+    "mtime": 1781432613.9928997,
+    "ast_hash": "6b9459e9436d482036a996b7239b9401",
     "semantic_hash": ""
   },
   "/Users/bendou/Modify.io/modify/tsconfig.json": {
@@ -1120,13 +1120,13 @@
     "semantic_hash": ""
   },
   "/Users/bendou/Modify.io/modify/components/brand/ModyAvatar.tsx": {
-    "mtime": 1781345540.4566479,
-    "ast_hash": "4734bd472fce4889f221cd4d346c0275",
+    "mtime": 1781432350.0251513,
+    "ast_hash": "ee961ce4e9da9502661f9597d216bcb7",
     "semantic_hash": ""
   },
   "/Users/bendou/Modify.io/modify/components/dashboard/ModyBanner.tsx": {
-    "mtime": 1781402571.2726657,
-    "ast_hash": "8a5a29201ebaffe687e02c3048719be4",
+    "mtime": 1781432717.193799,
+    "ast_hash": "2b2964412413d12f17e950200f7c4ac9",
     "semantic_hash": ""
   },
   "/Users/bendou/Modify.io/modify/components/dashboard/ModyCompanion.tsx": {

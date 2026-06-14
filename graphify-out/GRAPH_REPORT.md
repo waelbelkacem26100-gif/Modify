@@ -1,16 +1,16 @@
 # Graph Report - modify  (2026-06-14)
 
 ## Corpus Check
-- 232 files · ~95,538 words
+- 232 files · ~95,748 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 988 nodes · 2206 edges · 72 communities (56 shown, 16 thin omitted)
+- 991 nodes · 2209 edges · 77 communities (62 shown, 15 thin omitted)
 - Extraction: 98% EXTRACTED · 2% INFERRED · 0% AMBIGUOUS · INFERRED: 39 edges (avg confidence: 0.8)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `38efb2eb`
+- Built from commit: `17fd7b4e`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -27,6 +27,9 @@
 - [[_COMMUNITY_Community 9|Community 9]]
 - [[_COMMUNITY_Community 10|Community 10]]
 - [[_COMMUNITY_Community 11|Community 11]]
+- [[_COMMUNITY_Community 12|Community 12]]
+- [[_COMMUNITY_Community 13|Community 13]]
+- [[_COMMUNITY_Community 14|Community 14]]
 - [[_COMMUNITY_Community 15|Community 15]]
 - [[_COMMUNITY_Community 16|Community 16]]
 - [[_COMMUNITY_Community 17|Community 17]]
@@ -34,14 +37,17 @@
 - [[_COMMUNITY_Community 19|Community 19]]
 - [[_COMMUNITY_Community 20|Community 20]]
 - [[_COMMUNITY_Community 21|Community 21]]
+- [[_COMMUNITY_Community 22|Community 22]]
 - [[_COMMUNITY_Community 23|Community 23]]
 - [[_COMMUNITY_Community 24|Community 24]]
+- [[_COMMUNITY_Community 25|Community 25]]
 - [[_COMMUNITY_Community 26|Community 26]]
 - [[_COMMUNITY_Community 27|Community 27]]
 - [[_COMMUNITY_Community 28|Community 28]]
 - [[_COMMUNITY_Community 29|Community 29]]
 - [[_COMMUNITY_Community 30|Community 30]]
 - [[_COMMUNITY_Community 31|Community 31]]
+- [[_COMMUNITY_Community 32|Community 32]]
 - [[_COMMUNITY_Community 33|Community 33]]
 - [[_COMMUNITY_Community 34|Community 34]]
 - [[_COMMUNITY_Community 35|Community 35]]
@@ -72,7 +78,6 @@
 - [[_COMMUNITY_Community 80|Community 80]]
 - [[_COMMUNITY_Community 81|Community 81]]
 - [[_COMMUNITY_Community 82|Community 82]]
-- [[_COMMUNITY_Community 86|Community 86]]
 
 ## God Nodes (most connected - your core abstractions)
 1. `createServiceRoleClient()` - 120 edges
@@ -87,8 +92,6 @@
 10. `PATCH()` - 18 edges
 
 ## Surprising Connections (you probably didn't know these)
-- `GET()` --calls--> `createServiceRoleClient()`  [INFERRED]
-  app/api/fixes/apply/route.ts → lib/supabase-server.ts
 - `Migration to New Shopify App` --conceptually_related_to--> `App Icon`  [INFERRED]
   MIGRATION_NEW_APP.md → app/icon.svg
 - `LegacyTrackingContent()` --calls--> `createServiceRoleClient()`  [EXTRACTED]
@@ -97,27 +100,29 @@
   app/api/blog/generate/route.ts → lib/blog-generator.ts
 - `GET()` --calls--> `createServiceRoleClient()`  [EXTRACTED]
   app/api/cron/blog-articles/route.ts → lib/supabase-server.ts
+- `GET()` --calls--> `createServiceRoleClient()`  [EXTRACTED]
+  app/api/cron/optimize-images/route.ts → lib/supabase-server.ts
 
 ## Import Cycles
 - None detected.
 
-## Communities (72 total, 16 thin omitted)
+## Communities (77 total, 15 thin omitted)
 
 ### Community 0 - "Community 0"
 Cohesion: 0.05
-Nodes (54): AccompagnementPage(), POST(), POST(), DashboardLayout(), navItems, OnboardingProgressProps, Step, steps (+46 more)
+Nodes (56): AccompagnementPage(), POST(), POST(), DashboardLayout(), navItems, OnboardingProgressProps, Step, steps (+48 more)
 
 ### Community 1 - "Community 1"
-Cohesion: 0.06
-Nodes (71): POST(), POST(), POST(), applyAnchorInjection(), applyGroupA(), applyGroupAAltText(), applyGroupADescriptions(), applyGroupAJsonLd() (+63 more)
+Cohesion: 0.07
+Nodes (67): POST(), POST(), applyAnchorInjection(), applyGroupA(), applyGroupAAltText(), applyGroupADescriptions(), applyGroupAJsonLd(), applyGroupAMeta() (+59 more)
 
 ### Community 2 - "Community 2"
-Cohesion: 0.05
-Nodes (68): anthropic, competitiveAgent, funnelAgent, mobileAgent, performanceSeoAgent, productPagesAgent, anthropic, AuditAgent (+60 more)
+Cohesion: 0.06
+Nodes (66): anthropic, competitiveAgent, funnelAgent, mobileAgent, performanceSeoAgent, productPagesAgent, anthropic, AuditAgent (+58 more)
 
 ### Community 3 - "Community 3"
-Cohesion: 0.06
-Nodes (55): GET(), page(), runFullAuditSequential(), generateProductFaq(), applyPendingFixesForStore(), getPendingFixes(), PendingFix, SupabaseClient (+47 more)
+Cohesion: 0.08
+Nodes (43): GET(), page(), applyPendingFixesForStore(), getPendingFixes(), PendingFix, SupabaseClient, ApprovalEmailData, MonthlyReportData (+35 more)
 
 ### Community 4 - "Community 4"
 Cohesion: 0.06
@@ -129,11 +134,11 @@ Nodes (33): dependencies, @anthropic-ai/sdk, @clerk/nextjs, lucide-react, next, 
 
 ### Community 6 - "Community 6"
 Cohesion: 0.11
-Nodes (21): GET(), getStore(), PATCH(), POST(), VALID_TYPES, agentChat(), AgentMessage, ANCHOR_FALLBACK_PRIORITY (+13 more)
+Nodes (21): POST(), GET(), getStore(), PATCH(), POST(), VALID_TYPES, ANCHOR_FALLBACK_PRIORITY, anthropic (+13 more)
 
 ### Community 7 - "Community 7"
-Cohesion: 0.05
-Nodes (60): GET(), GET(), GET(), getStore(), POST(), GET(), GET(), generateBlogArticle() (+52 more)
+Cohesion: 0.11
+Nodes (20): GET(), GET(), buildInstallUrl(), exchangeCodeForToken(), getShopInfo(), parseTokenResponse(), refreshAccessToken(), SHOPIFY_SCOPES (+12 more)
 
 ### Community 8 - "Community 8"
 Cohesion: 0.29
@@ -144,8 +149,20 @@ Cohesion: 0.10
 Nodes (19): compilerOptions, allowJs, esModuleInterop, incremental, isolatedModules, jsx, lib, module (+11 more)
 
 ### Community 10 - "Community 10"
-Cohesion: 0.16
-Nodes (9): POST(), StoreMode, Tab, CAPABILITY_META, CapabilityMeta, fixCapability, fixMode(), whatChanged() (+1 more)
+Cohesion: 0.13
+Nodes (9): POST(), Props, StoreMode, Tab, CAPABILITY_META, CapabilityMeta, fixCapability, beforeAfter() (+1 more)
+
+### Community 12 - "Community 12"
+Cohesion: 0.24
+Nodes (11): GET(), generateBlogArticle(), BlogGenResult, deriveNiche(), generateAndPublishArticle(), SupabaseClient, buildIllustrationPrompt(), generateIllustration() (+3 more)
+
+### Community 13 - "Community 13"
+Cohesion: 0.24
+Nodes (10): POST(), generateProductFaq(), fixAllSeo(), SeoFixResult, SupabaseClient, setProductMetafield(), updateProductImageAlt(), updateProductMetafields() (+2 more)
+
+### Community 14 - "Community 14"
+Cohesion: 0.26
+Nodes (10): compressFromUrl(), CompressResult, headImageSize(), optimizeStoreImages(), OptimizeSummary, SupabaseClient, createProductImage(), deleteProductImage() (+2 more)
 
 ### Community 15 - "Community 15"
 Cohesion: 0.18
@@ -173,15 +190,23 @@ Nodes (12): alreadyDiscounted(), applyPromos(), detectPromoCandidates(), firstPr
 
 ### Community 21 - "Community 21"
 Cohesion: 0.07
-Nodes (41): POST(), POST(), POST(), POST(), GET(), GET(), getStore(), POST() (+33 more)
+Nodes (43): POST(), POST(), POST(), POST(), GET(), GET(), GET(), getStore() (+35 more)
+
+### Community 22 - "Community 22"
+Cohesion: 0.18
+Nodes (8): AnalyseContent(), catMeta(), euros(), Filter, Prio, PRIORITY_META, Tab, ProgressProps
 
 ### Community 23 - "Community 23"
-Cohesion: 0.17
-Nodes (16): captureFixScreenshot(), captureScreenshot(), productUrlForStore(), ScreenshotWhen, storefrontIsGated(), SupabaseClient, uploadScreenshot(), getProduct() (+8 more)
+Cohesion: 0.12
+Nodes (21): GET(), captureFixScreenshot(), captureScreenshot(), productUrlForStore(), ScreenshotWhen, storefrontIsGated(), SupabaseClient, uploadScreenshot() (+13 more)
 
 ### Community 24 - "Community 24"
 Cohesion: 0.14
-Nodes (13): FixPanelProps, beforeAfter(), CATEGORY_PRESENTATION, MODE_PRESENTATION, PRIORITY_PRESENTATION, priorityPresentation(), AuditLog, AuditResult (+5 more)
+Nodes (13): FixPanelProps, CATEGORY_PRESENTATION, fixMode(), MODE_PRESENTATION, PRIORITY_PRESENTATION, priorityPresentation(), AuditLog, AuditResult (+5 more)
+
+### Community 25 - "Community 25"
+Cohesion: 0.33
+Nodes (8): GET(), getStore(), POST(), suggestBundles(), anthropic, pickCrossSellSettings(), createCustomCollection(), getProductsDetailed()
 
 ### Community 26 - "Community 26"
 Cohesion: 0.29
@@ -207,6 +232,10 @@ Nodes (5): Applied, Article, Audit, PRIO, SeoProblem
 Cohesion: 0.33
 Nodes (5): modify, json_ld, social_proof, trust_badges, urgency
 
+### Community 32 - "Community 32"
+Cohesion: 0.43
+Nodes (7): createBackupTheme(), duplicateTheme(), getBlogs(), getOrCreateBlog(), putAssetSrc(), putAssetValue(), shopifyHeaders()
+
 ### Community 34 - "Community 34"
 Cohesion: 0.33
 Nodes (5): modify, json_ld, social_proof, trust_badges, urgency
@@ -220,16 +249,16 @@ Cohesion: 0.40
 Nodes (3): BlockDef, BLOCKS, StatusResponse
 
 ### Community 37 - "Community 37"
-Cohesion: 0.27
-Nodes (6): ConversionChartProps, euros(), SuiviContent(), SuiviData, LegacyTrackingContent(), Conversion
+Cohesion: 0.24
+Nodes (7): ConversionChartProps, euros(), SuiviContent(), SuiviData, LegacyTrackingContent(), Conversion, Fix
 
 ### Community 40 - "Community 40"
 Cohesion: 0.40
 Nodes (5): App Icon, Migration to New Shopify App, shopify.app.toml, SHOPIFY_CLIENT_ID, SHOPIFY_CLIENT_SECRET
 
 ### Community 42 - "Community 42"
-Cohesion: 0.40
-Nodes (3): inter, metadata, spaceGrotesk
+Cohesion: 0.33
+Nodes (4): inter, metadata, spaceGrotesk, syne
 
 ### Community 44 - "Community 44"
 Cohesion: 0.50
@@ -257,11 +286,11 @@ Nodes (7): ModyAvatarProps, MISSION_META, Mission, PRIO_RANK, Props, ModyOpenDet
 
 ### Community 77 - "Community 77"
 Cohesion: 0.31
-Nodes (11): generateMissionContent(), missionTypeForProblem(), guideProblems(), GuideRow, latestCompletedAudit(), listMissions(), startMission(), SupabaseClient (+3 more)
+Nodes (10): generateMissionContent(), MissionType, missionTypeForProblem(), guideProblems(), GuideRow, latestCompletedAudit(), listMissions(), Mission (+2 more)
 
 ### Community 80 - "Community 80"
-Cohesion: 0.22
-Nodes (7): anthropic, GeneratedMission, GENERATORS, MissionContext, MissionStep, MissionType, Mission
+Cohesion: 0.29
+Nodes (5): anthropic, GeneratedMission, GENERATORS, MissionContext, MissionStep
 
 ### Community 81 - "Community 81"
 Cohesion: 0.22
@@ -272,24 +301,24 @@ Cohesion: 0.25
 Nodes (5): AgentChatProps, InlineAction, MISSION_STARTERS, Msg, STARTERS
 
 ## Knowledge Gaps
-- **299 isolated node(s):** `PreToolUse`, `trust_badges`, `social_proof`, `urgency`, `json_ld` (+294 more)
+- **302 isolated node(s):** `PreToolUse`, `trust_badges`, `social_proof`, `urgency`, `json_ld` (+297 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **16 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **15 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `createServiceRoleClient()` connect `Community 21` to `Community 0`, `Community 1`, `Community 2`, `Community 3`, `Community 37`, `Community 6`, `Community 7`, `Community 10`, `Community 77`, `Community 19`, `Community 20`, `Community 23`?**
-  _High betweenness centrality (0.096) - this node is a cross-community bridge._
-- **Why does `Store` connect `Community 3` to `Community 0`, `Community 1`, `Community 2`, `Community 37`, `Community 6`, `Community 7`, `Community 10`, `Community 77`, `Community 19`, `Community 20`, `Community 21`, `Community 23`, `Community 24`?**
+- **Why does `createServiceRoleClient()` connect `Community 21` to `Community 0`, `Community 1`, `Community 2`, `Community 3`, `Community 37`, `Community 6`, `Community 7`, `Community 10`, `Community 12`, `Community 13`, `Community 14`, `Community 19`, `Community 20`, `Community 23`, `Community 25`?**
+  _High betweenness centrality (0.095) - this node is a cross-community bridge._
+- **Why does `Store` connect `Community 3` to `Community 0`, `Community 1`, `Community 2`, `Community 37`, `Community 6`, `Community 10`, `Community 12`, `Community 77`, `Community 13`, `Community 14`, `Community 19`, `Community 20`, `Community 21`, `Community 23`, `Community 24`, `Community 25`?**
   _High betweenness centrality (0.057) - this node is a cross-community bridge._
 - **Are the 10 inferred relationships involving `createServiceRoleClient()` (e.g. with `POST()` and `POST()`) actually correct?**
   _`createServiceRoleClient()` has 10 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `PreToolUse`, `trust_badges`, `social_proof` to the rest of the system?**
-  _300 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _303 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Community 0` be split into smaller, more focused modules?**
-  _Cohesion score 0.05347985347985348 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.05025712949976625 - nodes in this community are weakly interconnected._
 - **Should `Community 1` be split into smaller, more focused modules?**
-  _Cohesion score 0.057181942544459644 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.06523855890944498 - nodes in this community are weakly interconnected._
 - **Should `Community 2` be split into smaller, more focused modules?**
-  _Cohesion score 0.052184769038701624 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.05658263305322129 - nodes in this community are weakly interconnected._
