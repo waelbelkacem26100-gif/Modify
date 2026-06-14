@@ -50,7 +50,19 @@ export default function ModyBanner() {
     return () => { alive = false }
   }, [])
 
-  if (!loaded) return null
+  // Skeleton de marque (v6) — la présence de Mody est visible dès le chargement,
+  // pas de saut de layout ni de bloc gris générique.
+  if (!loaded) {
+    return (
+      <div className="flex items-center gap-3.5 bg-gradient-to-r from-mody-glow to-surface border border-mody/20 rounded-2xl px-4 py-3.5 mb-6">
+        <ModyAvatar size={40} />
+        <div className="flex-1 space-y-2">
+          <div className="h-2.5 w-28 rounded-full bg-mody/20 animate-pulse" />
+          <div className="h-2.5 w-3/4 rounded-full bg-surface-2 animate-pulse" />
+        </div>
+      </div>
+    )
+  }
 
   // État vide honnête — tout est lancé / aucune mission disponible
   if (!mission) {

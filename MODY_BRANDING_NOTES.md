@@ -51,6 +51,24 @@
 - Une mascotte qui parle à la 1ʳᵉ personne du pluriel corporate (« Nous avons
   détecté ») — Mody est un *je*, singulier et direct.
 
+## Contraste WCAG — règle d'usage des couleurs Mody (vérifié v6)
+
+Audit fait avec notre propre fonction `contrastRatio` (lib/audit/accessibility.ts) :
+
+| Usage | Ratio | Verdict |
+|---|---|---|
+| Mody `#8B7BFF` texte/icône sur fond `#0A0A0B` | 6.01:1 | ✅ |
+| Mody `#8B7BFF` sur surface `#141416` | 5.59:1 | ✅ |
+| `mody-bright #A99BFF` libellés sur fond | 8.31:1 | ✅ |
+| Blanc sur **`mody` plein `#8B7BFF`** | 3.29:1 | ⚠️ texte normal NON conforme |
+| Blanc sur **`mody-dark #6D5CE6`** | 4.86:1 | ✅ |
+
+**Règle** : pour un bouton/pastille à **fond Mody plein avec texte blanc**, utiliser
+`bg-mody-dark` (pas `bg-mody`). `bg-mody` convient pour les icônes/grands graphismes
+(seuil 3:1) — c'est le cas de l'éclair ⚡ du `<ModyAvatar />` (3.29:1, conforme grand
+graphisme). Aujourd'hui aucun bouton `bg-mody` à texte blanc n'existe ; la règle est
+préventive.
+
 ## Prochaine session suggérée
 
 1. Décliner 4-5 expressions SVG depuis `<ModyAvatar />`.
