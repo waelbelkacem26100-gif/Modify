@@ -415,12 +415,9 @@ export default function AnalyseContent({ isSubscribed, shopDomain, initialAudit,
                                 </span>
                                 <span className="text-danger text-xs font-semibold ml-auto">−{euros(r.impact_euros)}/mois</span>
                               </div>
+                              {/* État fermé COMPACT (bug 5) : titre + badges + €/mois uniquement.
+                                  La ligne « Concerne : … » n'apparaît qu'au clic (bloc déplié ci-dessous). */}
                               <p className={['text-text-primary font-medium', r.priority === 'high' ? 'text-[15px]' : 'text-sm'].join(' ')}>{r.title}</p>
-                              {(r.affected_items?.length ?? 0) > 0 && (
-                                <p className="text-text-muted text-xs mt-1 truncate">
-                                  Concerne : {r.affected_items!.slice(0, 3).join(' · ')}{r.affected_items!.length > 3 ? ` +${r.affected_items!.length - 3}` : ''}
-                                </p>
-                              )}
                             </button>
                             {expanded && (
                               <div className="px-4 pb-4 -mt-1">

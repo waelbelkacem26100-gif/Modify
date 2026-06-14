@@ -42,7 +42,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
   return (
     <div className="flex min-h-screen bg-background">
       <Sidebar shopDomain={shopDomain} />
-      <main className="flex-1 overflow-y-auto pb-16 md:pb-0 min-w-0">
+      {/* pb-20 (80px) : le bouton Mody flottant ne masque jamais le bas des pages (bug 6) */}
+      <main className="flex-1 overflow-y-auto pb-20 min-w-0">
         <TokenGuard shopDomain={shopDomain} needsReconnect={reconnect} />
         {children}
       </main>

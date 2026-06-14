@@ -14,14 +14,12 @@ const SPACES = [
     href: '/dashboard',
     icon: Home,
     label: 'Tableau de bord',
-    sub: 'Ce qui se passe maintenant',
     match: (p: string) => p === '/dashboard',
   },
   {
     href: '/dashboard/resultats',
     icon: BarChart3,
     label: 'Impact & Résultats',
-    sub: 'Ce que Modify rapporte',
     match: (p: string) => p.startsWith('/dashboard/resultats'),
   },
 ]
@@ -81,19 +79,14 @@ export default function Sidebar({ shopDomain }: Props) {
               key={s.href}
               href={s.href}
               className={[
-                'flex items-start gap-3 px-3.5 py-3 rounded-2xl border transition-all duration-150',
+                'flex items-center gap-3 px-3.5 py-2.5 rounded-2xl border transition-all duration-150',
                 active
                   ? 'bg-primary/10 text-text-primary border-primary/30'
                   : 'text-text-secondary border-transparent hover:text-text-primary hover:bg-surface-2',
               ].join(' ')}
             >
-              <s.icon className={['w-5 h-5 flex-shrink-0 mt-0.5', active ? 'text-primary' : ''].join(' ')} />
-              <span className="min-w-0">
-                <span className="block font-display font-semibold text-[15px] leading-tight">{s.label}</span>
-                <span className={['block text-[11px] leading-tight mt-0.5', active ? 'text-text-secondary' : 'text-text-muted'].join(' ')}>
-                  {s.sub}
-                </span>
-              </span>
+              <s.icon className={['w-5 h-5 flex-shrink-0', active ? 'text-primary' : ''].join(' ')} />
+              <span className="font-display font-semibold text-[15px] leading-tight">{s.label}</span>
             </Link>
           )
         })}

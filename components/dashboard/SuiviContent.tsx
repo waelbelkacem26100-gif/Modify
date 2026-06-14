@@ -2,7 +2,7 @@
 
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import ConversionChart from '@/components/dashboard/ConversionChart'
-import { Wallet, TrendingUp, Gauge, Wand2, Newspaper, Sparkles, CheckCircle2 } from 'lucide-react'
+import { Wallet, TrendingUp, Gauge, Wand2, Newspaper, CheckCircle2 } from 'lucide-react'
 import type { Conversion } from '@/types'
 
 export interface SuiviData {
@@ -57,15 +57,14 @@ export default function SuiviContent({ d }: { d: SuiviData }) {
         <div className="absolute -right-8 -bottom-10 w-48 h-48 rounded-full bg-white/10" />
       </div>
 
-      {/* Metrics */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
+      {/* Metrics — tuile « Produits gagnants » retirée (bug 2) ; grille 5 colonnes */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
         {[
           { icon: Wallet, label: 'Récupéré', value: euros(d.recovered), color: 'text-success' },
           { icon: TrendingUp, label: 'Conversion', value: d.avgAfter > 0 ? `${(d.avgAfter * 100).toFixed(1)}%` : '—', color: 'text-text-primary' },
           { icon: Gauge, label: 'Score', value: `${d.currentScore}/100`, color: 'text-text-primary' },
           { icon: Wand2, label: 'Correctifs', value: String(d.fixesApplied), color: 'text-text-primary' },
           { icon: Newspaper, label: 'Articles', value: String(d.articles), color: 'text-text-primary' },
-          { icon: Sparkles, label: 'Produits gagnants', value: String(d.winningProducts), color: 'text-text-primary' },
         ].map((m) => (
           <div key={m.label} className="bg-surface border border-border rounded-2xl p-4">
             <div className="flex items-center gap-1.5 text-text-muted text-xs mb-1.5"><m.icon className="w-3.5 h-3.5" /> {m.label}</div>
@@ -74,25 +73,31 @@ export default function SuiviContent({ d }: { d: SuiviData }) {
         ))}
       </div>
 
-      {/* Before / after */}
+      {/* Before / after — masqué tant qu'il n'y a aucune donnée de conversion (bug 3) */}
       <div className="bg-surface border border-border rounded-2xl p-5 mb-6">
         <h2 className="font-syne font-semibold text-text-primary mb-4">Avant / après Modify</h2>
-        <div className="grid grid-cols-3 gap-3 text-center">
-          <div>
-            <p className="text-text-muted text-xs mb-1">Conversion avant</p>
-            <p className="font-syne font-bold text-lg text-text-secondary">{d.avgBefore > 0 ? `${(d.avgBefore * 100).toFixed(1)}%` : '—'}</p>
+        {d.avgBefore > 0 || d.avgAfter > 0 ? (
+          <div className="grid grid-cols-3 gap-3 text-center">
+            <div>
+              <p className="text-text-muted text-xs mb-1">Conversion avant</p>
+              <p className="font-syne font-bold text-lg text-text-secondary">{d.avgBefore > 0 ? `${(d.avgBefore * 100).toFixed(1)}%` : '—'}</p>
+            </div>
+            <div>
+              <p className="text-text-muted text-xs mb-1">Conversion après</p>
+              <p className="font-syne font-bold text-lg text-success">{d.avgAfter > 0 ? `${(d.avgAfter * 100).toFixed(1)}%` : '—'}</p>
+            </div>
+            <div>
+              <p className="text-text-muted text-xs mb-1">Évolution</p>
+              <p className={`font-syne font-bold text-lg ${d.uplift >= 0 ? 'text-success' : 'text-danger'}`}>
+                {d.uplift > 0 ? '+' : ''}{d.uplift.toFixed(0)}%
+              </p>
+            </div>
           </div>
-          <div>
-            <p className="text-text-muted text-xs mb-1">Conversion après</p>
-            <p className="font-syne font-bold text-lg text-success">{d.avgAfter > 0 ? `${(d.avgAfter * 100).toFixed(1)}%` : '—'}</p>
-          </div>
-          <div>
-            <p className="text-text-muted text-xs mb-1">Évolution</p>
-            <p className={`font-syne font-bold text-lg ${d.uplift >= 0 ? 'text-success' : 'text-danger'}`}>
-              {d.uplift > 0 ? '+' : ''}{d.uplift.toFixed(0)}%
-            </p>
-          </div>
-        </div>
+        ) : (
+          <p className="text-text-muted text-sm">
+            Les données de conversion apparaîtront dès que votre boutique reçoit du trafic.
+          </p>
+        )}
       </div>
 
       {/* Conversion chart */}
