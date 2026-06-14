@@ -3382,7 +3382,7 @@
       "label": "Props",
       "file_type": "code",
       "source_file": "components/dashboard/Sidebar.tsx",
-      "source_location": "L29",
+      "source_location": "L27",
       "id": "dashboard_sidebar_props",
       "community": 0,
       "norm_label": "props"
@@ -3391,7 +3391,7 @@
       "label": "Sidebar()",
       "file_type": "code",
       "source_file": "components/dashboard/Sidebar.tsx",
-      "source_location": "L33",
+      "source_location": "L31",
       "id": "dashboard_sidebar_sidebar",
       "community": 0,
       "norm_label": "sidebar()"
@@ -9635,9 +9635,9 @@
       "source_file": "app/(site)/dashboard/page.tsx",
       "source_location": "L9",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "dashboard_page",
-      "target": "brand_modyavatar",
-      "confidence_score": 1.0
+      "target": "brand_modyavatar"
     },
     {
       "relation": "imports_from",
@@ -32309,9 +32309,9 @@
       "source_file": "MODY_BRANDING_NOTES.md",
       "source_location": "L1",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "mody_branding_notes",
-      "target": "mody_branding_notes_mody_notes_de_direction_de_marque_r\u00e9flexion_non_impl\u00e9ment\u00e9",
-      "confidence_score": 1.0
+      "target": "mody_branding_notes_mody_notes_de_direction_de_marque_r\u00e9flexion_non_impl\u00e9ment\u00e9"
     },
     {
       "relation": "contains",
@@ -32319,9 +32319,9 @@
       "source_file": "MODY_BRANDING_NOTES.md",
       "source_location": "L46",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "mody_branding_notes_mody_notes_de_direction_de_marque_r\u00e9flexion_non_impl\u00e9ment\u00e9",
-      "target": "mody_branding_notes_anti_patterns_\u00e0_\u00e9viter",
-      "confidence_score": 1.0
+      "target": "mody_branding_notes_anti_patterns_\u00e0_\u00e9viter"
     },
     {
       "relation": "contains",
@@ -32329,9 +32329,9 @@
       "source_file": "MODY_BRANDING_NOTES.md",
       "source_location": "L7",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "mody_branding_notes_mody_notes_de_direction_de_marque_r\u00e9flexion_non_impl\u00e9ment\u00e9",
-      "target": "mody_branding_notes_ce_qui_existe_d\u00e9j\u00e0_v6_impl\u00e9ment\u00e9",
-      "confidence_score": 1.0
+      "target": "mody_branding_notes_ce_qui_existe_d\u00e9j\u00e0_v6_impl\u00e9ment\u00e9"
     },
     {
       "relation": "contains",
@@ -32339,9 +32339,9 @@
       "source_file": "MODY_BRANDING_NOTES.md",
       "source_location": "L54",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "mody_branding_notes_mody_notes_de_direction_de_marque_r\u00e9flexion_non_impl\u00e9ment\u00e9",
-      "target": "mody_branding_notes_contraste_wcag_r\u00e8gle_d_usage_des_couleurs_mody_v\u00e9rifi\u00e9_v6",
-      "confidence_score": 1.0
+      "target": "mody_branding_notes_contraste_wcag_r\u00e8gle_d_usage_des_couleurs_mody_v\u00e9rifi\u00e9_v6"
     },
     {
       "relation": "contains",
@@ -32349,9 +32349,9 @@
       "source_file": "MODY_BRANDING_NOTES.md",
       "source_location": "L18",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "mody_branding_notes_mody_notes_de_direction_de_marque_r\u00e9flexion_non_impl\u00e9ment\u00e9",
-      "target": "mody_branding_notes_pistes_pour_la_mascotte_compl\u00e8te_\u00e0_explorer",
-      "confidence_score": 1.0
+      "target": "mody_branding_notes_pistes_pour_la_mascotte_compl\u00e8te_\u00e0_explorer"
     },
     {
       "relation": "contains",
@@ -32359,9 +32359,9 @@
       "source_file": "MODY_BRANDING_NOTES.md",
       "source_location": "L72",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "mody_branding_notes_mody_notes_de_direction_de_marque_r\u00e9flexion_non_impl\u00e9ment\u00e9",
-      "target": "mody_branding_notes_prochaine_session_sugg\u00e9r\u00e9e",
-      "confidence_score": 1.0
+      "target": "mody_branding_notes_prochaine_session_sugg\u00e9r\u00e9e"
     },
     {
       "relation": "conceptually_related_to",
@@ -32425,5 +32425,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "59c103c4bc3ad7eecb1b79d83dc02fea92b913a2"
+  "built_at_commit": "38efb2eb4392e7b98375feb7c0857e25b3a0e148"
 }
