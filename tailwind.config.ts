@@ -46,6 +46,10 @@ const config: Config = {
         'fade-up': 'fadeUp 0.5s ease-out forwards',
         // v6 — révélation marquante d'une preuve au passage « Corrigé »
         'proof-reveal': 'proofReveal 0.55s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+        // v7 — animation signature « ticket de prix barré » : la barre rouge se
+        // trace de gauche à droite (400ms), puis le montant vert apparaît.
+        strike: 'strike 0.4s ease-out forwards',
+        'price-reveal': 'priceReveal 0.65s ease-out forwards',
         pulse: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
         spin: 'spin 1s linear infinite',
       },
@@ -58,6 +62,14 @@ const config: Config = {
           '0%': { opacity: '0', transform: 'translateY(-10px) scale(0.97)', maxHeight: '0' },
           '60%': { opacity: '1' },
           '100%': { opacity: '1', transform: 'translateY(0) scale(1)', maxHeight: '1200px' },
+        },
+        strike: {
+          '0%': { transform: 'scaleX(0)' },
+          '100%': { transform: 'scaleX(1)' },
+        },
+        priceReveal: {
+          '0%, 65%': { opacity: '0', transform: 'translateY(4px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
         },
       },
     },

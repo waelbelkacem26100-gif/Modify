@@ -40,7 +40,8 @@ interface Props {
   initialScore: number
 }
 
-type Filter = 'all' | 'high' | 'medium' | 'low' | 'auto' | 'guide'
+type Tab = 'todo' | 'fixed'
+type Prio = 'all' | 'high' | 'medium' | 'low'
 
 const PRIORITY_META = {
   high: { emoji: '🔴', label: 'Urgent', cls: 'text-danger bg-danger/10 border-danger/20' },
@@ -64,7 +65,8 @@ export default function AnalyseContent({ isSubscribed, shopDomain, initialAudit,
   const [starting, setStarting] = useState(false)
   const [fixing, setFixing] = useState(false)
   const [error, setError] = useState('')
-  const [filter, setFilter] = useState<Filter>('all')
+  const [tab, setTab] = useState<Tab>('todo')
+  const [prio, setPrio] = useState<Prio>('all')
   const [openCats, setOpenCats] = useState<Set<string>>(new Set())
   const [openProblem, setOpenProblem] = useState<string | null>(null)
   const [strengths, setStrengths] = useState<Strength[]>([])
@@ -166,11 +168,13 @@ export default function AnalyseContent({ isSubscribed, shopDomain, initialAudit,
   const cats = [...CATEGORY_ORDER.filter((c) => results.some((r) => r.category === c)),
     ...Array.from(new Set(results.map((r) => r.category))).filter((c) => !(CATEGORY_ORDER as string[]).includes(c))]
 
+  // v7 — 2 onglets (à corriger / corrigé) × 3 chips de priorité.
   const filtered = (items: AuditResult[]) => items.filter((r) => {
-    if (filter === 'all') return true
-    if (filter === 'auto') return (r.capability ?? (r.fix_available ? 'auto' : 'guide')) === 'auto'
-    if (filter === 'guide') return (r.capability ?? (r.fix_available ? 'auto' : 'guide')) === 'guide'
-    return r.priority === filter
+    const isFixed = proofs.has(normTitle(r.title))
+    if (tab === 'todo' && isFixed) return false
+    if (tab === 'fixed' && !isFixed) return false
+    if (prio !== 'all' && r.priority !== prio) return false
+    return true
   })
 
   // Index global pour le gating freemium (les 3 premiers problèmes toutes catégories
@@ -316,26 +320,40 @@ export default function AnalyseContent({ isSubscribed, shopDomain, initialAudit,
             </div>
           )}
 
-          {/* Filtres */}
-          <div className="flex items-center gap-2 flex-wrap mb-4">
-            {([
-              { key: 'all', label: 'Tous' },
-              { key: 'high', label: '🔴 Urgent' },
-              { key: 'medium', label: '🟠 Important' },
-              { key: 'low', label: '🟡 À améliorer' },
-              { key: 'auto', label: '✅ Corrigeables' },
-              { key: 'guide', label: '👋 Guides' },
-            ] as { key: Filter; label: string }[]).map((f) => (
-              <button key={f.key} onClick={() => setFilter(f.key)}
-                className={[
-                  'px-3 py-1.5 rounded-full text-xs font-medium border transition-colors duration-150',
-                  filter === f.key
-                    ? 'bg-primary/10 text-primary border-primary/30'
-                    : 'bg-surface text-text-secondary border-border hover:text-text-primary',
-                ].join(' ')}>
-                {f.label}
-              </button>
-            ))}
+          {/* Filtres v7 — 2 onglets + 3 chips de priorité (5 contrôles max) */}
+          <div className="flex items-center justify-between gap-3 flex-wrap mb-4">
+            <div className="inline-flex p-0.5 bg-surface-2 rounded-xl">
+              {([
+                { key: 'todo', label: 'À corriger' },
+                { key: 'fixed', label: '✅ Corrigé' },
+              ] as { key: Tab; label: string }[]).map((t) => (
+                <button key={t.key} onClick={() => setTab(t.key)}
+                  className={[
+                    'px-4 py-1.5 rounded-lg text-sm font-medium transition-colors duration-150',
+                    tab === t.key ? 'bg-primary text-white' : 'text-text-secondary hover:text-text-primary',
+                  ].join(' ')}>
+                  {t.label}
+                </button>
+              ))}
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              {([
+                { key: 'all', label: 'Tous' },
+                { key: 'high', label: '🔴 Urgent' },
+                { key: 'medium', label: '🟠 Important' },
+                { key: 'low', label: '🟡 Améliorer' },
+              ] as { key: Prio; label: string }[]).map((f) => (
+                <button key={f.key} onClick={() => setPrio(f.key)}
+                  className={[
+                    'px-3 py-1.5 rounded-full text-xs font-medium border transition-colors duration-150',
+                    prio === f.key
+                      ? 'bg-primary/10 text-primary border-primary/30'
+                      : 'bg-surface text-text-secondary border-border hover:text-text-primary',
+                  ].join(' ')}>
+                  {f.label}
+                </button>
+              ))}
+            </div>
           </div>
 
           <div className="space-y-3">
@@ -383,11 +401,20 @@ export default function AnalyseContent({ isSubscribed, shopDomain, initialAudit,
                         // visible sans clic. Le cycle de vie du problème au même endroit (v6).
                         if (proof && !locked) {
                           return (
-                            <li key={r.id} className="bg-success/[0.06] border-l-2 border-success p-3 sm:p-4 overflow-hidden animate-proof-reveal">
+                            <li key={r.id} className="bg-success/[0.06] border-l-[3px] border-success p-3 sm:p-4 overflow-hidden animate-proof-reveal">
                               <div className="flex items-center gap-2 mb-2">
                                 <CheckCircle2 className="w-4 h-4 text-success flex-shrink-0" />
                                 <span className="text-success text-sm font-semibold">Corrigé par Modify</span>
-                                <span className="text-success text-xs font-semibold ml-auto">+{euros(proof.monthlyImpactEur)}/mois récupérés</span>
+                                {/* Signature « ticket de prix barré » : montant rouge barré (gauche→droite) puis montant vert (v7) */}
+                                <span className="ml-auto flex items-center gap-2 font-syne">
+                                  <span className="relative text-danger text-sm font-bold whitespace-nowrap">
+                                    −{euros(proof.monthlyImpactEur)}/mois
+                                    <span className="absolute left-0 top-1/2 h-[2px] w-full bg-danger origin-left animate-strike" />
+                                  </span>
+                                  <span className="text-success text-sm font-bold whitespace-nowrap opacity-0 animate-price-reveal">
+                                    +{euros(proof.monthlyImpactEur)}/mois
+                                  </span>
+                                </span>
                               </div>
                               <ProofCard proof={proof} shopDomain={proofShop} />
                             </li>
@@ -420,7 +447,7 @@ export default function AnalyseContent({ isSubscribed, shopDomain, initialAudit,
                                 <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium border ${cap === 'auto' ? 'text-success bg-success/10 border-success/20' : 'text-sky-400 bg-sky-400/10 border-sky-400/20'}`}>
                                   {cap === 'auto' ? '✅ Modify s’en occupe' : '👋 Guide disponible'}
                                 </span>
-                                <span className="text-danger text-xs font-semibold ml-auto">−{euros(r.impact_euros)}/mois</span>
+                                <span className="font-syne text-danger text-sm font-bold ml-auto whitespace-nowrap">−{euros(r.impact_euros)}/mois</span>
                               </div>
                               {/* État fermé COMPACT (bug 5) : titre + badges + €/mois uniquement.
                                   La ligne « Concerne : … » n'apparaît qu'au clic (bloc déplié ci-dessous). */}
