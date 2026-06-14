@@ -126,7 +126,7 @@ export default function Sidebar({ shopDomain }: Props) {
         >
           <UserButton
             appearance={{
-              variables: { colorPrimary: '#FF6B35' },
+              variables: { colorPrimary: '#8B7BFF' },
               elements: { avatarBox: 'w-7 h-7' },
             }}
           />

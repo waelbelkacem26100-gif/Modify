@@ -68,18 +68,18 @@ export default function ConversionChart({ data, fixAppliedDate }: ConversionChar
               day: '2-digit',
               month: 'short',
             })}
-            stroke="#FF6B35"
+            stroke="#8B7BFF"
             strokeDasharray="4 4"
-            label={{ value: 'Correctifs appliqués', fill: '#FF6B35', fontSize: 10 }}
+            label={{ value: 'Correctifs appliqués', fill: '#8B7BFF', fontSize: 10 }}
           />
         )}
         <Line
           type="monotone"
           dataKey="Taux"
-          stroke="#FF6B35"
+          stroke="#8B7BFF"
           strokeWidth={2}
           dot={false}
-          activeDot={{ r: 4, fill: '#FF6B35', stroke: '#0A0A0B', strokeWidth: 2 }}
+          activeDot={{ r: 4, fill: '#8B7BFF', stroke: '#0D0D0F', strokeWidth: 2 }}
         />
       </LineChart>
     </ResponsiveContainer>

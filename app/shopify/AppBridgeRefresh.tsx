@@ -80,11 +80,11 @@ export default function AppBridgeRefresh() {
     return () => { cancelled = true }
   }, [])
 
-  const color = status === 'ok' ? '#16a34a' : status === 'error' ? '#dc2626' : '#FF6B35'
+  const color = status === 'ok' ? '#16a34a' : status === 'error' ? '#dc2626' : '#8B7BFF'
   return (
     <div style={{ fontFamily: 'system-ui, sans-serif', padding: '48px 24px', textAlign: 'center' }}>
       <div style={{ maxWidth: 480, margin: '0 auto' }}>
-        <div style={{ width: 48, height: 48, borderRadius: 12, background: '#FF6B35', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: 20 }}>
+        <div style={{ width: 48, height: 48, borderRadius: 12, background: '#8B7BFF', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: 20 }}>
           <span style={{ color: '#fff', fontWeight: 800, fontSize: 22 }}>M</span>
         </div>
         <h1 style={{ fontSize: 20, fontWeight: 700, margin: '0 0 8px' }}>Modify</h1>
@@ -96,7 +96,7 @@ export default function AppBridgeRefresh() {
                 <a
                   href={dashboardUrl}
                   target="_top"
-                  style={{ display: 'inline-block', background: '#FF6B35', color: '#fff', fontWeight: 600, fontSize: 14, textDecoration: 'none', padding: '10px 20px', borderRadius: 8 }}
+                  style={{ display: 'inline-block', background: '#8B7BFF', color: '#fff', fontWeight: 600, fontSize: 14, textDecoration: 'none', padding: '10px 20px', borderRadius: 8 }}
                 >
                   Ouvrir le tableau de bord Modify
                 </a>
