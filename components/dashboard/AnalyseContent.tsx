@@ -202,53 +202,60 @@ export default function AnalyseContent({ isSubscribed, shopDomain, initialAudit,
         )}
       </div>
 
-      {/* Hero — l'objectif de la page en grand */}
-      <div className="bg-surface border border-border rounded-3xl p-6 sm:p-8 mb-8">
+      {/* Hero v7 — le chiffre €/mois domine, score à droite, 2 boutons sur 1 ligne */}
+      <div className="bg-surface border border-border rounded-3xl p-6 sm:p-8 mb-8"
+        title={`${checksRun != null ? checksRun : TOTAL_CHECKS} points de contrôle analysés — un audit SEO classique en couvre 15 à 20.`}>
         <div className="flex flex-col sm:flex-row sm:items-center gap-6">
           <div className="flex-1 min-w-0">
-            <h1 className="font-syne font-bold text-2xl sm:text-3xl text-text-primary leading-tight">
-              {results.length > 0 ? (
-                isSubscribed ? (
-                  <>Votre boutique perd environ <span className="text-danger">{euros(totalLoss)}/mois</span> — voici pourquoi</>
-                ) : (
-                  <>Votre boutique perd de l’argent <span className="text-danger">chaque mois</span> — voici pourquoi</>
-                )
-              ) : running ? (
-                <>Analyse de votre boutique en cours…</>
-              ) : (
-                <>Découvrez ce qui freine vos ventes</>
-              )}
-            </h1>
-            <p className="text-text-secondary text-sm mt-2 max-w-xl">
-              {results.length > 0
-                ? <>{results.length} points à améliorer détectés sur {CATEGORY_ORDER.length} domaines clés{strengths.length > 0 && <> &middot; {strengths.length} point{strengths.length > 1 ? 's' : ''} fort{strengths.length > 1 ? 's' : ''} identifié{strengths.length > 1 ? 's' : ''}</>}.</>
-                : <>{CATEGORY_ORDER.length} analyses spécialisées : fiches produits, apparence, vitesse &amp; Google, confiance, tunnel d&apos;achat, mobile, concurrence.</>
-              }
-            </p>
-            <p className="text-text-muted text-xs mt-2 max-w-xl">
-              {checksRun != null ? checksRun : TOTAL_CHECKS} points de contrôle analysés sur votre boutique
-              {checksRun != null && checksRun > TOTAL_CHECKS ? <> (dont {checksRun - TOTAL_CHECKS} vérifications déterministes v5)</> : null} — un audit SEO classique en couvre 15 à 20.
-            </p>
+            {results.length > 0 ? (
+              <>
+                <p className="text-text-secondary text-sm">Votre boutique perd</p>
+                <h1 className="font-syne font-extrabold leading-none mt-1">
+                  {isSubscribed ? (
+                    <>
+                      <span className="text-danger text-5xl sm:text-6xl">{euros(totalLoss)}</span>
+                      <span className="text-text-secondary text-2xl"> /mois</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="text-danger text-5xl sm:text-6xl blur-md select-none">€000</span>
+                      <span className="text-text-secondary text-2xl"> /mois</span>
+                    </>
+                  )}
+                </h1>
+                <p className="text-text-secondary text-sm mt-3">
+                  {results.length} problèmes · {CATEGORY_ORDER.length} domaines{strengths.length > 0 && <> · {strengths.length} point{strengths.length > 1 ? 's' : ''} fort{strengths.length > 1 ? 's' : ''}</>}
+                </p>
+              </>
+            ) : (
+              <h1 className="font-syne font-extrabold text-3xl sm:text-4xl text-text-primary leading-tight">
+                {running ? 'Analyse en cours…' : 'Découvrez ce qui freine vos ventes'}
+              </h1>
+            )}
             <div className="mt-5 flex items-center gap-3 flex-wrap">
-              <Button onClick={startAudit} loading={starting || running} disabled={running}>
+              <Button variant="secondary" onClick={startAudit} loading={starting || running} disabled={running}>
                 <ScanSearch className="w-4 h-4" />
-                {running ? 'Analyse en cours…' : results.length > 0 ? 'Relancer une analyse' : 'Analyser ma boutique'}
+                {running ? 'Analyse en cours…' : results.length > 0 ? 'Relancer l’analyse' : 'Analyser ma boutique'}
               </Button>
-              {/* « Tout corriger » vit désormais en tête de la liste de problèmes (v6) */}
+              {results.length > 0 && isSubscribed && correctableCount > 0 && (
+                <Button onClick={fixAll} loading={fixing}>
+                  Tout corriger <ArrowRight className="w-4 h-4" />
+                </Button>
+              )}
             </div>
             {error && <p className="text-danger text-sm mt-3">{error}</p>}
           </div>
 
-          {/* Score /100 */}
+          {/* Score /100 — anneau à droite */}
           <div className="flex sm:flex-col items-center gap-3 flex-shrink-0">
             <div className="w-24 h-24 rounded-full flex items-center justify-center"
-              style={{ background: `conic-gradient(${scoreColor} ${initialScore * 3.6}deg, #26262A 0deg)` }}>
+              style={{ background: `conic-gradient(${scoreColor} ${initialScore * 3.6}deg, #2A2A38 0deg)` }}>
               <div className="w-[76px] h-[76px] rounded-full bg-surface flex flex-col items-center justify-center">
                 <span className="font-syne font-bold text-2xl text-text-primary">{initialScore}</span>
                 <span className="text-text-muted text-[10px]">/ 100</span>
               </div>
             </div>
-            <p className="text-text-muted text-xs text-center">Score de<br className="hidden sm:block" /> votre boutique</p>
+            <p className="text-text-muted text-xs text-center">Score</p>
           </div>
         </div>
       </div>

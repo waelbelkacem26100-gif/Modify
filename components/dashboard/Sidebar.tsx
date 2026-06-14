@@ -51,10 +51,14 @@ export default function Sidebar({ shopDomain }: Props) {
   }
 
   return (
-    <aside className="hidden md:flex w-60 bg-surface border-r border-border flex-col h-screen sticky top-0">
-      {/* Logo */}
+    <aside
+      className="hidden md:flex w-[200px] bg-surface border-r border-border flex-col h-screen sticky top-0"
+      /* Lueur violette ambiante subtile — la sidebar « porte » la couleur Modify (v7) */
+      style={{ backgroundImage: 'radial-gradient(120% 60% at 0% 0%, rgba(139,123,255,0.07), transparent 60%)' }}
+    >
+      {/* Logo — éclair violet + « Modify » en Syne */}
       <Link href="/" className="flex items-center gap-2.5 px-5 py-5 hover:opacity-80 transition-opacity">
-        <div className="w-7 h-7 bg-primary rounded-lg flex items-center justify-center flex-shrink-0">
+        <div className="w-7 h-7 bg-primary rounded-lg flex items-center justify-center flex-shrink-0 shadow-lg shadow-primary-glow">
           <Zap className="w-4 h-4 text-white fill-white" />
         </div>
         <span className="font-display font-bold text-lg tracking-tight text-text-primary">Modify</span>
@@ -79,14 +83,14 @@ export default function Sidebar({ shopDomain }: Props) {
               key={s.href}
               href={s.href}
               className={[
-                'flex items-center gap-3 px-3.5 py-2.5 rounded-2xl border transition-all duration-150',
+                'flex items-center gap-3 px-3 py-2.5 rounded-r-xl border-l-[3px] transition-all duration-150',
                 active
-                  ? 'bg-primary/10 text-text-primary border-primary/30'
+                  ? 'bg-primary/10 text-primary border-primary'
                   : 'text-text-secondary border-transparent hover:text-text-primary hover:bg-surface-2',
               ].join(' ')}
             >
-              <s.icon className={['w-5 h-5 flex-shrink-0', active ? 'text-primary' : ''].join(' ')} />
-              <span className="font-display font-semibold text-[15px] leading-tight">{s.label}</span>
+              <s.icon className="w-5 h-5 flex-shrink-0" />
+              <span className="font-medium text-[15px] leading-tight">{s.label}</span>
             </Link>
           )
         })}
