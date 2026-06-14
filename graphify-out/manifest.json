@@ -85,9 +85,9 @@
     "semantic_hash": "b144c341152ae29755295a782e8959a6"
   },
   "/Users/bendou/Modify.io/modify/app/(site)/dashboard/page.tsx": {
-    "mtime": 1781231527.4841483,
-    "ast_hash": "9c8ce740d7067158c0dbabeb63ba6189",
-    "semantic_hash": "9c8ce740d7067158c0dbabeb63ba6189"
+    "mtime": 1781346567.7301035,
+    "ast_hash": "753e513f032030f33f2f96aae5106a10",
+    "semantic_hash": ""
   },
   "/Users/bendou/Modify.io/modify/app/(site)/dashboard/products/page.tsx": {
     "mtime": 1780414973.2531269,
@@ -1125,8 +1125,8 @@
     "semantic_hash": ""
   },
   "/Users/bendou/Modify.io/modify/components/dashboard/ModyBanner.tsx": {
-    "mtime": 1781345841.6299639,
-    "ast_hash": "e38cde56bdd5204077bc17cde63bae1b",
+    "mtime": 1781402571.2726657,
+    "ast_hash": "8a5a29201ebaffe687e02c3048719be4",
     "semantic_hash": ""
   },
   "/Users/bendou/Modify.io/modify/components/dashboard/ModyCompanion.tsx": {
@@ -1157,6 +1157,11 @@
   "/Users/bendou/Modify.io/modify/scripts/compare-audit-v5.mjs": {
     "mtime": 1781318376.6033301,
     "ast_hash": "358fc36bfe4217b25b08d7458cfae9e0",
+    "semantic_hash": ""
+  },
+  "/Users/bendou/Modify.io/modify/MODY_BRANDING_NOTES.md": {
+    "mtime": 1781402564.2718399,
+    "ast_hash": "8105d5f3ff3642734f110334ed32c304",
     "semantic_hash": ""
   }
 }
