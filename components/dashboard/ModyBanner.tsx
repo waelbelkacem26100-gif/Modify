@@ -84,7 +84,7 @@ export default function ModyBanner() {
   return (
     <button
       onClick={() => openMody(mission.problem_title)}
-      className="group w-full flex items-center gap-3.5 text-left bg-gradient-to-r from-mody-glow to-surface border border-mody/25 hover:border-mody/50 rounded-2xl px-4 py-3.5 mb-6 transition-all duration-200"
+      className="group w-full flex items-center gap-3.5 text-left bg-gradient-to-r from-mody-glow to-surface border-l-[3px] border-mody hover:from-mody-glow hover:brightness-110 rounded-r-2xl rounded-l-md px-4 py-3.5 mb-6 transition-all duration-200"
     >
       <ModyAvatar size={40} glow />
       <div className="flex-1 min-w-0">

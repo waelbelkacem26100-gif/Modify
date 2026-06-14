@@ -84,14 +84,7 @@ export default async function ResultatsPage() {
     appliedFixes,
   }
 
-  // 📊 Impact & Résultats (v6) — ROI + graphique + timeline (SuiviContent), puis
-  // la Galerie Impact (ex-page Preuves) embarquée comme section finale.
-  return (
-    <>
-      <SuiviContent d={data} />
-      <div className="px-4 sm:px-8 pb-8 -mt-2">
-        <ProofsContent embedded />
-      </div>
-    </>
-  )
+  // 📊 Impact & Résultats (v7) — la Galerie des preuves est passée à SuiviContent
+  // pour s'afficher juste après les métriques, AVANT les graphiques.
+  return <SuiviContent d={data} gallery={<ProofsContent embedded />} />
 }

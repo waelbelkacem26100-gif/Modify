@@ -2,7 +2,8 @@
 
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import ConversionChart from '@/components/dashboard/ConversionChart'
-import { Wallet, TrendingUp, Gauge, Wand2, Newspaper, CheckCircle2 } from 'lucide-react'
+import { Gauge, Wand2, CalendarClock, CheckCircle2 } from 'lucide-react'
+import type { ReactNode } from 'react'
 import type { Conversion } from '@/types'
 
 export interface SuiviData {
@@ -25,7 +26,7 @@ export interface SuiviData {
 
 function euros(n: number) { return `€${Math.round(n).toLocaleString('fr-FR')}` }
 
-export default function SuiviContent({ d }: { d: SuiviData }) {
+export default function SuiviContent({ d, gallery }: { d: SuiviData; gallery?: ReactNode }) {
   const scoreColor = d.currentScore >= 80 ? '#22c55e' : d.currentScore >= 50 ? '#f59e0b' : '#ef4444'
 
   return (
@@ -37,41 +38,42 @@ export default function SuiviContent({ d }: { d: SuiviData }) {
         </div>
         <a href="#galerie-impact"
           className="inline-flex items-center gap-2 px-4 py-2.5 bg-primary hover:bg-primary-dark text-white text-sm font-medium rounded-xl transition-colors flex-shrink-0">
-          📸 Voir ce que Modify a changé →
+          📸 Galerie des preuves →
         </a>
       </div>
 
-      {/* ROI hero */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary to-primary-dark p-6 sm:p-8 mb-6">
+      {/* ROI hero v7 — le chiffre domine, fond sombre + lueur violette */}
+      <div className="relative overflow-hidden rounded-3xl border border-border bg-gradient-to-br from-[#0D0D0F] to-[#141419] p-6 sm:p-8 mb-6">
         <div className="relative z-10">
-          <p className="text-white/80 text-sm font-medium mb-2">Le retour sur investissement</p>
-          <p className="font-syne font-bold text-2xl sm:text-4xl text-white leading-tight">
-            Vous payez {d.planPrice > 0 ? `${d.planPrice}€/mois` : '0€'} — Modify vous a rapporté {euros(d.recovered)}
-          </p>
-          <p className="text-white/85 text-sm mt-3">
+          <p className="text-text-secondary text-sm">Vous payez {d.planPrice > 0 ? `${d.planPrice}€/mois` : '0€'}</p>
+          <p className="text-text-secondary text-sm mb-2">Modify vous a rapporté</p>
+          <p className="font-syne font-extrabold text-5xl sm:text-6xl text-text-primary leading-none">{euros(d.recovered)}</p>
+          <p className="text-sm mt-3">
             {d.planPrice > 0 && d.roiMultiple >= 1
-              ? `Soit ${d.roiMultiple}× votre abonnement récupéré chaque mois.`
-              : 'Continuez : chaque correctif appliqué augmente ce montant.'}
+              ? <>Soit <span className="font-syne font-bold text-primary-bright">{d.roiMultiple}×</span> votre abonnement récupéré chaque mois.</>
+              : <span className="text-text-secondary">Continuez : chaque correctif appliqué augmente ce montant.</span>}
           </p>
         </div>
-        <div className="absolute -right-8 -bottom-10 w-48 h-48 rounded-full bg-white/10" />
+        {/* lueur violette ambiante */}
+        <div className="absolute -right-10 -top-10 w-56 h-56 rounded-full bg-primary/15 blur-3xl" />
       </div>
 
-      {/* Metrics — tuile « Produits gagnants » retirée (bug 2) ; grille 5 colonnes */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
+      {/* Metrics v7 — 3 tuiles : Score, Corrections, Depuis */}
+      <div className="grid grid-cols-3 gap-3 mb-6">
         {[
-          { icon: Wallet, label: 'Récupéré', value: euros(d.recovered), color: 'text-success' },
-          { icon: TrendingUp, label: 'Conversion', value: d.avgAfter > 0 ? `${(d.avgAfter * 100).toFixed(1)}%` : '—', color: 'text-text-primary' },
-          { icon: Gauge, label: 'Score', value: `${d.currentScore}/100`, color: 'text-text-primary' },
-          { icon: Wand2, label: 'Correctifs', value: String(d.fixesApplied), color: 'text-text-primary' },
-          { icon: Newspaper, label: 'Articles', value: String(d.articles), color: 'text-text-primary' },
+          { icon: Gauge, label: 'Score', value: `${d.currentScore}/100` },
+          { icon: Wand2, label: 'Corrections', value: String(d.fixesApplied) },
+          { icon: CalendarClock, label: 'Depuis', value: d.firstFixDate ? new Date(d.firstFixDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) : '—' },
         ].map((m) => (
           <div key={m.label} className="bg-surface border border-border rounded-2xl p-4">
             <div className="flex items-center gap-1.5 text-text-muted text-xs mb-1.5"><m.icon className="w-3.5 h-3.5" /> {m.label}</div>
-            <p className={`font-syne font-bold text-lg ${m.color}`}>{m.value}</p>
+            <p className="font-syne font-bold text-lg text-text-primary">{m.value}</p>
           </div>
         ))}
       </div>
+
+      {/* Galerie des preuves — remontée AVANT les graphiques (v7) */}
+      {gallery}
 
       {/* Before / after — masqué tant qu'il n'y a aucune donnée de conversion (bug 3) */}
       <div className="bg-surface border border-border rounded-2xl p-5 mb-6">
