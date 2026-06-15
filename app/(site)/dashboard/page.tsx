@@ -62,6 +62,28 @@ export default async function DashboardPage() {
   // F1 — premier run : boutique connectée mais AUCUN audit encore lancé.
   const isFirstRun = !audit
 
+  // F4 — résumé « Cette semaine » : corrections appliquées + €récupérés + Δ score (7 derniers jours).
+  const weekAgo = new Date(Date.now() - 7 * 864e5).toISOString()
+  const { data: weekAudits } = await supabase.from('audits').select('id').eq('store_id', typedStore.id)
+  const weekAuditIds = (weekAudits ?? []).map((a: { id: string }) => a.id)
+  const { data: weekFixes } = weekAuditIds.length
+    ? await supabase.from('fixes').select('impact_euros, created_at')
+        .in('audit_id', weekAuditIds).eq('status', 'applied').gte('created_at', weekAgo)
+    : { data: [] }
+  const weekCorrections = (weekFixes ?? []) as { impact_euros: number }[]
+  const { data: weekSnaps } = await supabase
+    .from('store_score_snapshots').select('score, created_at').eq('store_id', typedStore.id)
+    .gte('created_at', weekAgo).order('created_at', { ascending: true })
+  const snapsArr = (weekSnaps ?? []) as { score: number }[]
+  const scoreChange = snapsArr.length >= 2 ? snapsArr[snapsArr.length - 1].score - snapsArr[0].score : 0
+  const weekly = weekCorrections.length > 0
+    ? {
+        corrections: weekCorrections.length,
+        eurosRecovered: weekCorrections.reduce((s, f) => s + (f.impact_euros || 0), 0),
+        scoreChange,
+      }
+    : null
+
   return (
     <AnalyseContent
       isSubscribed={isSubscribed}
@@ -69,6 +91,7 @@ export default async function DashboardPage() {
       initialAudit={audit}
       initialScore={score}
       isFirstRun={isFirstRun}
+      weekly={weekly}
     />
   )
 }

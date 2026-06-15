@@ -43,6 +43,8 @@ interface Props {
   previewMode?: boolean
   /** Premier run (0 audit) : onboarding guidé — auto-lancement + Mody à la fin. */
   isFirstRun?: boolean
+  /** F4 — résumé de la semaine (null si aucune activité cette semaine). */
+  weekly?: { corrections: number; eurosRecovered: number; scoreChange: number } | null
 }
 
 type Tab = 'todo' | 'fixed'
@@ -64,7 +66,7 @@ function catMeta(category: string): { emoji: string; label: string } {
     ?? categoryPresentation(category)
 }
 
-export default function AnalyseContent({ isSubscribed, shopDomain, initialAudit, initialScore, previewMode = false, isFirstRun = false }: Props) {
+export default function AnalyseContent({ isSubscribed, shopDomain, initialAudit, initialScore, previewMode = false, isFirstRun = false, weekly = null }: Props) {
   const [audit, setAudit] = useState<Audit | null>(initialAudit)
   const [progress, setProgress] = useState<ProgressInfo | null>(null)
   const [starting, setStarting] = useState(false)
@@ -439,6 +441,20 @@ export default function AnalyseContent({ isSubscribed, shopDomain, initialAudit,
           </div>
         </div>
       </div>
+
+      {/* F4 — Résumé « Cette semaine » : visible uniquement s'il y a eu des corrections */}
+      {weekly && weekly.corrections > 0 && !running && (
+        <a href={previewMode ? '#' : '/dashboard/resultats'}
+          className="flex items-center gap-3 bg-surface border border-border hover:border-primary/40 rounded-2xl px-4 py-3 mb-6 transition-colors">
+          <span className="text-lg">📅</span>
+          <p className="text-sm text-text-secondary flex-1 min-w-0">
+            <span className="text-text-primary font-medium">Cette semaine</span> — {weekly.corrections} correction{weekly.corrections > 1 ? 's' : ''}
+            <span className="font-syne text-success font-bold"> · +{euros(weekly.eurosRecovered)}/mois</span>
+            {weekly.scoreChange !== 0 && <span className="text-success"> · Score {weekly.scoreChange > 0 ? '+' : ''}{weekly.scoreChange} pts</span>}
+          </p>
+          <span className="text-primary-bright text-sm font-medium flex-shrink-0 hidden sm:inline">Voir le détail →</span>
+        </a>
+      )}
 
       {/* 💜 Bandeau d'activité Mody — juste sous le hero (v6) */}
       <ModyBanner />
