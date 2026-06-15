@@ -74,6 +74,7 @@ export default function AnalyseContent({ isSubscribed, shopDomain, initialAudit,
   const [openProblem, setOpenProblem] = useState<string | null>(null)
   const [strengths, setStrengths] = useState<Strength[]>([])
   const [strengthsOpen, setStrengthsOpen] = useState(false)
+  const [confirmFixOpen, setConfirmFixOpen] = useState(false)
   const [checksRun, setChecksRun] = useState<number | null>(null)
   // Preuves des corrections appliquées, indexées par titre normalisé (v6) — une
   // carte problème dont le titre matche affiche sa preuve EN PLACE.
@@ -198,9 +199,10 @@ export default function AnalyseContent({ isSubscribed, shopDomain, initialAudit,
   // Catégorie auto-dépliée si elle contient ≥1 correction prouvée (preuve sans clic).
   const catHasProof = (cat: string) => results.some((r) => r.category === cat && proofFor(r))
   // Nombre de corrections automatiques pas encore appliquées (pour le bouton « Tout corriger »).
-  const correctableCount = results.filter(
-    (r) => (r.capability ?? (r.fix_available ? 'auto' : 'guide')) === 'auto' && !proofFor(r)
-  ).length
+  const correctableItems = results
+    .filter((r) => (r.capability ?? (r.fix_available ? 'auto' : 'guide')) === 'auto' && !proofFor(r))
+    .sort((a, b) => b.impact_euros - a.impact_euros)
+  const correctableCount = correctableItems.length
   // Problèmes urgents non encore corrigés (pour le bouton « Corriger les urgences »).
   const urgentCount = results.filter((r) => r.priority === 'high' && !proofFor(r)).length
 
@@ -369,7 +371,7 @@ export default function AnalyseContent({ isSubscribed, shopDomain, initialAudit,
                 )}
                 {correctableCount > 0 && (
                   <button
-                    onClick={fixAll}
+                    onClick={() => setConfirmFixOpen(true)}
                     disabled={fixing}
                     className="flex flex-col items-start gap-1 text-left bg-primary/10 border border-primary/30 hover:border-primary/50 hover:bg-primary/15 rounded-2xl p-4 transition-all duration-150 disabled:opacity-60"
                   >
@@ -581,6 +583,47 @@ export default function AnalyseContent({ isSubscribed, shopDomain, initialAudit,
             Lancez votre première analyse : Modify passe votre boutique au crible sur {CATEGORY_ORDER.length} domaines
             ({TOTAL_CHECKS}+ points de contrôle) et vous montre exactement où vous perdez des ventes.
           </p>
+        </div>
+      )}
+
+      {/* F2 — Modale de confirmation « Tout corriger » */}
+      {confirmFixOpen && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px]" onClick={() => !fixing && setConfirmFixOpen(false)} />
+          <div className="relative w-full max-w-md bg-surface border border-border rounded-3xl p-6 shadow-2xl animate-[fadeUp_0.2s_ease-out]">
+            <h2 className="font-syne font-bold text-xl text-text-primary mb-1">
+              Modify va appliquer {correctableCount} correction{correctableCount > 1 ? 's' : ''}
+            </h2>
+            <p className="text-text-secondary text-sm mb-4">Voici ce qui sera corrigé automatiquement sur votre boutique :</p>
+
+            <ul className="space-y-2 mb-4 max-h-56 overflow-y-auto">
+              {correctableItems.slice(0, 6).map((r) => (
+                <li key={r.id} className="flex items-center gap-2 text-sm">
+                  <CheckCircle2 className="w-4 h-4 text-success flex-shrink-0" />
+                  <span className="text-text-primary truncate flex-1">{r.title}</span>
+                  <span className="font-syne text-success text-xs font-bold whitespace-nowrap">+{euros(r.impact_euros)}</span>
+                </li>
+              ))}
+              {correctableCount > 6 && (
+                <li className="text-text-muted text-xs pl-6">+ {correctableCount - 6} autre{correctableCount - 6 > 1 ? 's' : ''} correction{correctableCount - 6 > 1 ? 's' : ''}</li>
+              )}
+            </ul>
+
+            <div className="bg-surface-2 rounded-xl p-3 mb-5 space-y-1.5">
+              <p className="text-text-secondary text-xs flex items-center gap-2"><span>⏱️</span> Durée estimée : <span className="text-text-primary font-medium">~3 minutes</span></p>
+              <p className="text-text-secondary text-xs flex items-center gap-2"><span>💾</span> Une sauvegarde automatique est créée avant chaque modification</p>
+            </div>
+
+            <div className="flex items-center justify-end gap-3">
+              <button onClick={() => setConfirmFixOpen(false)} disabled={fixing}
+                className="px-4 py-2.5 rounded-xl text-sm font-medium text-text-secondary hover:text-text-primary hover:bg-surface-2 transition-colors disabled:opacity-50">
+                Annuler
+              </button>
+              <Button onClick={fixAll} loading={fixing}>
+                Lancer les corrections <ArrowRight className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
         </div>
       )}
     </div>
