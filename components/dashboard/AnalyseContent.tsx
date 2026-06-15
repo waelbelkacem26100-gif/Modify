@@ -442,6 +442,13 @@ export default function AnalyseContent({ isSubscribed, shopDomain, initialAudit,
         </div>
       </div>
 
+      {/* F5 — lien discret vers le guide de démarrage */}
+      {!previewMode && results.length > 0 && (
+        <a href="/dashboard/guide" className="inline-flex items-center gap-1.5 text-text-muted hover:text-primary-bright text-xs mb-6 transition-colors">
+          🧭 Nouveau ici ? Voir le guide de démarrage →
+        </a>
+      )}
+
       {/* F4 — Résumé « Cette semaine » : visible uniquement s'il y a eu des corrections */}
       {weekly && weekly.corrections > 0 && !running && (
         <a href={previewMode ? '#' : '/dashboard/resultats'}

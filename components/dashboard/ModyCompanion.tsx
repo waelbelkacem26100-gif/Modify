@@ -42,6 +42,11 @@ export default function ModyCompanion({ isPro, hasAccess }: Props) {
       setSeen(true)
     }
     window.addEventListener(MODY_OPEN_EVENT, handler)
+    // Deep-link ?mody=1 (depuis le guide de démarrage) → ouvre Mody.
+    if (new URLSearchParams(window.location.search).get('mody') === '1') {
+      mountKey.current += 1
+      setOpen(true); setSeen(true)
+    }
     return () => window.removeEventListener(MODY_OPEN_EVENT, handler)
   }, [])
 
