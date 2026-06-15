@@ -5,6 +5,7 @@ import { X } from 'lucide-react'
 import ModyAvatar from '@/components/brand/ModyAvatar'
 import CopilotMissions from '@/components/dashboard/CopilotMissions'
 import { MODY_OPEN_EVENT, type ModyOpenDetail } from '@/lib/mody-companion'
+import { withPreviewToken } from '@/lib/preview'
 
 interface Props {
   isPro: boolean
@@ -47,7 +48,7 @@ export default function ModyCompanion({ isPro, hasAccess }: Props) {
   // Pastille : missions disponibles non encore consultées (localStorage).
   useEffect(() => {
     let alive = true
-    fetch('/api/copilot/missions')
+    fetch(withPreviewToken('/api/copilot/missions'))
       .then((r) => (r.ok ? r.json() : null))
       .then((d: { missions?: unknown[] } | null) => {
         if (!alive || !d?.missions) return

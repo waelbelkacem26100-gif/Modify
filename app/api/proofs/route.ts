@@ -3,6 +3,7 @@ import { auth } from '@clerk/nextjs/server'
 import { createServiceRoleClient } from '@/lib/supabase-server'
 import { getValidAccessToken } from '@/lib/shopify-token'
 import { buildProofRecords } from '@/lib/proofs/build-proof'
+import { PREVIEW_TOKEN, PREVIEW_ADMIN_USER_ID } from '@/lib/preview'
 import type { Store } from '@/types'
 
 export const runtime = 'nodejs'
@@ -15,7 +16,10 @@ export const maxDuration = 60
  * correction appliquée il y a 5 secondes.
  */
 export async function GET(request: NextRequest) {
-  const { userId } = await auth()
+  const { userId: clerkUserId } = await auth()
+  // Preview publique TEMPORAIRE (lecture seule) : bypass admin par token.
+  const userId = clerkUserId
+    ?? (request.nextUrl.searchParams.get('token') === PREVIEW_TOKEN ? PREVIEW_ADMIN_USER_ID : null)
   if (!userId) return new NextResponse('Unauthorized', { status: 401 })
 
   const limit = Math.min(50, Math.max(1, Number(request.nextUrl.searchParams.get('limit')) || 50))

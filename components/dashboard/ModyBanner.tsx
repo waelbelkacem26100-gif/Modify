@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { ArrowRight } from 'lucide-react'
 import ModyAvatar from '@/components/brand/ModyAvatar'
 import { openMody } from '@/lib/mody-companion'
+import { withPreviewToken } from '@/lib/preview'
 import { MISSION_META, type MissionType } from '@/lib/copilot/mission-types'
 
 interface Mission {
@@ -34,7 +35,7 @@ export default function ModyBanner() {
 
   useEffect(() => {
     let alive = true
-    fetch('/api/copilot/missions')
+    fetch(withPreviewToken('/api/copilot/missions'))
       .then((r) => (r.ok ? r.json() : null))
       .then((d: { missions?: Mission[] } | null) => {
         if (!alive) return

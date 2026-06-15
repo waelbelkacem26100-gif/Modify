@@ -13,6 +13,7 @@ import RecentActivityFeed from '@/components/analyse/RecentActivityFeed'
 import ModyBanner from '@/components/dashboard/ModyBanner'
 import ProofCard from '@/components/proofs/ProofCard'
 import { openMody } from '@/lib/mody-companion'
+import { withPreviewToken } from '@/lib/preview'
 import { categoryPresentation } from '@/lib/fix-presentation'
 import type { Audit, AuditResult } from '@/types'
 import type { ProofRecord } from '@/lib/proofs/types'
@@ -38,6 +39,8 @@ interface Props {
   shopDomain: string | null
   initialAudit: Audit | null
   initialScore: number
+  /** Preview publique lecture seule : masque les boutons d'action (audit/correction). */
+  previewMode?: boolean
 }
 
 type Tab = 'todo' | 'fixed'
@@ -59,7 +62,7 @@ function catMeta(category: string): { emoji: string; label: string } {
     ?? categoryPresentation(category)
 }
 
-export default function AnalyseContent({ isSubscribed, shopDomain, initialAudit, initialScore }: Props) {
+export default function AnalyseContent({ isSubscribed, shopDomain, initialAudit, initialScore, previewMode = false }: Props) {
   const [audit, setAudit] = useState<Audit | null>(initialAudit)
   const [progress, setProgress] = useState<ProgressInfo | null>(null)
   const [starting, setStarting] = useState(false)
@@ -82,7 +85,7 @@ export default function AnalyseContent({ isSubscribed, shopDomain, initialAudit,
   // Fetch strengths + dynamic checks count once audit is completed.
   const fetchStrengths = useCallback(async () => {
     try {
-      const res = await fetch('/api/audit/strengths')
+      const res = await fetch(withPreviewToken('/api/audit/strengths'))
       if (!res.ok) return
       const d = await res.json() as { strengths: Strength[]; checksRun: number | null }
       setStrengths(d.strengths ?? [])
@@ -93,7 +96,7 @@ export default function AnalyseContent({ isSubscribed, shopDomain, initialAudit,
   // Fetch applied-fix proofs and key them by normalized title for in-card display.
   const fetchProofs = useCallback(async () => {
     try {
-      const res = await fetch('/api/proofs?limit=50')
+      const res = await fetch(withPreviewToken('/api/proofs?limit=50'))
       if (!res.ok) return
       const d = await res.json() as { proofs?: ProofRecord[]; shopDomain?: string }
       const m = new Map<string, ProofRecord>()
@@ -236,17 +239,19 @@ export default function AnalyseContent({ isSubscribed, shopDomain, initialAudit,
                 {running ? 'Analyse en cours…' : 'Découvrez ce qui freine vos ventes'}
               </h1>
             )}
-            <div className="mt-5 flex items-center gap-3 flex-wrap">
-              <Button variant="secondary" onClick={startAudit} loading={starting || running} disabled={running}>
-                <ScanSearch className="w-4 h-4" />
-                {running ? 'Analyse en cours…' : results.length > 0 ? 'Relancer l’analyse' : 'Analyser ma boutique'}
-              </Button>
-              {results.length > 0 && isSubscribed && correctableCount > 0 && (
-                <Button onClick={fixAll} loading={fixing}>
-                  Tout corriger <ArrowRight className="w-4 h-4" />
+            {!previewMode && (
+              <div className="mt-5 flex items-center gap-3 flex-wrap">
+                <Button variant="secondary" onClick={startAudit} loading={starting || running} disabled={running}>
+                  <ScanSearch className="w-4 h-4" />
+                  {running ? 'Analyse en cours…' : results.length > 0 ? 'Relancer l’analyse' : 'Analyser ma boutique'}
                 </Button>
-              )}
-            </div>
+                {results.length > 0 && isSubscribed && correctableCount > 0 && (
+                  <Button onClick={fixAll} loading={fixing}>
+                    Tout corriger <ArrowRight className="w-4 h-4" />
+                  </Button>
+                )}
+              </div>
+            )}
             {error && <p className="text-danger text-sm mt-3">{error}</p>}
           </div>
 
@@ -309,7 +314,7 @@ export default function AnalyseContent({ isSubscribed, shopDomain, initialAudit,
       {results.length > 0 && !running && (
         <>
           {/* Bouton persistant « Tout corriger » — en haut de la liste (v6) */}
-          {isSubscribed && correctableCount > 0 && (
+          {!previewMode && isSubscribed && correctableCount > 0 && (
             <div className="flex items-center justify-between gap-3 bg-surface border border-border rounded-2xl px-4 py-3 mb-4">
               <p className="text-sm text-text-secondary min-w-0">
                 <span className="text-text-primary font-medium">{correctableCount} correction{correctableCount > 1 ? 's' : ''}</span> que Modify peut appliquer pour vous, automatiquement.
