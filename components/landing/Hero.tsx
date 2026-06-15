@@ -73,9 +73,9 @@ export default function Hero() {
           {/* Fake dashboard content */}
           <div className="p-4 sm:p-6 grid grid-cols-3 gap-3 sm:gap-4">
             {[
-              { label: 'Manque à gagner identifié', value: '875 €/mois', color: 'text-success' },
-              { label: 'Problèmes détectés', value: '19', color: 'text-warning' },
-              { label: 'Corrigés automatiquement', value: '8', color: 'text-primary' },
+              { label: 'Manque à gagner identifié', value: '910 €/mois', color: 'text-success' },
+              { label: 'Problèmes détectés', value: '24', color: 'text-warning' },
+              { label: 'Corrigés automatiquement', value: '10', color: 'text-primary' },
             ].map((card) => (
               <div key={card.label} className="bg-surface-2 rounded-xl p-3 sm:p-4 border border-border">
                 <p className="text-text-muted text-[10px] sm:text-xs mb-1">{card.label}</p>

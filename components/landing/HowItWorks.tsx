@@ -16,7 +16,7 @@ const steps = [
     number: '02',
     title: 'Scanner',
     description:
-      "L'IA analyse 50+ points de friction en moins de 2 minutes : thème, fiches produits, trust signals, vitesse, checkout.",
+      "L'IA analyse 68 points de friction en moins de 3 minutes : thème, fiches produits, trust signals, vitesse, checkout.",
     color: 'text-blue-400',
     bg: 'bg-blue-400/10',
     border: 'border-blue-400/20',

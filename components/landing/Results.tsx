@@ -3,18 +3,19 @@ import { ScanSearch, Euro, Wand2, Clock } from 'lucide-react'
 // Exemple RÉEL (anonymisé) : audit complet d'une boutique d'équipement
 // nautique sur l'environnement de production Modify — pas de chiffres inventés.
 const stats = [
-  { icon: ScanSearch, value: '19', label: 'problèmes détectés', sub: 'sur une vraie boutique analysée', color: 'text-primary' },
-  { icon: Euro, value: '875€', label: 'identifiés / mois', sub: 'manque à gagner chiffré point par point', color: 'text-success' },
-  { icon: Wand2, value: '8', label: 'corrigés automatiquement', sub: 'sauvegarde + vérification à chaque fois', color: 'text-blue-400' },
-  { icon: Clock, value: '~3 min', label: 'pour l’analyse complète', sub: '6 analyses spécialisées en parallèle', color: 'text-violet-400' },
+  { icon: ScanSearch, value: '24', label: 'problèmes détectés', sub: 'sur une vraie boutique analysée', color: 'text-primary' },
+  { icon: Euro, value: '910€', label: 'identifiés / mois', sub: 'manque à gagner chiffré point par point', color: 'text-success' },
+  { icon: Wand2, value: '10', label: 'corrigés automatiquement', sub: 'sauvegarde + vérification à chaque fois', color: 'text-blue-400' },
+  { icon: Clock, value: '~3 min', label: 'pour l’analyse complète', sub: '7 analyses spécialisées en parallèle', color: 'text-violet-400' },
 ]
 
-// Répartition exacte du même audit (sommes par domaine).
+// Répartition exacte du même audit (sommes par domaine) = 910€.
 const breakdown = [
-  { label: 'Fiches produits (photos, descriptions, titres)', euros: 300 },
-  { label: 'Confiance (avis, garanties, contact)', euros: 245 },
-  { label: 'Apparence & navigation', euros: 215 },
-  { label: 'Vitesse & visibilité Google', euros: 115 },
+  { label: 'Fiches produits (photos, descriptions, titres)', euros: 320 },
+  { label: 'Vitesse & visibilité Google', euros: 225 },
+  { label: 'Concurrence & positionnement', euros: 165 },
+  { label: 'Confiance (avis, garanties, contact)', euros: 130 },
+  { label: 'Tunnel d’achat', euros: 70 },
 ]
 const total = breakdown.reduce((s, b) => s + b.euros, 0)
 const max = Math.max(...breakdown.map((b) => b.euros))
