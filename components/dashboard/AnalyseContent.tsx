@@ -17,6 +17,7 @@ import ProofCard from '@/components/proofs/ProofCard'
 import { openMody } from '@/lib/mody-companion'
 import { withPreviewToken } from '@/lib/preview'
 import { useCountUp } from '@/lib/use-count-up'
+import EmptyStateIllustration from '@/components/brand/EmptyStateIllustration'
 import { categoryPresentation } from '@/lib/fix-presentation'
 import type { Audit, AuditResult } from '@/types'
 import type { ProofRecord } from '@/lib/proofs/types'
@@ -747,16 +748,20 @@ export default function AnalyseContent({ isSubscribed, shopDomain, initialAudit,
         </>
       )}
 
-      {/* État vide élégant */}
-      {results.length === 0 && !running && (
-        <div className="text-center py-10">
-          <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-surface border border-border flex items-center justify-center">
-            <ScanSearch className="w-7 h-7 text-text-muted" />
-          </div>
-          <p className="text-text-secondary text-sm max-w-md mx-auto">
-            Lancez votre première analyse : Modify passe votre boutique au crible sur {CATEGORY_ORDER.length} domaines
-            ({TOTAL_CHECKS}+ points de contrôle) et vous montre exactement où vous perdez des ventes.
+      {/* État vide illustré (v9 — étape 8) */}
+      {results.length === 0 && !running && !isFirstRun && (
+        <div className="text-center py-8">
+          <EmptyStateIllustration className="w-56 h-auto mx-auto mb-5" />
+          <h2 className="font-syne font-bold text-xl text-text-primary mb-2">Votre boutique attend son analyse</h2>
+          <p className="text-text-secondary text-sm max-w-md mx-auto mb-5">
+            Modify passe votre boutique au crible sur {CATEGORY_ORDER.length} domaines ({TOTAL_CHECKS}+ points de contrôle)
+            et vous montre exactement où vous perdez des ventes.
           </p>
+          {!previewMode && (
+            <Button onClick={startAudit} loading={starting}>
+              <ScanSearch className="w-4 h-4" /> Lancer l’analyse gratuite
+            </Button>
+          )}
         </div>
       )}
 
