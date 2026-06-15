@@ -140,9 +140,9 @@
     "semantic_hash": "12e3018cd10b911edd7a61246048b6da"
   },
   "/Users/bendou/Modify.io/modify/app/(site)/page.tsx": {
-    "mtime": 1781269342.7925134,
-    "ast_hash": "00f1cffa7f7d9b623c4de09b94826109",
-    "semantic_hash": "00f1cffa7f7d9b623c4de09b94826109"
+    "mtime": 1781486693.8402233,
+    "ast_hash": "1e3fc774acda7259b293d660a6b01008",
+    "semantic_hash": ""
   },
   "/Users/bendou/Modify.io/modify/app/(site)/privacy/page.tsx": {
     "mtime": 1780606648.1885118,
@@ -415,8 +415,8 @@
     "semantic_hash": ""
   },
   "/Users/bendou/Modify.io/modify/components/dashboard/AnalyseContent.tsx": {
-    "mtime": 1781484978.0415301,
-    "ast_hash": "e4e942cc4ae30822958974ad41e3a2b1",
+    "mtime": 1781486624.0494597,
+    "ast_hash": "bee7d9f90b4603631a38f4cc829e1b4d",
     "semantic_hash": ""
   },
   "/Users/bendou/Modify.io/modify/components/dashboard/AuditContent.tsx": {
@@ -570,9 +570,9 @@
     "semantic_hash": "c27e4fa340ac8da61f720d88bffd227e"
   },
   "/Users/bendou/Modify.io/modify/components/landing/Hero.tsx": {
-    "mtime": 1781269308.2050772,
-    "ast_hash": "ae5d694dedd74c4488ee9e8bb3a6e8a3",
-    "semantic_hash": "ae5d694dedd74c4488ee9e8bb3a6e8a3"
+    "mtime": 1781486770.7660906,
+    "ast_hash": "49a236cf01befa494f2ef9b401eae08a",
+    "semantic_hash": ""
   },
   "/Users/bendou/Modify.io/modify/components/landing/HeroCTA.tsx": {
     "mtime": 1780407517.1766996,
@@ -580,9 +580,9 @@
     "semantic_hash": "48c05ea47c4f17fd643c5f4aa09d4584"
   },
   "/Users/bendou/Modify.io/modify/components/landing/HowItWorks.tsx": {
-    "mtime": 1780407536.5940812,
-    "ast_hash": "c1bcb8941d79bd5d973a9c9b8de4cc49",
-    "semantic_hash": "c1bcb8941d79bd5d973a9c9b8de4cc49"
+    "mtime": 1781486807.3762724,
+    "ast_hash": "0c7fb3446ff1adaed1f9039dedad3f73",
+    "semantic_hash": ""
   },
   "/Users/bendou/Modify.io/modify/components/landing/Navbar.tsx": {
     "mtime": 1780606070.1677861,
@@ -595,9 +595,9 @@
     "semantic_hash": "1be127a98d581550bbab2ffe65d886a4"
   },
   "/Users/bendou/Modify.io/modify/components/landing/Results.tsx": {
-    "mtime": 1781269283.1716907,
-    "ast_hash": "27c855590f3d911d749ba077b1f8f2dd",
-    "semantic_hash": "27c855590f3d911d749ba077b1f8f2dd"
+    "mtime": 1781486796.0907595,
+    "ast_hash": "c10b61693002b7213f8f4bcf0961f2d5",
+    "semantic_hash": ""
   },
   "/Users/bendou/Modify.io/modify/components/legal/LegalShell.tsx": {
     "mtime": 1780606612.0482438,
@@ -1182,6 +1182,11 @@
   "/Users/bendou/Modify.io/modify/lib/suivi-data.ts": {
     "mtime": 1781484756.9808302,
     "ast_hash": "63f5ef0e618b1eb502bf49b1b2074afd",
+    "semantic_hash": ""
+  },
+  "/Users/bendou/Modify.io/modify/components/landing/ModySection.tsx": {
+    "mtime": 1781486676.886802,
+    "ast_hash": "3e8a19e70fc43bf5e32b4e884d812278",
     "semantic_hash": ""
   }
 }
