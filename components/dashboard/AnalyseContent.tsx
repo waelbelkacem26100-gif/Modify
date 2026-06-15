@@ -41,6 +41,8 @@ interface Props {
   initialScore: number
   /** Preview publique lecture seule : masque les boutons d'action (audit/correction). */
   previewMode?: boolean
+  /** Premier run (0 audit) : onboarding guidé — auto-lancement + Mody à la fin. */
+  isFirstRun?: boolean
 }
 
 type Tab = 'todo' | 'fixed'
@@ -62,7 +64,7 @@ function catMeta(category: string): { emoji: string; label: string } {
     ?? categoryPresentation(category)
 }
 
-export default function AnalyseContent({ isSubscribed, shopDomain, initialAudit, initialScore, previewMode = false }: Props) {
+export default function AnalyseContent({ isSubscribed, shopDomain, initialAudit, initialScore, previewMode = false, isFirstRun = false }: Props) {
   const [audit, setAudit] = useState<Audit | null>(initialAudit)
   const [progress, setProgress] = useState<ProgressInfo | null>(null)
   const [starting, setStarting] = useState(false)
@@ -84,6 +86,8 @@ export default function AnalyseContent({ isSubscribed, shopDomain, initialAudit,
   const [proofs, setProofs] = useState<Map<string, ProofRecord>>(new Map())
   const [proofShop, setProofShop] = useState('')
   const pollStart = useRef(0)
+  const autoStarted = useRef(false)  // F1 — garde anti-double auto-lancement
+  const firstAuditMody = useRef(false)  // F1 — Mody ouvert une seule fois à la fin
 
   const running = audit?.status === 'running'
 
@@ -137,7 +141,7 @@ export default function AnalyseContent({ isSubscribed, shopDomain, initialAudit,
     return () => clearInterval(t)
   }, [running, poll])
 
-  async function startAudit() {
+  const startAudit = useCallback(async () => {
     setStarting(true)
     setError('')
     setOpenCats(new Set())
@@ -150,7 +154,24 @@ export default function AnalyseContent({ isSubscribed, shopDomain, initialAudit,
     } finally {
       setStarting(false)
     }
-  }
+  }, [])
+
+  // F1 — onboarding : au premier run, lance automatiquement la première analyse.
+  useEffect(() => {
+    if (isFirstRun && !previewMode && !autoStarted.current && !audit && !starting) {
+      autoStarted.current = true
+      startAudit()
+    }
+  }, [isFirstRun, previewMode, audit, starting, startAudit])
+
+  // F1 — à la fin de la première analyse, ouvre Mody avec ses suggestions réelles.
+  useEffect(() => {
+    if (isFirstRun && audit?.status === 'completed' && !firstAuditMody.current) {
+      firstAuditMody.current = true
+      const t = setTimeout(() => openMody(), 900)
+      return () => clearTimeout(t)
+    }
+  }, [isFirstRun, audit?.status])
 
   // F3 — lance les corrections et affiche la progression EN PLACE (plus de redirection).
   async function fixAll() {
@@ -286,12 +307,32 @@ export default function AnalyseContent({ isSubscribed, shopDomain, initialAudit,
                   {results.length} problèmes · {CATEGORY_ORDER.length} domaines{strengths.length > 0 && <> · {strengths.length} point{strengths.length > 1 ? 's' : ''} fort{strengths.length > 1 ? 's' : ''}</>}
                 </p>
               </>
+            ) : isFirstRun ? (
+              // F1 — onboarding : message de bienvenue pendant la 1re analyse
+              <>
+                <h1 className="font-syne font-extrabold text-2xl sm:text-3xl text-text-primary leading-tight">
+                  Bienvenue ! {running || starting ? 'Mody lance votre première analyse…' : 'Prêt pour votre première analyse ?'}
+                </h1>
+                <p className="text-text-secondary text-sm mt-2 max-w-xl">
+                  {error
+                    ? <span className="text-danger">{error}</span>
+                    : 'Modify passe votre boutique au crible sur 7 domaines. C’est l’affaire de ~3 minutes.'}
+                </p>
+                {error && (
+                  <div className="mt-4">
+                    <Button onClick={startAudit} loading={starting}>
+                      <ScanSearch className="w-4 h-4" /> Réessayer
+                    </Button>
+                  </div>
+                )}
+              </>
             ) : (
               <h1 className="font-syne font-extrabold text-3xl sm:text-4xl text-text-primary leading-tight">
                 {running ? 'Analyse en cours…' : 'Découvrez ce qui freine vos ventes'}
               </h1>
             )}
-            {!previewMode && (
+            {/* Boutons d'action génériques — masqués pendant l'onboarding (F1 gère son propre CTA) */}
+            {!previewMode && !isFirstRun && (
               <div className="mt-5 flex items-center gap-3 flex-wrap">
                 <Button variant="secondary" onClick={startAudit} loading={starting || running} disabled={running}>
                   <ScanSearch className="w-4 h-4" />
@@ -304,7 +345,8 @@ export default function AnalyseContent({ isSubscribed, shopDomain, initialAudit,
                 )}
               </div>
             )}
-            {error && <p className="text-danger text-sm mt-3">{error}</p>}
+            {/* En premier run, l'erreur + Réessayer sont déjà gérés dans le bloc bienvenue */}
+            {error && !isFirstRun && <p className="text-danger text-sm mt-3">{error}</p>}
           </div>
 
           {/* Score /100 — anneau à droite */}

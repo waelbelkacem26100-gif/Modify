@@ -59,12 +59,16 @@ export default async function DashboardPage() {
   const audit = latestAudit as Audit | null
   const score = snap?.score ?? (audit?.results?.length ? Math.max(35, 100 - audit.results.length * 4) : 60)
 
+  // F1 — premier run : boutique connectée mais AUCUN audit encore lancé.
+  const isFirstRun = !audit
+
   return (
     <AnalyseContent
       isSubscribed={isSubscribed}
       shopDomain={typedStore.shop_domain}
       initialAudit={audit}
       initialScore={score}
+      isFirstRun={isFirstRun}
     />
   )
 }
