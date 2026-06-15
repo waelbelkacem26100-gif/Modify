@@ -4,6 +4,8 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import {
   ScanSearch, ExternalLink, ChevronDown, ChevronUp, ArrowRight, Lock,
   CheckCircle2, Loader2, Circle, ThumbsUp,
+  Tag, Palette, Zap, ShieldCheck, ShoppingCart, Smartphone, Trophy,
+  type LucideIcon,
 } from 'lucide-react'
 import Button from '@/components/ui/Button'
 import Progress from '@/components/ui/Progress'
@@ -66,6 +68,18 @@ function catMeta(category: string): { emoji: string; label: string } {
   return (AUDIT_CATEGORIES as Record<string, { emoji: string; label: string }>)[category]
     ?? categoryPresentation(category)
 }
+
+// v9 — icône SVG + couleur par catégorie (remplace l'emoji seul).
+const CAT_ICON: Record<string, { icon: LucideIcon; color: string; bg: string }> = {
+  products: { icon: Tag, color: 'text-primary-bright', bg: 'bg-primary/10' },
+  uiux: { icon: Palette, color: 'text-pink-400', bg: 'bg-pink-400/10' },
+  perf_seo: { icon: Zap, color: 'text-warning', bg: 'bg-warning/10' },
+  trust: { icon: ShieldCheck, color: 'text-info', bg: 'bg-info/10' },
+  funnel: { icon: ShoppingCart, color: 'text-success', bg: 'bg-success/10' },
+  mobile: { icon: Smartphone, color: 'text-cyan-400', bg: 'bg-cyan-400/10' },
+  competitive: { icon: Trophy, color: 'text-amber-400', bg: 'bg-amber-400/10' },
+}
+const FALLBACK_CAT_ICON = { icon: Circle, color: 'text-text-muted', bg: 'bg-surface-2' }
 
 export default function AnalyseContent({ isSubscribed, shopDomain, initialAudit, initialScore, previewMode = false, isFirstRun = false, weekly = null }: Props) {
   const [audit, setAudit] = useState<Audit | null>(initialAudit)
@@ -669,7 +683,14 @@ export default function AnalyseContent({ isSubscribed, shopDomain, initialAudit,
                   className="bg-surface border border-border rounded-2xl overflow-hidden animate-card-enter hover:border-primary/30 hover:shadow-[0_8px_24px_rgba(139,123,255,0.10)] transition-all duration-200"
                   style={ci < 8 ? { animationDelay: `${ci * 60}ms` } : undefined}>
                   <div className="flex items-center gap-3 p-5">
-                    <span className="text-xl">{meta.emoji}</span>
+                    {(() => {
+                      const ci2 = CAT_ICON[cat] ?? FALLBACK_CAT_ICON
+                      return (
+                        <span className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${ci2.bg}`}>
+                          <ci2.icon className={`w-[18px] h-[18px] ${ci2.color}`} strokeWidth={1.75} />
+                        </span>
+                      )
+                    })()}
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-text-primary text-sm">{meta.label}</p>
                       <p className="text-text-muted text-xs">
