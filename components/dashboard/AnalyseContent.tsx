@@ -75,6 +75,9 @@ export default function AnalyseContent({ isSubscribed, shopDomain, initialAudit,
   const [strengths, setStrengths] = useState<Strength[]>([])
   const [strengthsOpen, setStrengthsOpen] = useState(false)
   const [confirmFixOpen, setConfirmFixOpen] = useState(false)
+  // F3 — progression temps réel de « Tout corriger »
+  const [applying, setApplying] = useState(false)
+  const [applyFixes, setApplyFixes] = useState<{ id: string; title: string; status: string; impact_euros: number }[]>([])
   const [checksRun, setChecksRun] = useState<number | null>(null)
   // Preuves des corrections appliquées, indexées par titre normalisé (v6) — une
   // carte problème dont le titre matche affiche sa preuve EN PLACE.
@@ -149,21 +152,58 @@ export default function AnalyseContent({ isSubscribed, shopDomain, initialAudit,
     }
   }
 
+  // F3 — lance les corrections et affiche la progression EN PLACE (plus de redirection).
   async function fixAll() {
     if (!audit) return
     setFixing(true)
+    setError('')
     try {
-      const res = await fetch('/api/fixes/apply', {
+      // 1. Génère les correctifs (statut pending)
+      const gen = await fetch('/api/fixes/apply', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ audit_id: audit.id }),
       })
-      if (res.ok) window.location.href = '/dashboard/corrections'
-      else setError('La préparation des corrections a échoué. Réessayez.')
+      if (!gen.ok) { setError('La préparation des corrections a échoué. Réessayez.'); return }
+      // 2. Kicke l'application en chaîne côté serveur
+      await fetch('/api/fixes/apply-all', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ audit_id: audit.id }),
+      }).catch(() => {})
+      // 3. Bascule en mode progression (le polling prend le relais)
+      setConfirmFixOpen(false)
+      setApplying(true)
     } finally {
       setFixing(false)
     }
   }
+
+  // F3 — polling de la progression toutes les 3s tant que des correctifs s'appliquent.
+  useEffect(() => {
+    if (!applying) return
+    let stop = false
+    const tick = async () => {
+      try {
+        const res = await fetch('/api/fixes/apply', { cache: 'no-store' })
+        if (!res.ok) return
+        const d = await res.json() as { fixes?: { id: string; title: string; status: string; impact_euros: number }[] }
+        const fixes = d.fixes ?? []
+        if (!stop) setApplyFixes(fixes)
+        // Terminé quand plus aucun correctif en attente / en cours
+        const pending = fixes.some((f) => f.status === 'pending' || f.status === 'running')
+        if (!pending && fixes.length > 0) {
+          stop = true
+          setApplying(false)
+          fetchProofs()
+          poll()
+        }
+      } catch { /* best-effort */ }
+    }
+    tick()
+    const t = setInterval(tick, POLL_MS)
+    return () => { stop = true; clearInterval(t) }
+  }, [applying, fetchProofs, poll])
 
   const results: AuditResult[] = audit?.status === 'completed' && Array.isArray(audit.results) ? audit.results : []
   const totalLoss = results.reduce((s, r) => s + (r.impact_euros || 0), 0)
@@ -286,6 +326,43 @@ export default function AnalyseContent({ isSubscribed, shopDomain, initialAudit,
 
       {/* 💜 Bandeau d'activité Mody — juste sous le hero (v6) */}
       <ModyBanner />
+
+      {/* F3 — progression temps réel pendant « Tout corriger » */}
+      {applying && (() => {
+        const total = applyFixes.length
+        const done = applyFixes.filter((f) => ['applied', 'completed', 'preview'].includes(f.status)).length
+        const current = applyFixes.find((f) => f.status === 'running')
+        const pct = total > 0 ? Math.round((done / total) * 100) : 0
+        return (
+          <div className="bg-surface border border-primary/30 rounded-2xl p-5 mb-6">
+            <div className="flex items-center gap-2 mb-3">
+              <Loader2 className="w-4 h-4 text-primary animate-spin" />
+              <h2 className="font-syne font-semibold text-text-primary">Modify travaille…</h2>
+              <span className="ml-auto text-text-secondary text-sm">{done}/{total || '…'}</span>
+            </div>
+            <div className="h-2 bg-surface-2 rounded-full overflow-hidden mb-4">
+              <div className="h-full bg-primary rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
+            </div>
+            <ul className="space-y-2">
+              {applyFixes.map((f) => {
+                const fdone = ['applied', 'completed', 'preview'].includes(f.status)
+                const failed = f.status === 'failed'
+                return (
+                  <li key={f.id} className="flex items-center gap-2 text-sm">
+                    {fdone ? <CheckCircle2 className="w-4 h-4 text-success flex-shrink-0" />
+                      : failed ? <span className="w-4 text-danger text-center flex-shrink-0">✕</span>
+                      : f.status === 'running' ? <Loader2 className="w-4 h-4 text-primary animate-spin flex-shrink-0" />
+                      : <Circle className="w-4 h-4 text-text-muted flex-shrink-0" />}
+                    <span className={['truncate flex-1', fdone ? 'text-text-primary' : 'text-text-secondary'].join(' ')}>{f.title}</span>
+                    {fdone && <span className="font-syne text-success text-xs font-bold whitespace-nowrap">+{euros(f.impact_euros)}/mois</span>}
+                  </li>
+                )
+              })}
+            </ul>
+            {current && <p className="text-text-muted text-xs mt-3">En cours : {current.title}…</p>}
+          </div>
+        )
+      })()}
 
       {/* ✅ Points forts — bloc compact remonté sous le hero, expandable (P12/T4 v8) */}
       {strengths.length > 0 && !running && (
