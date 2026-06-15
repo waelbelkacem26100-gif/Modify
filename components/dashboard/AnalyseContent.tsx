@@ -201,6 +201,8 @@ export default function AnalyseContent({ isSubscribed, shopDomain, initialAudit,
   const correctableCount = results.filter(
     (r) => (r.capability ?? (r.fix_available ? 'auto' : 'guide')) === 'auto' && !proofFor(r)
   ).length
+  // Problèmes urgents non encore corrigés (pour le bouton « Corriger les urgences »).
+  const urgentCount = results.filter((r) => r.priority === 'high' && !proofFor(r)).length
 
   const scoreColor = initialScore >= 80 ? '#22c55e' : initialScore >= 50 ? '#f59e0b' : '#ef4444'
 
@@ -351,15 +353,31 @@ export default function AnalyseContent({ isSubscribed, shopDomain, initialAudit,
       {/* Résultats par catégorie */}
       {results.length > 0 && !running && (
         <>
-          {/* Bouton persistant « Tout corriger » — en haut de la liste (v6) */}
-          {!previewMode && isSubscribed && correctableCount > 0 && (
-            <div className="flex items-center justify-between gap-3 bg-surface border border-border rounded-2xl px-4 py-3 mb-4">
-              <p className="text-sm text-text-secondary min-w-0">
-                <span className="text-text-primary font-medium">{correctableCount} correction{correctableCount > 1 ? 's' : ''}</span> que Modify peut appliquer pour vous, automatiquement.
-              </p>
-              <Button onClick={fixAll} loading={fixing} className="flex-shrink-0">
-                Tout corriger <ArrowRight className="w-4 h-4" />
-              </Button>
+          {/* P1 — 2 boutons géants « Par quoi commencer ? » au-dessus des catégories */}
+          {!previewMode && isSubscribed && (urgentCount > 0 || correctableCount > 0) && (
+            <div className="mb-5">
+              <p className="text-text-secondary text-sm mb-3">Par quoi voulez-vous commencer ?</p>
+              <div className="grid sm:grid-cols-2 gap-3">
+                {urgentCount > 0 && (
+                  <button
+                    onClick={() => { setTab('todo'); setPrio('high') }}
+                    className="flex flex-col items-start gap-1 text-left bg-danger/10 border border-danger/30 hover:border-danger/50 hover:bg-danger/15 rounded-2xl p-4 transition-all duration-150"
+                  >
+                    <span className="font-syne font-bold text-text-primary text-base">🔴 Corriger les urgences</span>
+                    <span className="text-danger text-sm font-medium">{urgentCount} problème{urgentCount > 1 ? 's' : ''} urgent{urgentCount > 1 ? 's' : ''} →</span>
+                  </button>
+                )}
+                {correctableCount > 0 && (
+                  <button
+                    onClick={fixAll}
+                    disabled={fixing}
+                    className="flex flex-col items-start gap-1 text-left bg-primary/10 border border-primary/30 hover:border-primary/50 hover:bg-primary/15 rounded-2xl p-4 transition-all duration-150 disabled:opacity-60"
+                  >
+                    <span className="font-syne font-bold text-text-primary text-base">✅ Tout corriger automatiquement</span>
+                    <span className="text-primary-bright text-sm font-medium">{fixing ? 'Préparation…' : <>{correctableCount} correction{correctableCount > 1 ? 's' : ''} en 1 clic →</>}</span>
+                  </button>
+                )}
+              </div>
             </div>
           )}
 
