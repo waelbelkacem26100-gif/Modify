@@ -43,7 +43,7 @@ export default function SuiviContent({ d, gallery }: { d: SuiviData; gallery?: R
       </div>
 
       {/* ROI hero v7 — le chiffre domine, fond sombre + lueur violette */}
-      <div className="relative overflow-hidden rounded-3xl border border-border bg-gradient-to-br from-[#0D0D0F] to-[#141419] p-6 sm:p-8 mb-6">
+      <div className="relative overflow-hidden rounded-3xl border border-border bg-gradient-to-br from-[#080B14] to-[#0F1424] p-6 sm:p-8 mb-6">
         <div className="relative z-10">
           <p className="text-text-secondary text-sm">Vous payez {d.planPrice > 0 ? `${d.planPrice}€/mois` : '0€'}</p>
           <p className="text-text-secondary text-sm mb-2">Modify vous a rapporté</p>
@@ -127,10 +127,10 @@ export default function SuiviContent({ d, gallery }: { d: SuiviData; gallery?: R
                     <stop offset="100%" stopColor={scoreColor} stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#2A2A38" />
+                <CartesianGrid strokeDasharray="3 3" stroke="#1C2440" />
                 <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#71717a' }} tickLine={false} axisLine={false} />
                 <YAxis domain={[0, 100]} tick={{ fontSize: 10, fill: '#71717a' }} tickLine={false} axisLine={false} />
-                <Tooltip contentStyle={{ background: '#2A2A38', border: '1px solid #3f3f46', borderRadius: 12, fontSize: 12 }}
+                <Tooltip contentStyle={{ background: '#1C2440', border: '1px solid #3f3f46', borderRadius: 12, fontSize: 12 }}
                   labelStyle={{ color: '#a1a1aa' }} formatter={(v: number) => [`${v}/100`, 'Score']} />
                 <Area type="monotone" dataKey="score" stroke={scoreColor} strokeWidth={2} fill="url(#scoreGrad)" />
               </AreaChart>

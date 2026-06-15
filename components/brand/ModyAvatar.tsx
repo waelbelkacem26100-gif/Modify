@@ -36,13 +36,13 @@ export default function ModyAvatar({ size = 40, glow = false, className, spark =
       role="img"
       aria-label="Mody"
       className={className}
-      style={glow ? { filter: 'drop-shadow(0 0 8px rgba(255,107,53,0.55))' } : undefined}
+      style={glow ? { filter: 'drop-shadow(0 0 8px rgba(16,185,129,0.55))' } : undefined}
     >
       <defs>
         <linearGradient id={gid} x1="6" y1="4" x2="42" y2="44" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#FF8A5E" />
-          <stop offset="0.55" stopColor="#FF6B35" />
-          <stop offset="1" stopColor="#E55622" />
+          <stop stopColor="#34D399" />
+          <stop offset="0.55" stopColor="#10B981" />
+          <stop offset="1" stopColor="#059669" />
         </linearGradient>
       </defs>
 

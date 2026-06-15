@@ -9,26 +9,25 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // Design system v7 — dark premium, fonds légèrement violet-teintés.
-        background: '#0D0D0F',
-        surface: '#141419',
-        'surface-2': '#1E1E26',
-        border: '#2A2A38',
-        // INVERSION v7 : le VIOLET est désormais la couleur Modify (toute
-        // l'interface : logo, sidebar active, CTA, accents).
+        // Design system v9 — bleu nuit profond (vivant, pas noir morose).
+        background: '#080B14',
+        surface: '#0F1424',
+        'surface-2': '#1A2035',
+        border: '#1C2440',
+        // VIOLET = Modify (toute l'interface : logo, sidebar active, CTA, accents).
         primary: '#8B7BFF',
         'primary-dark': '#6D5FE8',
         'primary-bright': '#A99BFF',
         'primary-glow': 'rgba(139, 123, 255, 0.16)',
-        // Mody — désormais ORANGE, et UNIQUEMENT pour Mody (bouton flottant,
-        // bandeau, panneau, avatar). Seule chose orange de l'interface.
-        mody: '#FF6B35',
-        'mody-dark': '#E55622',
-        'mody-bright': '#FF8A5E',
-        'mody-glow': 'rgba(255, 107, 53, 0.16)',
-        'text-primary': '#F0F0F0',
-        'text-secondary': '#8888A0',
-        'text-muted': '#6B6B80',
+        // Mody — VERT émeraude (v9), et UNIQUEMENT pour Mody (bouton flottant,
+        // bandeau, panneau, avatar). Seule chose verte-Mody de l'interface.
+        mody: '#10B981',
+        'mody-dark': '#059669',
+        'mody-bright': '#34D399',
+        'mody-glow': 'rgba(16, 185, 129, 0.16)',
+        'text-primary': '#E8EAED',
+        'text-secondary': '#8892A4',
+        'text-muted': '#525F72',
         success: '#22C55E',
         warning: '#F59E0B',
         danger: '#EF4444',

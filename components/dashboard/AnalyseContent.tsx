@@ -428,7 +428,7 @@ export default function AnalyseContent({ isSubscribed, shopDomain, initialAudit,
           {/* Score /100 — anneau à droite */}
           <div className="flex sm:flex-col items-center gap-3 flex-shrink-0">
             <div className="w-24 h-24 rounded-full flex items-center justify-center"
-              style={{ background: `conic-gradient(${scoreColor} ${initialScore * 3.6}deg, #2A2A38 0deg)` }}>
+              style={{ background: `conic-gradient(${scoreColor} ${initialScore * 3.6}deg, #1C2440 0deg)` }}>
               <div className="w-[76px] h-[76px] rounded-full bg-surface flex flex-col items-center justify-center">
                 <span className="font-syne font-bold text-2xl text-text-primary">{initialScore}</span>
                 <span className="text-text-muted text-[10px]">/ 100</span>
