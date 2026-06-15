@@ -91,16 +91,17 @@ export default function ModyCompanion({ isPro, hasAccess }: Props) {
         <button
           onClick={openGeneric}
           aria-label="Ouvrir Mody, votre copilote"
-          /* bottom-[72px] sur mobile : au-dessus de la bottom-nav (≈52px) ; bottom-6 sur desktop */
-          className="fixed bottom-[72px] right-4 md:bottom-6 md:right-6 z-50 flex items-center gap-2.5 pl-2 pr-4 py-2 rounded-full bg-surface border border-mody/40 shadow-lg shadow-mody-glow hover:border-mody/70 hover:shadow-mody/30 transition-all duration-200 group"
+          /* bottom-[72px] sur mobile : au-dessus de la bottom-nav (≈52px) ; bottom-6 sur desktop.
+             v9 — fond gradient vert Mody + lueur pulsée. */
+          className="fixed bottom-[72px] right-4 md:bottom-6 md:right-6 z-50 flex items-center gap-2.5 pl-2 pr-4 py-2 rounded-full bg-gradient-to-br from-mody to-mody-dark border border-mody-bright/40 animate-pulse-glow hover:scale-105 transition-transform duration-200 group"
         >
           <span className="relative">
-            <ModyAvatar size={36} glow />
+            <ModyAvatar size={36} />
             {!seen && missionCount > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full bg-primary border-2 border-surface" />
+              <span className="absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full bg-primary border-2 border-mody-dark" />
             )}
           </span>
-          <span className="font-display font-semibold text-sm text-text-primary group-hover:text-mody-bright transition-colors">
+          <span className="font-display font-semibold text-sm text-white">
             Mody
           </span>
         </button>

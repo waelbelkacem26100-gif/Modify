@@ -49,6 +49,11 @@ const config: Config = {
         // trace de gauche à droite (400ms), puis le montant vert apparaît.
         strike: 'strike 0.4s ease-out forwards',
         'price-reveal': 'priceReveal 0.65s ease-out forwards',
+        // v9 — vie : entrée des cartes en stagger, lueur pulsée Mody, dérive des particules
+        'card-enter': 'cardEnter 0.3s cubic-bezier(0.16, 1, 0.3, 1) both',
+        'pulse-glow': 'pulseGlow 2.5s ease-in-out infinite',
+        'float-slow': 'floatSlow 10s ease-in-out infinite',
+        'score-draw': 'scoreDraw 1s cubic-bezier(0.16, 1, 0.3, 1) 0.3s both',
         pulse: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
         spin: 'spin 1s linear infinite',
       },
@@ -56,6 +61,22 @@ const config: Config = {
         fadeUp: {
           '0%': { opacity: '0', transform: 'translateY(16px)' },
           '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+        cardEnter: {
+          '0%': { opacity: '0', transform: 'translateY(12px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+        pulseGlow: {
+          '0%, 100%': { boxShadow: '0 0 15px rgba(16,185,129,0.3)' },
+          '50%': { boxShadow: '0 0 30px rgba(16,185,129,0.6)' },
+        },
+        floatSlow: {
+          '0%, 100%': { transform: 'translateY(0)', opacity: '0.5' },
+          '50%': { transform: 'translateY(-12px)', opacity: '1' },
+        },
+        scoreDraw: {
+          '0%': { strokeDashoffset: 'var(--score-circumference)' },
+          '100%': { strokeDashoffset: 'var(--score-offset)' },
         },
         proofReveal: {
           '0%': { opacity: '0', transform: 'translateY(-10px) scale(0.97)', maxHeight: '0' },

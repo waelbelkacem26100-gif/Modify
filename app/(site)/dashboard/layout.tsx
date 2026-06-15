@@ -4,6 +4,7 @@ import Sidebar from '@/components/dashboard/Sidebar'
 import MobileNav from '@/components/dashboard/MobileNav'
 import TokenGuard from '@/components/dashboard/TokenGuard'
 import ModyCompanion from '@/components/dashboard/ModyCompanion'
+import BackgroundParticles from '@/components/brand/BackgroundParticles'
 import { getValidAccessToken, needsReconnect } from '@/lib/shopify-token'
 import { getUserSubscription, planFor, hasActiveAccess } from '@/lib/subscription'
 import { isAdmin } from '@/lib/config'
@@ -41,6 +42,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   return (
     <div className="flex min-h-screen bg-background">
+      <BackgroundParticles />
       <Sidebar shopDomain={shopDomain} />
       {/* pb-20 (80px) : le bouton Mody flottant ne masque jamais le bas des pages (bug 6) */}
       <main className="flex-1 overflow-y-auto pb-20 min-w-0">

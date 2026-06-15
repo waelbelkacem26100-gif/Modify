@@ -358,10 +358,12 @@ export default function AnalyseContent({ isSubscribed, shopDomain, initialAudit,
         )}
       </div>
 
-      {/* Hero v7 — le chiffre €/mois domine, score à droite, 2 boutons sur 1 ligne */}
-      <div className="bg-surface border border-border rounded-3xl p-6 sm:p-8 mb-8"
+      {/* Hero v7 — le chiffre €/mois domine, score à droite, 2 boutons sur 1 ligne.
+          v9 — lueur radiale violette ambiante. */}
+      <div className="relative overflow-hidden bg-surface border border-border rounded-3xl p-6 sm:p-8 mb-8"
+        style={{ backgroundImage: 'radial-gradient(ellipse 80% 60% at 50% -10%, rgba(139,123,255,0.10), transparent 70%)' }}
         title={`${checksRun != null ? checksRun : TOTAL_CHECKS} points de contrôle analysés — un audit SEO classique en couvre 15 à 20.`}>
-        <div className="flex flex-col sm:flex-row sm:items-center gap-6">
+        <div className="relative flex flex-col sm:flex-row sm:items-center gap-6">
           <div className="flex-1 min-w-0">
             {results.length > 0 ? (
               <>
@@ -636,7 +638,7 @@ export default function AnalyseContent({ isSubscribed, shopDomain, initialAudit,
           </div>
 
           <div className="space-y-3">
-            {cats.map((cat) => {
+            {cats.map((cat, ci) => {
               const items = filtered(results.filter((r) => r.category === cat))
                 .sort((a, b) => b.impact_euros - a.impact_euros)
               if (items.length === 0) return null
@@ -650,7 +652,10 @@ export default function AnalyseContent({ isSubscribed, shopDomain, initialAudit,
               const topItems = items.slice(0, 3)
               const restItems = items.slice(3)
               return (
-                <div key={cat} className="bg-surface border border-border rounded-2xl overflow-hidden">
+                // v9 — entrée en stagger (≤8 cartes), élévation au hover
+                <div key={cat}
+                  className="bg-surface border border-border rounded-2xl overflow-hidden animate-card-enter hover:border-primary/30 hover:shadow-[0_8px_24px_rgba(139,123,255,0.10)] transition-all duration-200"
+                  style={ci < 8 ? { animationDelay: `${ci * 60}ms` } : undefined}>
                   <div className="flex items-center gap-3 p-5">
                     <span className="text-xl">{meta.emoji}</span>
                     <div className="flex-1 min-w-0">
