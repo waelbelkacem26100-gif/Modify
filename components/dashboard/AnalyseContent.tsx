@@ -267,6 +267,80 @@ export default function AnalyseContent({ isSubscribed, shopDomain, initialAudit,
   // Problèmes urgents non encore corrigés (pour le bouton « Corriger les urgences »).
   const urgentCount = results.filter((r) => r.priority === 'high' && !proofFor(r)).length
 
+  // Rendu d'UN problème (réutilisé pour le top-3 toujours visible et le reste).
+  const renderProblem = (r: AuditResult) => {
+    const locked = isLocked(r)
+    const cap = r.capability ?? (r.fix_available ? 'auto' : 'guide')
+    const pr = PRIORITY_META[r.priority] ?? PRIORITY_META.medium
+    const expanded = openProblem === r.id
+    const proof = proofFor(r)
+    if (proof && !locked) {
+      return (
+        <li key={r.id} className="bg-success/[0.06] border-l-[3px] border-success p-3 sm:p-4 overflow-hidden animate-proof-reveal">
+          <div className="flex items-center gap-2 mb-2">
+            <CheckCircle2 className="w-4 h-4 text-success flex-shrink-0" />
+            <span className="text-success text-sm font-semibold">Corrigé par Modify</span>
+            <span className="ml-auto flex items-center gap-2 font-syne">
+              <span className="relative text-danger text-sm font-bold whitespace-nowrap">
+                −{euros(proof.monthlyImpactEur)}/mois
+                <span className="absolute left-0 top-1/2 h-[2px] w-full bg-danger origin-left animate-strike" />
+              </span>
+              <span className="text-success text-sm font-bold whitespace-nowrap opacity-0 animate-price-reveal">
+                +{euros(proof.monthlyImpactEur)}/mois
+              </span>
+            </span>
+          </div>
+          <ProofCard proof={proof} shopDomain={proofShop} />
+        </li>
+      )
+    }
+    if (locked) {
+      return (
+        <li key={r.id} className="p-4 flex items-center gap-3">
+          <Lock className="w-4 h-4 text-text-muted flex-shrink-0" />
+          <p className="text-text-muted text-sm blur-[3px] select-none flex-1">{r.title}</p>
+          <a href="/dashboard/subscription" className="text-primary text-xs font-medium hover:text-primary-dark flex-shrink-0">Débloquer →</a>
+        </li>
+      )
+    }
+    const accent = r.priority === 'high'
+      ? 'border-l-2 border-danger/50'
+      : r.priority === 'medium' ? 'border-l-2 border-warning/40' : 'border-l-2 border-transparent'
+    return (
+      <li key={r.id} className={accent}>
+        <button onClick={() => setOpenProblem(expanded ? null : r.id)}
+          className={['w-full text-left hover:bg-surface-2 transition-colors duration-150', r.priority === 'high' ? 'p-4 sm:p-5' : 'p-4'].join(' ')}>
+          <div className="flex items-center gap-2 flex-wrap mb-1">
+            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium border ${pr.cls}`}>{pr.emoji} {pr.label}</span>
+            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium border ${cap === 'auto' ? 'text-success bg-success/10 border-success/20' : 'text-sky-400 bg-sky-400/10 border-sky-400/20'}`}>
+              {cap === 'auto' ? '✅ Modify s’en occupe' : '👋 Guide disponible'}
+            </span>
+            <span className="font-syne text-danger text-sm font-bold ml-auto whitespace-nowrap">−{euros(r.impact_euros)}/mois</span>
+          </div>
+          <p className={['text-text-primary font-medium', r.priority === 'high' ? 'text-[15px]' : 'text-sm'].join(' ')}>{r.title}</p>
+        </button>
+        {expanded && (
+          <div className="px-4 pb-4 -mt-1">
+            <p className="text-text-secondary text-sm leading-relaxed mb-2">{r.description}</p>
+            {(r.affected_items?.length ?? 0) > 0 && (
+              <div className="flex items-center gap-1.5 flex-wrap mb-3">
+                {r.affected_items!.map((it, i) => (
+                  <span key={i} className="px-2 py-0.5 bg-surface-2 border border-border rounded-md text-[11px] text-text-secondary">{it}</span>
+                ))}
+              </div>
+            )}
+            <p className="text-text-secondary text-xs mb-3"><span className="text-text-muted font-medium">Recommandation : </span>{r.recommendation}</p>
+            {cap === 'auto' ? (
+              <a href="/dashboard/corrections" className="inline-flex items-center gap-1.5 text-primary text-sm font-medium hover:text-primary-dark transition-colors">Voir le correctif <ArrowRight className="w-3.5 h-3.5" /></a>
+            ) : (
+              <button onClick={() => openMody(r.title)} className="inline-flex items-center gap-1.5 text-mody-bright text-sm font-medium hover:text-mody transition-colors">Demander à Mody <ArrowRight className="w-3.5 h-3.5" /></button>
+            )}
+          </div>
+        )}
+      </li>
+    )
+  }
+
   const scoreColor = initialScore >= 80 ? '#22c55e' : initialScore >= 50 ? '#f59e0b' : '#ef4444'
 
   return (
@@ -548,13 +622,13 @@ export default function AnalyseContent({ isSubscribed, shopDomain, initialAudit,
               const fixedCount = items.filter((r) => proofFor(r)).length
               // Auto-déplié si la catégorie contient une correction prouvée :
               // la preuve doit être visible sans clic (v6).
+              // P2 — top-3 toujours visibles (sans clic) ; le reste dans l'accordéon.
               const open = openCats.has(cat) || catHasProof(cat)
+              const topItems = items.slice(0, 3)
+              const restItems = items.slice(3)
               return (
                 <div key={cat} className="bg-surface border border-border rounded-2xl overflow-hidden">
-                  <button onClick={() => setOpenCats((prev) => {
-                    const n = new Set(prev); if (n.has(cat)) n.delete(cat); else n.add(cat); return n
-                  })}
-                    className="w-full flex items-center gap-3 p-5 text-left hover:bg-surface-2 transition-colors duration-150">
+                  <div className="flex items-center gap-3 p-5">
                     <span className="text-xl">{meta.emoji}</span>
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-text-primary text-sm">{meta.label}</p>
@@ -568,106 +642,26 @@ export default function AnalyseContent({ isSubscribed, shopDomain, initialAudit,
                     ) : catLoss > 0 ? (
                       <span className="font-syne text-danger text-sm font-bold flex-shrink-0 whitespace-nowrap">−{euros(catLoss)}/mois</span>
                     ) : (
-                      // P6 — pas de « −€0/mois » contre-productif : impact qualitatif
                       <span className="text-text-muted text-xs flex-shrink-0 whitespace-nowrap">Impact sur l’expérience</span>
                     )}
-                    {open ? <ChevronUp className="w-4 h-4 text-text-muted" /> : <ChevronDown className="w-4 h-4 text-text-muted" />}
-                  </button>
+                  </div>
 
-                  {open && (
-                    <ul className="border-t border-border divide-y divide-border">
-                      {items.map((r) => {
-                        const locked = isLocked(r)
-                        const cap = r.capability ?? (r.fix_available ? 'auto' : 'guide')
-                        const pr = PRIORITY_META[r.priority] ?? PRIORITY_META.medium
-                        const expanded = openProblem === r.id
-                        const proof = proofFor(r)
-                        // ✅ CORRIGÉ — preuve avant/après EN PLACE, fond/bordure verts,
-                        // visible sans clic. Le cycle de vie du problème au même endroit (v6).
-                        if (proof && !locked) {
-                          return (
-                            <li key={r.id} className="bg-success/[0.06] border-l-[3px] border-success p-3 sm:p-4 overflow-hidden animate-proof-reveal">
-                              <div className="flex items-center gap-2 mb-2">
-                                <CheckCircle2 className="w-4 h-4 text-success flex-shrink-0" />
-                                <span className="text-success text-sm font-semibold">Corrigé par Modify</span>
-                                {/* Signature « ticket de prix barré » : montant rouge barré (gauche→droite) puis montant vert (v7) */}
-                                <span className="ml-auto flex items-center gap-2 font-syne">
-                                  <span className="relative text-danger text-sm font-bold whitespace-nowrap">
-                                    −{euros(proof.monthlyImpactEur)}/mois
-                                    <span className="absolute left-0 top-1/2 h-[2px] w-full bg-danger origin-left animate-strike" />
-                                  </span>
-                                  <span className="text-success text-sm font-bold whitespace-nowrap opacity-0 animate-price-reveal">
-                                    +{euros(proof.monthlyImpactEur)}/mois
-                                  </span>
-                                </span>
-                              </div>
-                              <ProofCard proof={proof} shopDomain={proofShop} />
-                            </li>
-                          )
-                        }
-                        if (locked) {
-                          return (
-                            <li key={r.id} className="p-4 flex items-center gap-3">
-                              <Lock className="w-4 h-4 text-text-muted flex-shrink-0" />
-                              <p className="text-text-muted text-sm blur-[3px] select-none flex-1">{r.title}</p>
-                              <a href="/dashboard/subscription"
-                                className="text-primary text-xs font-medium hover:text-primary-dark flex-shrink-0">
-                                Débloquer →
-                              </a>
-                            </li>
-                          )
-                        }
-                        // Hiérarchie visuelle par priorité (v6) : 🔴 plus proéminent que 🟡.
-                        const accent = r.priority === 'high'
-                          ? 'border-l-2 border-danger/50'
-                          : r.priority === 'medium' ? 'border-l-2 border-warning/40' : 'border-l-2 border-transparent'
-                        return (
-                          <li key={r.id} className={accent}>
-                            <button onClick={() => setOpenProblem(expanded ? null : r.id)}
-                              className={['w-full text-left hover:bg-surface-2 transition-colors duration-150', r.priority === 'high' ? 'p-4 sm:p-5' : 'p-4'].join(' ')}>
-                              <div className="flex items-center gap-2 flex-wrap mb-1">
-                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium border ${pr.cls}`}>
-                                  {pr.emoji} {pr.label}
-                                </span>
-                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium border ${cap === 'auto' ? 'text-success bg-success/10 border-success/20' : 'text-sky-400 bg-sky-400/10 border-sky-400/20'}`}>
-                                  {cap === 'auto' ? '✅ Modify s’en occupe' : '👋 Guide disponible'}
-                                </span>
-                                <span className="font-syne text-danger text-sm font-bold ml-auto whitespace-nowrap">−{euros(r.impact_euros)}/mois</span>
-                              </div>
-                              {/* État fermé COMPACT (bug 5) : titre + badges + €/mois uniquement.
-                                  La ligne « Concerne : … » n'apparaît qu'au clic (bloc déplié ci-dessous). */}
-                              <p className={['text-text-primary font-medium', r.priority === 'high' ? 'text-[15px]' : 'text-sm'].join(' ')}>{r.title}</p>
-                            </button>
-                            {expanded && (
-                              <div className="px-4 pb-4 -mt-1">
-                                <p className="text-text-secondary text-sm leading-relaxed mb-2">{r.description}</p>
-                                {(r.affected_items?.length ?? 0) > 0 && (
-                                  <div className="flex items-center gap-1.5 flex-wrap mb-3">
-                                    {r.affected_items!.map((it, i) => (
-                                      <span key={i} className="px-2 py-0.5 bg-surface-2 border border-border rounded-md text-[11px] text-text-secondary">{it}</span>
-                                    ))}
-                                  </div>
-                                )}
-                                <p className="text-text-secondary text-xs mb-3">
-                                  <span className="text-text-muted font-medium">Recommandation : </span>{r.recommendation}
-                                </p>
-                                {cap === 'auto' ? (
-                                  <a href="/dashboard/corrections"
-                                    className="inline-flex items-center gap-1.5 text-primary text-sm font-medium hover:text-primary-dark transition-colors">
-                                    Voir le correctif <ArrowRight className="w-3.5 h-3.5" />
-                                  </a>
-                                ) : (
-                                  <button onClick={() => openMody(r.title)}
-                                    className="inline-flex items-center gap-1.5 text-mody-bright text-sm font-medium hover:text-mody transition-colors">
-                                    Demander à Mody <ArrowRight className="w-3.5 h-3.5" />
-                                  </button>
-                                )}
-                              </div>
-                            )}
-                          </li>
-                        )
+                  {/* Top-3 — visibles sans clic */}
+                  <ul className="border-t border-border divide-y divide-border">
+                    {topItems.map(renderProblem)}
+                  </ul>
+
+                  {/* Reste — derrière l'accordéon */}
+                  {restItems.length > 0 && (
+                    <>
+                      {open && <ul className="divide-y divide-border border-t border-border">{restItems.map(renderProblem)}</ul>}
+                      <button onClick={() => setOpenCats((prev) => {
+                        const n = new Set(prev); if (n.has(cat)) n.delete(cat); else n.add(cat); return n
                       })}
-                    </ul>
+                        className="w-full flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium text-text-secondary hover:text-text-primary border-t border-border hover:bg-surface-2 transition-colors">
+                        {open ? <>Voir moins <ChevronUp className="w-3.5 h-3.5" /></> : <>Voir les {restItems.length} autre{restItems.length > 1 ? 's' : ''} <ChevronDown className="w-3.5 h-3.5" /></>}
+                      </button>
+                    </>
                   )}
                 </div>
               )
