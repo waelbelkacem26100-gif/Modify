@@ -14,6 +14,7 @@ import ModyBanner from '@/components/dashboard/ModyBanner'
 import ProofCard from '@/components/proofs/ProofCard'
 import { openMody } from '@/lib/mody-companion'
 import { withPreviewToken } from '@/lib/preview'
+import { useCountUp } from '@/lib/use-count-up'
 import { categoryPresentation } from '@/lib/fix-presentation'
 import type { Audit, AuditResult } from '@/types'
 import type { ProofRecord } from '@/lib/proofs/types'
@@ -230,6 +231,7 @@ export default function AnalyseContent({ isSubscribed, shopDomain, initialAudit,
 
   const results: AuditResult[] = audit?.status === 'completed' && Array.isArray(audit.results) ? audit.results : []
   const totalLoss = results.reduce((s, r) => s + (r.impact_euros || 0), 0)
+  const animatedLoss = useCountUp(totalLoss) // v9 — compteur €/mois 0 → total
   const visibleLimit = isSubscribed ? Infinity : FREE_LIMIT
 
   // Titre d'onglet dynamique (T2) : le €/mois identifié quand un audit existe.
@@ -371,7 +373,7 @@ export default function AnalyseContent({ isSubscribed, shopDomain, initialAudit,
                 <h1 className="font-syne font-extrabold leading-none mt-1">
                   {isSubscribed ? (
                     <>
-                      <span className="text-danger text-5xl sm:text-6xl">{euros(totalLoss)}</span>
+                      <span className="text-danger text-5xl sm:text-6xl tabular-nums">{euros(animatedLoss)}</span>
                       <span className="text-text-secondary text-2xl"> /mois</span>
                     </>
                   ) : (
@@ -427,11 +429,21 @@ export default function AnalyseContent({ isSubscribed, shopDomain, initialAudit,
             {error && !isFirstRun && <p className="text-danger text-sm mt-3">{error}</p>}
           </div>
 
-          {/* Score /100 — anneau à droite */}
+          {/* Score /100 — anneau SVG qui se dessine au chargement (v9) */}
           <div className="flex sm:flex-col items-center gap-3 flex-shrink-0">
-            <div className="w-24 h-24 rounded-full flex items-center justify-center"
-              style={{ background: `conic-gradient(${scoreColor} ${initialScore * 3.6}deg, #1C2440 0deg)` }}>
-              <div className="w-[76px] h-[76px] rounded-full bg-surface flex flex-col items-center justify-center">
+            <div className="relative w-24 h-24">
+              <svg className="w-24 h-24 -rotate-90" viewBox="0 0 96 96">
+                <circle cx="48" cy="48" r="44" fill="none" stroke="#1C2440" strokeWidth="6" />
+                <circle cx="48" cy="48" r="44" fill="none" stroke={scoreColor} strokeWidth="6" strokeLinecap="round"
+                  className="animate-score-draw"
+                  style={{
+                    // circumference = 2π·44 ≈ 276.46 ; offset = C·(1 − score/100)
+                    ['--score-circumference' as string]: '276.46',
+                    ['--score-offset' as string]: String(276.46 * (1 - initialScore / 100)),
+                    strokeDasharray: '276.46',
+                  }} />
+              </svg>
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
                 <span className="font-syne font-bold text-2xl text-text-primary">{initialScore}</span>
                 <span className="text-text-muted text-[10px]">/ 100</span>
               </div>
