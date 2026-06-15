@@ -2,6 +2,7 @@ import Navbar from '@/components/landing/Navbar'
 import Hero from '@/components/landing/Hero'
 import HowItWorks from '@/components/landing/HowItWorks'
 import Automation from '@/components/landing/Automation'
+import ModySection from '@/components/landing/ModySection'
 import Results from '@/components/landing/Results'
 import Pricing from '@/components/landing/Pricing'
 import Faq from '@/components/landing/Faq'
@@ -15,6 +16,7 @@ export default function LandingPage() {
       <Hero />
       <HowItWorks />
       <Automation />
+      <ModySection />
       <Results />
       <Pricing />
       <Faq />
