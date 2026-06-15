@@ -50,10 +50,15 @@ export async function POST(request: NextRequest) {
     const result = await startMission(store, body.problem_id, supabase)
     return NextResponse.json({ success: true, ...result })
   } catch (e) {
-    if (String(e).includes('PROBLEM_NOT_FOUND')) {
+    const msg = String(e)
+    if (msg.includes('PROBLEM_NOT_FOUND')) {
       return NextResponse.json({ error: 'Ce problème ne figure plus dans votre dernier audit.' }, { status: 404 })
     }
-    console.error('[copilot/missions] start failed:', String(e))
+    // Quota IA atteint : message honnête plutôt qu'un échec générique.
+    if (msg.includes('credit balance') || msg.includes('insufficient_quota') || msg.includes('rate_limit')) {
+      return NextResponse.json({ error: 'Mody est temporairement en pause (quota IA atteint). Réessayez bientôt.', code: 'AI_QUOTA' }, { status: 503 })
+    }
+    console.error('[copilot/missions] start failed:', msg)
     return NextResponse.json({ error: 'La préparation de la mission a échoué. Réessayez.' }, { status: 502 })
   }
 }

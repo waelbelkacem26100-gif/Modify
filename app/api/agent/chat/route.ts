@@ -69,7 +69,12 @@ Ton rôle ici : aider à EXÉCUTER ces étapes (adapter un texte, répondre aux 
     const reply = await agentChat(context, messages)
     return NextResponse.json({ reply, isPro, remaining: isPro ? null : Math.max(0, PREVIEW_USER_MESSAGES - userTurns) })
   } catch (e) {
-    console.error('[agent/chat] failed for', store.shop_domain, String(e))
+    const msg = String(e)
+    // Quota IA atteint : message honnête plutôt qu'un échec générique.
+    if (msg.includes('credit balance') || msg.includes('insufficient_quota') || msg.includes('rate_limit')) {
+      return NextResponse.json({ error: 'Mody est temporairement en pause (quota IA atteint). Réessayez bientôt.', code: 'AI_QUOTA' }, { status: 503 })
+    }
+    console.error('[agent/chat] failed for', store.shop_domain, msg)
     return NextResponse.json({ error: 'L’assistant est momentanément indisponible. Réessayez.' }, { status: 502 })
   }
 }
