@@ -73,6 +73,7 @@ export default function AnalyseContent({ isSubscribed, shopDomain, initialAudit,
   const [openCats, setOpenCats] = useState<Set<string>>(new Set())
   const [openProblem, setOpenProblem] = useState<string | null>(null)
   const [strengths, setStrengths] = useState<Strength[]>([])
+  const [strengthsOpen, setStrengthsOpen] = useState(false)
   const [checksRun, setChecksRun] = useState<number | null>(null)
   // Preuves des corrections appliquées, indexées par titre normalisé (v6) — une
   // carte problème dont le titre matche affiche sa preuve EN PLACE.
@@ -166,6 +167,13 @@ export default function AnalyseContent({ isSubscribed, shopDomain, initialAudit,
   const results: AuditResult[] = audit?.status === 'completed' && Array.isArray(audit.results) ? audit.results : []
   const totalLoss = results.reduce((s, r) => s + (r.impact_euros || 0), 0)
   const visibleLimit = isSubscribed ? Infinity : FREE_LIMIT
+
+  // Titre d'onglet dynamique (T2) : le €/mois identifié quand un audit existe.
+  useEffect(() => {
+    document.title = results.length > 0 && isSubscribed
+      ? `${euros(totalLoss)}/mois identifiés — Modify`
+      : 'Tableau de bord — Modify'
+  }, [results.length, totalLoss, isSubscribed])
 
   // Groupement par catégorie (ordre v2 d'abord, puis catégories legacy rencontrées)
   const cats = [...CATEGORY_ORDER.filter((c) => results.some((r) => r.category === c)),
@@ -264,13 +272,43 @@ export default function AnalyseContent({ isSubscribed, shopDomain, initialAudit,
                 <span className="text-text-muted text-[10px]">/ 100</span>
               </div>
             </div>
-            <p className="text-text-muted text-xs text-center">Score</p>
+            {/* Contexte honnête du score (P7) — pas de benchmark inventé */}
+            <p className="text-text-muted text-xs text-center max-w-[120px]">
+              {initialScore >= 90 ? 'Excellent — continuez !' : <>Objectif 90 — encore <span className="text-primary-bright font-medium">{90 - initialScore} points</span></>}
+            </p>
           </div>
         </div>
       </div>
 
       {/* 💜 Bandeau d'activité Mody — juste sous le hero (v6) */}
       <ModyBanner />
+
+      {/* ✅ Points forts — bloc compact remonté sous le hero, expandable (P12/T4 v8) */}
+      {strengths.length > 0 && !running && (
+        <div className="bg-success/[0.04] border border-success/20 rounded-2xl mb-6 overflow-hidden">
+          <button onClick={() => setStrengthsOpen((v) => !v)}
+            className="w-full flex items-center gap-2.5 px-4 py-3 text-left hover:bg-success/[0.06] transition-colors">
+            <ThumbsUp className="w-4 h-4 text-success flex-shrink-0" />
+            <span className="text-success text-sm font-medium flex-1">
+              {strengths.length} chose{strengths.length > 1 ? 's' : ''} qui marche{strengths.length > 1 ? 'nt' : ''} déjà bien
+            </span>
+            {strengthsOpen ? <ChevronUp className="w-4 h-4 text-text-muted" /> : <ChevronDown className="w-4 h-4 text-text-muted" />}
+          </button>
+          {strengthsOpen && (
+            <ul className="px-4 pb-4 pt-1 space-y-3 border-t border-success/15">
+              {strengths.map((s, i) => (
+                <li key={i} className="flex items-start gap-2.5">
+                  <CheckCircle2 className="w-4 h-4 text-success mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="text-text-primary text-sm font-medium">{s.title}</p>
+                    <p className="text-text-muted text-xs mt-0.5">{s.detail}</p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
 
       {/* 🛠️ Dernières actions prouvées — juste après le hero, avant les catégories */}
       <RecentActivityFeed />
@@ -386,10 +424,13 @@ export default function AnalyseContent({ isSubscribed, shopDomain, initialAudit,
                         {items.length - fixedCount} point{items.length - fixedCount > 1 ? 's' : ''} à améliorer
                       </p>
                     </div>
-                    {isSubscribed ? (
-                      <span className="text-danger text-sm font-semibold flex-shrink-0">−{euros(catLoss)}/mois</span>
-                    ) : (
+                    {!isSubscribed ? (
                       <span className="text-danger text-sm font-semibold flex-shrink-0 blur-sm select-none">−€000/mois</span>
+                    ) : catLoss > 0 ? (
+                      <span className="font-syne text-danger text-sm font-bold flex-shrink-0 whitespace-nowrap">−{euros(catLoss)}/mois</span>
+                    ) : (
+                      // P6 — pas de « −€0/mois » contre-productif : impact qualitatif
+                      <span className="text-text-muted text-xs flex-shrink-0 whitespace-nowrap">Impact sur l’expérience</span>
                     )}
                     {open ? <ChevronUp className="w-4 h-4 text-text-muted" /> : <ChevronDown className="w-4 h-4 text-text-muted" />}
                   </button>
@@ -510,27 +551,6 @@ export default function AnalyseContent({ isSubscribed, shopDomain, initialAudit,
             </div>
           )}
         </>
-      )}
-
-      {/* ✅ Points forts v5 — position secondaire : APRÈS les problèmes (v6) */}
-      {strengths.length > 0 && !running && (
-        <div className="bg-success/5 border border-success/20 rounded-2xl p-5 mt-6">
-          <div className="flex items-center gap-2 mb-3">
-            <ThumbsUp className="w-4 h-4 text-success flex-shrink-0" />
-            <h2 className="font-display font-semibold text-success text-sm">Ce que vous faites déjà bien</h2>
-          </div>
-          <ul className="space-y-3">
-            {strengths.map((s, i) => (
-              <li key={i} className="flex items-start gap-2.5">
-                <CheckCircle2 className="w-4 h-4 text-success mt-0.5 flex-shrink-0" />
-                <div>
-                  <p className="text-text-primary text-sm font-medium">{s.title}</p>
-                  <p className="text-text-muted text-xs mt-0.5">{s.detail}</p>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </div>
       )}
 
       {/* État vide élégant */}
