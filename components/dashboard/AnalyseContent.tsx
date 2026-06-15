@@ -433,7 +433,7 @@ export default function AnalyseContent({ isSubscribed, shopDomain, initialAudit,
       {results.length > 0 && !running && (
         <>
           {/* P1 — 2 boutons géants « Par quoi commencer ? » au-dessus des catégories */}
-          {!previewMode && isSubscribed && (urgentCount > 0 || correctableCount > 0) && (
+          {isSubscribed && (urgentCount > 0 || correctableCount > 0) && (
             <div className="mb-5">
               <p className="text-text-secondary text-sm mb-3">Par quoi voulez-vous commencer ?</p>
               <div className="grid sm:grid-cols-2 gap-3">
