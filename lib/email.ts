@@ -83,6 +83,8 @@ export interface MonthlyReportData {
   dashboardUrl: string
   /** Impact Visible — 1-2 preuves texte du mois (avant/après réels, ex. titre Google). */
   proofExamples?: { title: string; before: string; after: string }[]
+  /** Insights v10 — veille concurrentielle + tendances détectées ce mois. */
+  insights?: string[]
 }
 
 export function renderMonthlyReportHtml(d: MonthlyReportData): string {
@@ -122,6 +124,8 @@ export function renderMonthlyReportHtml(d: MonthlyReportData): string {
           <p style="margin:0 0 4px;color:#71717a;font-size:12px;"><span style="font-weight:700;text-transform:uppercase;font-size:10px;margin-right:6px;">Avant</span>${p.before}</p>
           <p style="margin:0;color:#18181b;font-size:12px;"><span style="color:#FF6B35;font-weight:700;text-transform:uppercase;font-size:10px;margin-right:6px;">Après</span>${p.after}</p>
         </div>`).join('')}` : '')}
+        ${(d.insights?.length ? `<p style="margin:22px 0 8px;color:#18181b;font-size:15px;font-weight:700;">Insights du mois</p>
+        ${d.insights.map((t) => `<p style="margin:0 0 8px;color:#3f3f46;font-size:13px;line-height:1.5;">${t}</p>`).join('')}` : '')}
         ${pendingRows ? `<p style="margin:22px 0 8px;color:#18181b;font-size:15px;font-weight:700;">Ce qui reste à gagner</p>
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0">${pendingRows}</table>` : ''}
         <div style="text-align:center;margin-top:28px;">

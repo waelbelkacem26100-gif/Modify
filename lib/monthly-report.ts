@@ -61,6 +61,17 @@ export async function buildMonthlyReport(store: Store, supabase: SupabaseClient)
   const monthAgo = rows.find((r) => new Date(r.created_at) <= new Date(monthSince))
   const scoreDelta = monthAgo ? scoreNow - monthAgo.score : null
 
+  // Insights v10 : veille concurrentielle + tendances du mois (si présentes).
+  const insights: string[] = []
+  const { data: alerts } = await supabase
+    .from('competitor_alerts').select('new_value, impact_assessment')
+    .eq('store_id', store.id).gte('created_at', monthSince).order('created_at', { ascending: false }).limit(1)
+  if (alerts?.[0]?.new_value) insights.push(`🔍 Concurrence : ${alerts[0].new_value}`)
+  const { data: trends } = await supabase
+    .from('trend_predictions').select('keyword, recommended_action')
+    .eq('store_id', store.id).gte('created_at', monthSince).order('created_at', { ascending: false }).limit(1)
+  if (trends?.[0]?.keyword) insights.push(`🔥 Tendance : « ${trends[0].keyword} » — ${trends[0].recommended_action ?? ''}`)
+
   return {
     shopName: store.shop_name ?? store.shop_domain,
     monthRecovered, totalRecovered, fixesApplied, appliedList,
@@ -68,5 +79,6 @@ export async function buildMonthlyReport(store: Store, supabase: SupabaseClient)
     scoreNow, scoreDelta, pendingList,
     dashboardUrl: `${appUrl}/dashboard/resultats`,
     proofExamples: await monthProofExamples(store, supabase, monthSince),
+    insights,
   }
 }
