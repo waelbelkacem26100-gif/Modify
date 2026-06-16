@@ -23,3 +23,20 @@ api_version = "2026-04"
   customer_data_request_url = "https://modify-coral.vercel.app/api/webhooks/customers/data_request"
   customer_deletion_url = "https://modify-coral.vercel.app/api/webhooks/customers/redact"
   shop_deletion_url = "https://modify-coral.vercel.app/api/webhooks/shop/redact"
+
+  # Pilote automatique v10
+  [[webhooks.subscriptions]]
+  topics = [ "products/create" ]
+  uri = "https://modify-coral.vercel.app/api/webhooks/products/create"
+
+  [[webhooks.subscriptions]]
+  topics = [ "products/update" ]
+  uri = "https://modify-coral.vercel.app/api/webhooks/products/update"
+
+  [[webhooks.subscriptions]]
+  topics = [ "themes/publish" ]
+  uri = "https://modify-coral.vercel.app/api/webhooks/themes/publish"
+
+  [[webhooks.subscriptions]]
+  topics = [ "orders/paid" ]
+  uri = "https://modify-coral.vercel.app/api/webhooks/orders/paid"
