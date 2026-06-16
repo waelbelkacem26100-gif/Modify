@@ -123,6 +123,14 @@ La langue est le français. altTexts DOIT avoir exactement ${product.images.leng
     } catch { /* best-effort */ }
   }
 
+  // Empreinte Modify : ce qui A ÉTÉ appliqué + l'horodatage de notre écriture.
+  // Sert à (a) détecter une régression tierce (products/update) et (b) ignorer
+  // les products/update issus de NOS propres écritures (garde anti-boucle).
+  try {
+    await setProductMetafield(store.shop_domain, store.access_token, pid, 'modify', 'seo_applied',
+      JSON.stringify({ title_tag: out.metaTitle?.slice(0, 70) ?? null, description_tag: out.metaDescription?.slice(0, 320) ?? null, at: Date.now() }), 'json')
+  } catch { /* best-effort */ }
+
   const report: OptimizeReport = {
     productId: String(pid),
     title: product.title,
