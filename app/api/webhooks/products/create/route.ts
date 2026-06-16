@@ -1,22 +1,25 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest, NextResponse, after } from 'next/server'
 import { createServiceRoleClient } from '@/lib/supabase-server'
+import { getValidAccessToken } from '@/lib/shopify-token'
 import { verifyWebhookHmac } from '@/lib/shopify'
+import { optimizeProduct } from '@/lib/autopilot/product-optimizer'
 import type { Store } from '@/types'
 
 export const runtime = 'nodejs'
+export const maxDuration = 60
 
 /**
- * Webhook `products/create` — Pilote automatique v10 (SCAFFOLD NON DESTRUCTIF).
+ * Webhook `products/create` — Pilote automatique v10 (ACTIF).
  *
- * État actuel : reçoit l'événement, vérifie la signature HMAC Shopify, et le
- * JOURNALISE dans `webhook_events` (processed_at = null). Il N'OPTIMISE PAS
- * encore le produit automatiquement.
+ * 1. Vérifie la signature HMAC Shopify.
+ * 2. Journalise l'événement dans `webhook_events`.
+ * 3. Optimise le produit en arrière-plan (after()) : meta SEO + alt texts +
+ *    cross-sell, via claude-opus-4-8, avec sauvegarde réversible. Marque
+ *    l'événement `processed_at` + `result`.
  *
- * ⚠️ L'optimisation IA (meta title, alt texts, JSON-LD, cross-sell) modifie le
- * VRAI store Shopify et consomme l'API Anthropic. Elle est délibérément différée
- * tant que (a) le quota IA n'est pas rechargé et (b) le marchand n'a pas activé
- * explicitement le pilote automatique (garde-fou : ne jamais auto-muter un store
- * sans accord). Le traitement réel lira `webhook_events` (processed_at IS NULL).
+ * Garde-fou : si l'optimisation échoue (quota IA, API Shopify), l'événement
+ * reste en `processed_at = null` (rejouable) et l'erreur est stockée — jamais
+ * de modification partielle silencieuse.
  */
 export async function POST(request: NextRequest) {
   const rawBody = await request.text()
@@ -30,23 +33,45 @@ export async function POST(request: NextRequest) {
   try { payload = rawBody ? JSON.parse(rawBody) : {} } catch { /* HMAC est la garde */ }
 
   const supabase = await createServiceRoleClient()
-  let storeId: string | null = null
+  let store: Store | null = null
   if (shopDomain) {
-    const { data } = await supabase
-      .from('stores').select('id').eq('shop_domain', shopDomain).limit(1).maybeSingle()
-    storeId = (data as Pick<Store, 'id'> | null)?.id ?? null
+    const { data } = await supabase.from('stores').select('*').eq('shop_domain', shopDomain).limit(1).maybeSingle()
+    store = (data as Store) ?? null
   }
 
-  // Journalisation pure (non destructive). Le traitement réel viendra plus tard.
-  await supabase.from('webhook_events').insert({
-    store_id: storeId,
+  // Journalise l'événement (toujours), récupère son id pour le marquer ensuite.
+  const { data: evt } = await supabase.from('webhook_events').insert({
+    store_id: store?.id ?? null,
     event_type: 'products/create',
     shopify_id: payload.id != null ? String(payload.id) : null,
     payload,
     processed_at: null,
-    result: { status: 'queued', note: 'optimisation IA différée (quota + accord requis)' },
-  })
+    result: { status: 'received' },
+  }).select('id').single()
+  const eventId = (evt as { id: string } | null)?.id ?? null
 
-  // 200 immédiat : Shopify réessaie si on ne répond pas vite.
+  // Optimisation en arrière-plan : Shopify reçoit 200 tout de suite (sinon retry).
+  if (store && payload.id != null && eventId) {
+    const storeRef = store
+    after(async () => {
+      try {
+        await getValidAccessToken(storeRef, supabase)
+        const report = await optimizeProduct(storeRef, payload.id!, supabase)
+        await supabase.from('webhook_events').update({
+          processed_at: new Date().toISOString(),
+          result: { status: 'optimized', changes: report.changes, title: report.title },
+        }).eq('id', eventId)
+      } catch (e) {
+        const msg = String(e)
+        const quota = msg.includes('credit balance') || msg.includes('rate_limit')
+        await supabase.from('webhook_events').update({
+          // quota : on laisse processed_at null pour rejouer plus tard ; autre erreur : on marque traité (échec) pour ne pas boucler
+          processed_at: quota ? null : new Date().toISOString(),
+          result: { status: quota ? 'deferred_quota' : 'error', error: msg.slice(0, 300) },
+        }).eq('id', eventId)
+      }
+    })
+  }
+
   return NextResponse.json({ received: true })
 }

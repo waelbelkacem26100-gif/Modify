@@ -10,6 +10,7 @@ export interface PiloteEntry {
 
 // Traduction d'une action audit_logs → entrée lisible du pilote (FR, sans jargon).
 const ACTION_LABEL: Record<string, (d: Record<string, unknown>) => { title: string; detail?: string; kind: PiloteEntry['kind'] } | null> = {
+  autopilot_product_optimized: (d) => ({ title: `Produit optimisé automatiquement${d.title ? ` : « ${d.title} »` : ''}`, detail: Array.isArray(d.changes) ? (d.changes as string[]).join(' · ') : undefined, kind: 'success' }),
   audit_started: () => ({ title: 'Analyse complète lancée', kind: 'info' }),
   audit_completed: (d) => ({ title: 'Analyse complète terminée', detail: `${d.problems ?? 0} points détectés`, kind: 'success' }),
   audit_module_checks: (d) => ({ title: `Vérification ${d.module === 'geo_simulation' ? 'lisibilité IA (GEO)' : 'accessibilité'}`, detail: `${d.checks ?? 0} contrôles déterministes`, kind: 'info' }),
