@@ -1230,8 +1230,8 @@
     "semantic_hash": ""
   },
   "/Users/bendou/Modify.io/modify/lib/pilote-feed.ts": {
-    "mtime": 1781582791.083601,
-    "ast_hash": "c77c879712ed9aad2ed2fde2718ee8de",
+    "mtime": 1781644315.833267,
+    "ast_hash": "9bb6e40d907d7a53bad49c4e7ad2d254",
     "semantic_hash": ""
   },
   "/Users/bendou/Modify.io/modify/supabase/migrations/019_autopilot_v10.sql": {
@@ -1245,28 +1245,43 @@
     "semantic_hash": ""
   },
   "/Users/bendou/Modify.io/modify/lib/autopilot/product-optimizer.ts": {
-    "mtime": 1781582826.8461647,
-    "ast_hash": "934b5578ae40def8d71be3d2e61df318",
+    "mtime": 1781632840.2094438,
+    "ast_hash": "2dfb92e14fdacc393cb8500ee70365d6",
     "semantic_hash": ""
   },
   "/Users/bendou/Modify.io/modify/app/api/webhooks/orders/paid/route.ts": {
-    "mtime": 1781625946.2239466,
-    "ast_hash": "7f983051c8882ec8981ee36d9b5535db",
+    "mtime": 1781644255.965645,
+    "ast_hash": "6ca31d1a88bef1dadc4f400ace5e1d5d",
     "semantic_hash": ""
   },
   "/Users/bendou/Modify.io/modify/app/api/webhooks/products/update/route.ts": {
-    "mtime": 1781583344.6683526,
-    "ast_hash": "1f6553fe42bbd9e987857f20297294c6",
+    "mtime": 1781644045.8577754,
+    "ast_hash": "8e02116b0d6242aebb24d633bad7f9ed",
     "semantic_hash": ""
   },
   "/Users/bendou/Modify.io/modify/app/api/webhooks/themes/publish/route.ts": {
-    "mtime": 1781583351.0566654,
-    "ast_hash": "8ba8221c33278ee71aa9c5bea3e1f797",
+    "mtime": 1781644473.6670105,
+    "ast_hash": "0804fedc6e022ff73dd6f02936c00af7",
     "semantic_hash": ""
   },
   "/Users/bendou/Modify.io/modify/lib/autopilot/webhook-log.ts": {
-    "mtime": 1781583334.8521903,
-    "ast_hash": "1ca57e6a3a0a8ef518837bcd489100cb",
+    "mtime": 1781644230.0526104,
+    "ast_hash": "4241bf222d9cbf5f2113f508fe321332",
+    "semantic_hash": ""
+  },
+  "/Users/bendou/Modify.io/modify/lib/autopilot/order-performance.ts": {
+    "mtime": 1781644245.538391,
+    "ast_hash": "9da673136ba3d00915430976e29f4ef6",
+    "semantic_hash": ""
+  },
+  "/Users/bendou/Modify.io/modify/lib/autopilot/regression.ts": {
+    "mtime": 1781644032.7094946,
+    "ast_hash": "5ad8978f372cb94b437cf08f4c26a989",
+    "semantic_hash": ""
+  },
+  "/Users/bendou/Modify.io/modify/lib/autopilot/theme-reinstall.ts": {
+    "mtime": 1781644493.238891,
+    "ast_hash": "70ecc3912e3f9ef33c495b2ad22e867c",
     "semantic_hash": ""
   }
 }
