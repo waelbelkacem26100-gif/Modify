@@ -1,13 +1,13 @@
 {
   "/Users/bendou/Modify.io/modify/.shopify/deploy-bundle/237da49c-8579-d5c6-e17c-53e6224177c7093e0338/locales/en.default.json": {
-    "mtime": 1781233657.1271787,
+    "mtime": 1781630028.6487813,
     "ast_hash": "e9bdbee9863f18eb6f4e1efee9becfde",
     "semantic_hash": "e9bdbee9863f18eb6f4e1efee9becfde"
   },
   "/Users/bendou/Modify.io/modify/.shopify/deploy-bundle/manifest.json": {
-    "mtime": 1781233656.870221,
-    "ast_hash": "6b8c219a8c8d879d9d0bc705e5f505c7",
-    "semantic_hash": "6b8c219a8c8d879d9d0bc705e5f505c7"
+    "mtime": 1781630028.3815734,
+    "ast_hash": "dac950bceda918b0ca3ebdb801bb23a9",
+    "semantic_hash": ""
   },
   "/Users/bendou/Modify.io/modify/.shopify/project.json": {
     "mtime": 1780347186.6630094,
@@ -1247,6 +1247,26 @@
   "/Users/bendou/Modify.io/modify/lib/autopilot/product-optimizer.ts": {
     "mtime": 1781582826.8461647,
     "ast_hash": "934b5578ae40def8d71be3d2e61df318",
+    "semantic_hash": ""
+  },
+  "/Users/bendou/Modify.io/modify/app/api/webhooks/orders/paid/route.ts": {
+    "mtime": 1781625946.2239466,
+    "ast_hash": "7f983051c8882ec8981ee36d9b5535db",
+    "semantic_hash": ""
+  },
+  "/Users/bendou/Modify.io/modify/app/api/webhooks/products/update/route.ts": {
+    "mtime": 1781583344.6683526,
+    "ast_hash": "1f6553fe42bbd9e987857f20297294c6",
+    "semantic_hash": ""
+  },
+  "/Users/bendou/Modify.io/modify/app/api/webhooks/themes/publish/route.ts": {
+    "mtime": 1781583351.0566654,
+    "ast_hash": "8ba8221c33278ee71aa9c5bea3e1f797",
+    "semantic_hash": ""
+  },
+  "/Users/bendou/Modify.io/modify/lib/autopilot/webhook-log.ts": {
+    "mtime": 1781583334.8521903,
+    "ast_hash": "1ca57e6a3a0a8ef518837bcd489100cb",
     "semantic_hash": ""
   }
 }
