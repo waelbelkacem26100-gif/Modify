@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { UserButton } from '@clerk/nextjs'
-import { Home, BarChart3, CreditCard, LogOut, ChevronUp, Zap } from 'lucide-react'
+import { Home, BarChart3, Gauge, CreditCard, LogOut, ChevronUp, Zap } from 'lucide-react'
 
 // Navigation v6 — 2 espaces seulement. Tout le reste (Corrections, Mody) vit
 // dans la page ou dans le compagnon flottant. Le marchand comprend en 5s qu'il
@@ -15,6 +15,12 @@ const SPACES = [
     icon: Home,
     label: 'Tableau de bord',
     match: (p: string) => p === '/dashboard',
+  },
+  {
+    href: '/dashboard/pilote',
+    icon: Gauge,
+    label: 'Pilote automatique',
+    match: (p: string) => p.startsWith('/dashboard/pilote'),
   },
   {
     href: '/dashboard/resultats',
