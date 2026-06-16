@@ -1220,8 +1220,8 @@
     "semantic_hash": ""
   },
   "/Users/bendou/Modify.io/modify/app/api/webhooks/products/create/route.ts": {
-    "mtime": 1781581536.5952473,
-    "ast_hash": "39b48007e4752a4142c7e52d5c963e87",
+    "mtime": 1781582783.0813034,
+    "ast_hash": "e1f9e82c364b87e80344d35c77ae84d7",
     "semantic_hash": ""
   },
   "/Users/bendou/Modify.io/modify/components/dashboard/PiloteContent.tsx": {
@@ -1230,13 +1230,23 @@
     "semantic_hash": ""
   },
   "/Users/bendou/Modify.io/modify/lib/pilote-feed.ts": {
-    "mtime": 1781581572.841845,
-    "ast_hash": "849264b7e8dea6433572e67aa6d7dc49",
+    "mtime": 1781582791.083601,
+    "ast_hash": "c77c879712ed9aad2ed2fde2718ee8de",
     "semantic_hash": ""
   },
   "/Users/bendou/Modify.io/modify/supabase/migrations/019_autopilot_v10.sql": {
     "mtime": 1781581507.973183,
     "ast_hash": "4b9ce3c888e82171a841fa0e9de31a64",
+    "semantic_hash": ""
+  },
+  "/Users/bendou/Modify.io/modify/app/api/autopilot/optimize/route.ts": {
+    "mtime": 1781582974.970912,
+    "ast_hash": "befc4a52e04c7e27b0d708c85ab42211",
+    "semantic_hash": ""
+  },
+  "/Users/bendou/Modify.io/modify/lib/autopilot/product-optimizer.ts": {
+    "mtime": 1781582826.8461647,
+    "ast_hash": "934b5578ae40def8d71be3d2e61df318",
     "semantic_hash": ""
   }
 }
