@@ -13,10 +13,10 @@ export async function ingestWebhook(
   request: NextRequest,
   eventType: string,
   shape: (payload: Record<string, unknown>) => { shopifyId: string | null; safePayload: Record<string, unknown> },
-): Promise<{ response: NextResponse; store: Store | null; eventId: string | null; shopifyId: string | null }> {
+): Promise<{ response: NextResponse; store: Store | null; eventId: string | null; shopifyId: string | null; payload: Record<string, unknown> }> {
   const rawBody = await request.text()
   if (!verifyWebhookHmac(rawBody, request.headers.get('x-shopify-hmac-sha256'))) {
-    return { response: new NextResponse('Invalid signature', { status: 401 }), store: null, eventId: null, shopifyId: null }
+    return { response: new NextResponse('Invalid signature', { status: 401 }), store: null, eventId: null, shopifyId: null, payload: {} }
   }
 
   let payload: Record<string, unknown> = {}
@@ -45,5 +45,6 @@ export async function ingestWebhook(
     store,
     eventId: (evt as { id: string } | null)?.id ?? null,
     shopifyId,
+    payload,
   }
 }
