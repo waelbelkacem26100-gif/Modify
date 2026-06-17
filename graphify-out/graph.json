@@ -7045,7 +7045,7 @@
       "label": "PlanId",
       "file_type": "code",
       "source_file": "lib/pricing.ts",
-      "source_location": "L11",
+      "source_location": "L16",
       "id": "lib_pricing_planid",
       "community": 10,
       "norm_label": "planid"
@@ -7054,7 +7054,7 @@
       "label": "PaidPlanId",
       "file_type": "code",
       "source_file": "lib/pricing.ts",
-      "source_location": "L12",
+      "source_location": "L17",
       "id": "lib_pricing_paidplanid",
       "community": 10,
       "norm_label": "paidplanid"
@@ -7063,7 +7063,7 @@
       "label": "Plan",
       "file_type": "code",
       "source_file": "lib/pricing.ts",
-      "source_location": "L14",
+      "source_location": "L19",
       "id": "lib_pricing_plan",
       "community": 10,
       "norm_label": "plan"
@@ -7072,7 +7072,7 @@
       "label": "PLANS",
       "file_type": "code",
       "source_file": "lib/pricing.ts",
-      "source_location": "L25",
+      "source_location": "L31",
       "id": "lib_pricing_plans",
       "community": 10,
       "norm_label": "plans"
@@ -7081,7 +7081,7 @@
       "label": "isPaidPlan()",
       "file_type": "code",
       "source_file": "lib/pricing.ts",
-      "source_location": "L73",
+      "source_location": "L97",
       "id": "lib_pricing_ispaidplan",
       "community": 10,
       "norm_label": "ispaidplan()"
@@ -7090,7 +7090,7 @@
       "label": "planById()",
       "file_type": "code",
       "source_file": "lib/pricing.ts",
-      "source_location": "L77",
+      "source_location": "L101",
       "id": "lib_pricing_planbyid",
       "community": 21,
       "norm_label": "planbyid()"
@@ -8287,7 +8287,7 @@
       "label": "planFor()",
       "file_type": "code",
       "source_file": "lib/subscription.ts",
-      "source_location": "L33",
+      "source_location": "L34",
       "id": "lib_subscription_planfor",
       "community": 0,
       "norm_label": "planfor()"
@@ -13844,9 +13844,9 @@
       "source_file": "app/api/cron/competitor-monitor/route.ts",
       "source_location": "L4",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "competitor_monitor_route",
-      "target": "autopilot_competitive",
-      "confidence_score": 1.0
+      "target": "autopilot_competitive"
     },
     {
       "relation": "imports",
@@ -13855,9 +13855,9 @@
       "source_file": "app/api/cron/competitor-monitor/route.ts",
       "source_location": "L4",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "competitor_monitor_route",
-      "target": "autopilot_competitive_monitorcompetitors",
-      "confidence_score": 1.0
+      "target": "autopilot_competitive_monitorcompetitors"
     },
     {
       "relation": "contains",
@@ -13865,9 +13865,9 @@
       "source_file": "app/api/cron/competitor-monitor/route.ts",
       "source_location": "L13",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "competitor_monitor_route",
-      "target": "competitor_monitor_route_get",
-      "confidence_score": 1.0
+      "target": "competitor_monitor_route_get"
     },
     {
       "relation": "imports_from",
@@ -13876,9 +13876,9 @@
       "source_file": "app/api/cron/competitor-monitor/route.ts",
       "source_location": "L5",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "competitor_monitor_route",
-      "target": "lib_preview",
-      "confidence_score": 1.0
+      "target": "lib_preview"
     },
     {
       "relation": "imports_from",
@@ -13887,9 +13887,9 @@
       "source_file": "app/api/cron/competitor-monitor/route.ts",
       "source_location": "L2",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "competitor_monitor_route",
-      "target": "lib_supabase_server",
-      "confidence_score": 1.0
+      "target": "lib_supabase_server"
     },
     {
       "relation": "imports",
@@ -13898,9 +13898,9 @@
       "source_file": "app/api/cron/competitor-monitor/route.ts",
       "source_location": "L2",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "competitor_monitor_route",
-      "target": "lib_supabase_server_createserviceroleclient",
-      "confidence_score": 1.0
+      "target": "lib_supabase_server_createserviceroleclient"
     },
     {
       "relation": "imports_from",
@@ -13909,9 +13909,9 @@
       "source_file": "app/api/cron/competitor-monitor/route.ts",
       "source_location": "L6",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "competitor_monitor_route",
-      "target": "types_index",
-      "confidence_score": 1.0
+      "target": "types_index"
     },
     {
       "relation": "imports",
@@ -13920,9 +13920,9 @@
       "source_file": "app/api/cron/competitor-monitor/route.ts",
       "source_location": "L6",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "competitor_monitor_route",
-      "target": "types_index_store",
-      "confidence_score": 1.0
+      "target": "types_index_store"
     },
     {
       "relation": "calls",
@@ -14214,9 +14214,9 @@
       "source_file": "app/api/cron/price-suggest/route.ts",
       "source_location": "L4",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "price_suggest_route",
-      "target": "autopilot_pricing",
-      "confidence_score": 1.0
+      "target": "autopilot_pricing"
     },
     {
       "relation": "imports",
@@ -14225,9 +14225,9 @@
       "source_file": "app/api/cron/price-suggest/route.ts",
       "source_location": "L4",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "price_suggest_route",
-      "target": "autopilot_pricing_suggestprices",
-      "confidence_score": 1.0
+      "target": "autopilot_pricing_suggestprices"
     },
     {
       "relation": "imports_from",
@@ -14236,9 +14236,9 @@
       "source_file": "app/api/cron/price-suggest/route.ts",
       "source_location": "L5",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "price_suggest_route",
-      "target": "lib_preview",
-      "confidence_score": 1.0
+      "target": "lib_preview"
     },
     {
       "relation": "imports_from",
@@ -14247,9 +14247,9 @@
       "source_file": "app/api/cron/price-suggest/route.ts",
       "source_location": "L2",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "price_suggest_route",
-      "target": "lib_supabase_server",
-      "confidence_score": 1.0
+      "target": "lib_supabase_server"
     },
     {
       "relation": "imports",
@@ -14258,9 +14258,9 @@
       "source_file": "app/api/cron/price-suggest/route.ts",
       "source_location": "L2",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "price_suggest_route",
-      "target": "lib_supabase_server_createserviceroleclient",
-      "confidence_score": 1.0
+      "target": "lib_supabase_server_createserviceroleclient"
     },
     {
       "relation": "contains",
@@ -14268,9 +14268,9 @@
       "source_file": "app/api/cron/price-suggest/route.ts",
       "source_location": "L12",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "price_suggest_route",
-      "target": "price_suggest_route_get",
-      "confidence_score": 1.0
+      "target": "price_suggest_route_get"
     },
     {
       "relation": "imports_from",
@@ -14279,9 +14279,9 @@
       "source_file": "app/api/cron/price-suggest/route.ts",
       "source_location": "L6",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "price_suggest_route",
-      "target": "types_index",
-      "confidence_score": 1.0
+      "target": "types_index"
     },
     {
       "relation": "imports",
@@ -14290,9 +14290,9 @@
       "source_file": "app/api/cron/price-suggest/route.ts",
       "source_location": "L6",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "price_suggest_route",
-      "target": "types_index_store",
-      "confidence_score": 1.0
+      "target": "types_index_store"
     },
     {
       "relation": "calls",
@@ -14399,9 +14399,9 @@
       "source_file": "app/api/cron/trend-predict/route.ts",
       "source_location": "L4",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "trend_predict_route",
-      "target": "autopilot_trends",
-      "confidence_score": 1.0
+      "target": "autopilot_trends"
     },
     {
       "relation": "imports",
@@ -14410,9 +14410,9 @@
       "source_file": "app/api/cron/trend-predict/route.ts",
       "source_location": "L4",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "trend_predict_route",
-      "target": "autopilot_trends_predicttrends",
-      "confidence_score": 1.0
+      "target": "autopilot_trends_predicttrends"
     },
     {
       "relation": "imports_from",
@@ -14421,9 +14421,9 @@
       "source_file": "app/api/cron/trend-predict/route.ts",
       "source_location": "L5",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "trend_predict_route",
-      "target": "lib_preview",
-      "confidence_score": 1.0
+      "target": "lib_preview"
     },
     {
       "relation": "imports_from",
@@ -14432,9 +14432,9 @@
       "source_file": "app/api/cron/trend-predict/route.ts",
       "source_location": "L2",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "trend_predict_route",
-      "target": "lib_supabase_server",
-      "confidence_score": 1.0
+      "target": "lib_supabase_server"
     },
     {
       "relation": "imports",
@@ -14443,9 +14443,9 @@
       "source_file": "app/api/cron/trend-predict/route.ts",
       "source_location": "L2",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "trend_predict_route",
-      "target": "lib_supabase_server_createserviceroleclient",
-      "confidence_score": 1.0
+      "target": "lib_supabase_server_createserviceroleclient"
     },
     {
       "relation": "contains",
@@ -14453,9 +14453,9 @@
       "source_file": "app/api/cron/trend-predict/route.ts",
       "source_location": "L12",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "trend_predict_route",
-      "target": "trend_predict_route_get",
-      "confidence_score": 1.0
+      "target": "trend_predict_route_get"
     },
     {
       "relation": "imports_from",
@@ -14464,9 +14464,9 @@
       "source_file": "app/api/cron/trend-predict/route.ts",
       "source_location": "L6",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "trend_predict_route",
-      "target": "types_index",
-      "confidence_score": 1.0
+      "target": "types_index"
     },
     {
       "relation": "imports",
@@ -14475,9 +14475,9 @@
       "source_file": "app/api/cron/trend-predict/route.ts",
       "source_location": "L6",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "trend_predict_route",
-      "target": "types_index_store",
-      "confidence_score": 1.0
+      "target": "types_index_store"
     },
     {
       "relation": "calls",
@@ -25980,9 +25980,9 @@
       "source_file": "lib/autopilot/competitive.ts",
       "source_location": "L2",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "autopilot_competitive",
-      "target": "lib_audit_log",
-      "confidence_score": 1.0
+      "target": "lib_audit_log"
     },
     {
       "relation": "imports_from",
@@ -25991,9 +25991,9 @@
       "source_file": "lib/autopilot/pricing.ts",
       "source_location": "L2",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "autopilot_pricing",
-      "target": "lib_audit_log",
-      "confidence_score": 1.0
+      "target": "lib_audit_log"
     },
     {
       "relation": "imports_from",
@@ -26035,9 +26035,9 @@
       "source_file": "lib/autopilot/trends.ts",
       "source_location": "L2",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "autopilot_trends",
-      "target": "lib_audit_log",
-      "confidence_score": 1.0
+      "target": "lib_audit_log"
     },
     {
       "relation": "imports_from",
@@ -26165,9 +26165,9 @@
       "source_file": "lib/autopilot/competitive.ts",
       "source_location": "L2",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "autopilot_competitive",
-      "target": "lib_audit_log_logaction",
-      "confidence_score": 1.0
+      "target": "lib_audit_log_logaction"
     },
     {
       "relation": "calls",
@@ -26187,9 +26187,9 @@
       "source_file": "lib/autopilot/pricing.ts",
       "source_location": "L2",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "autopilot_pricing",
-      "target": "lib_audit_log_logaction",
-      "confidence_score": 1.0
+      "target": "lib_audit_log_logaction"
     },
     {
       "relation": "calls",
@@ -26275,9 +26275,9 @@
       "source_file": "lib/autopilot/trends.ts",
       "source_location": "L2",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "autopilot_trends",
-      "target": "lib_audit_log_logaction",
-      "confidence_score": 1.0
+      "target": "lib_audit_log_logaction"
     },
     {
       "relation": "calls",
@@ -28703,9 +28703,9 @@
       "source_file": "lib/autopilot/competitive.ts",
       "source_location": "L9",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "autopilot_competitive",
-      "target": "autopilot_competitive_alert",
-      "confidence_score": 1.0
+      "target": "autopilot_competitive_alert"
     },
     {
       "relation": "contains",
@@ -28713,9 +28713,9 @@
       "source_file": "lib/autopilot/competitive.ts",
       "source_location": "L23",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "autopilot_competitive",
-      "target": "autopilot_competitive_monitorcompetitors",
-      "confidence_score": 1.0
+      "target": "autopilot_competitive_monitorcompetitors"
     },
     {
       "relation": "contains",
@@ -28723,9 +28723,9 @@
       "source_file": "lib/autopilot/competitive.ts",
       "source_location": "L7",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "autopilot_competitive",
-      "target": "autopilot_competitive_supabaseclient",
-      "confidence_score": 1.0
+      "target": "autopilot_competitive_supabaseclient"
     },
     {
       "relation": "imports_from",
@@ -28734,9 +28734,9 @@
       "source_file": "lib/autopilot/competitive.ts",
       "source_location": "L3",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "autopilot_competitive",
-      "target": "autopilot_web_search",
-      "confidence_score": 1.0
+      "target": "autopilot_web_search"
     },
     {
       "relation": "imports",
@@ -28745,9 +28745,9 @@
       "source_file": "lib/autopilot/competitive.ts",
       "source_location": "L3",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "autopilot_competitive",
-      "target": "autopilot_web_search_extractjson",
-      "confidence_score": 1.0
+      "target": "autopilot_web_search_extractjson"
     },
     {
       "relation": "imports",
@@ -28756,9 +28756,9 @@
       "source_file": "lib/autopilot/competitive.ts",
       "source_location": "L3",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "autopilot_competitive",
-      "target": "autopilot_web_search_websearchanalyze",
-      "confidence_score": 1.0
+      "target": "autopilot_web_search_websearchanalyze"
     },
     {
       "relation": "imports_from",
@@ -28767,9 +28767,9 @@
       "source_file": "lib/autopilot/competitive.ts",
       "source_location": "L1",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "autopilot_competitive",
-      "target": "lib_shopify",
-      "confidence_score": 1.0
+      "target": "lib_shopify"
     },
     {
       "relation": "imports",
@@ -28778,9 +28778,9 @@
       "source_file": "lib/autopilot/competitive.ts",
       "source_location": "L1",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "autopilot_competitive",
-      "target": "lib_shopify_getproductsdetailed",
-      "confidence_score": 1.0
+      "target": "lib_shopify_getproductsdetailed"
     },
     {
       "relation": "imports_from",
@@ -28789,9 +28789,9 @@
       "source_file": "lib/autopilot/competitive.ts",
       "source_location": "L4",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "autopilot_competitive",
-      "target": "types_index",
-      "confidence_score": 1.0
+      "target": "types_index"
     },
     {
       "relation": "imports",
@@ -28800,9 +28800,9 @@
       "source_file": "lib/autopilot/competitive.ts",
       "source_location": "L4",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "autopilot_competitive",
-      "target": "types_index_store",
-      "confidence_score": 1.0
+      "target": "types_index_store"
     },
     {
       "relation": "calls",
@@ -28895,9 +28895,9 @@
       "source_file": "lib/autopilot/pricing.ts",
       "source_location": "L9",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "autopilot_pricing",
-      "target": "autopilot_pricing_pricesuggestion",
-      "confidence_score": 1.0
+      "target": "autopilot_pricing_pricesuggestion"
     },
     {
       "relation": "contains",
@@ -28905,9 +28905,9 @@
       "source_file": "lib/autopilot/pricing.ts",
       "source_location": "L22",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "autopilot_pricing",
-      "target": "autopilot_pricing_suggestprices",
-      "confidence_score": 1.0
+      "target": "autopilot_pricing_suggestprices"
     },
     {
       "relation": "contains",
@@ -28915,9 +28915,9 @@
       "source_file": "lib/autopilot/pricing.ts",
       "source_location": "L7",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "autopilot_pricing",
-      "target": "autopilot_pricing_supabaseclient",
-      "confidence_score": 1.0
+      "target": "autopilot_pricing_supabaseclient"
     },
     {
       "relation": "imports_from",
@@ -28926,9 +28926,9 @@
       "source_file": "lib/autopilot/pricing.ts",
       "source_location": "L3",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "autopilot_pricing",
-      "target": "autopilot_web_search",
-      "confidence_score": 1.0
+      "target": "autopilot_web_search"
     },
     {
       "relation": "imports",
@@ -28937,9 +28937,9 @@
       "source_file": "lib/autopilot/pricing.ts",
       "source_location": "L3",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "autopilot_pricing",
-      "target": "autopilot_web_search_extractjson",
-      "confidence_score": 1.0
+      "target": "autopilot_web_search_extractjson"
     },
     {
       "relation": "imports",
@@ -28948,9 +28948,9 @@
       "source_file": "lib/autopilot/pricing.ts",
       "source_location": "L3",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "autopilot_pricing",
-      "target": "autopilot_web_search_websearchanalyze",
-      "confidence_score": 1.0
+      "target": "autopilot_web_search_websearchanalyze"
     },
     {
       "relation": "imports_from",
@@ -28959,9 +28959,9 @@
       "source_file": "lib/autopilot/pricing.ts",
       "source_location": "L1",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "autopilot_pricing",
-      "target": "lib_shopify",
-      "confidence_score": 1.0
+      "target": "lib_shopify"
     },
     {
       "relation": "imports",
@@ -28970,9 +28970,9 @@
       "source_file": "lib/autopilot/pricing.ts",
       "source_location": "L1",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "autopilot_pricing",
-      "target": "lib_shopify_getproductsdetailed",
-      "confidence_score": 1.0
+      "target": "lib_shopify_getproductsdetailed"
     },
     {
       "relation": "imports_from",
@@ -28981,9 +28981,9 @@
       "source_file": "lib/autopilot/pricing.ts",
       "source_location": "L4",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "autopilot_pricing",
-      "target": "types_index",
-      "confidence_score": 1.0
+      "target": "types_index"
     },
     {
       "relation": "imports",
@@ -28992,9 +28992,9 @@
       "source_file": "lib/autopilot/pricing.ts",
       "source_location": "L4",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "autopilot_pricing",
-      "target": "types_index_store",
-      "confidence_score": 1.0
+      "target": "types_index_store"
     },
     {
       "relation": "calls",
@@ -29547,9 +29547,9 @@
       "source_file": "lib/autopilot/trends.ts",
       "source_location": "L21",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "autopilot_trends",
-      "target": "autopilot_trends_predicttrends",
-      "confidence_score": 1.0
+      "target": "autopilot_trends_predicttrends"
     },
     {
       "relation": "contains",
@@ -29557,9 +29557,9 @@
       "source_file": "lib/autopilot/trends.ts",
       "source_location": "L7",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "autopilot_trends",
-      "target": "autopilot_trends_supabaseclient",
-      "confidence_score": 1.0
+      "target": "autopilot_trends_supabaseclient"
     },
     {
       "relation": "contains",
@@ -29567,9 +29567,9 @@
       "source_file": "lib/autopilot/trends.ts",
       "source_location": "L9",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "autopilot_trends",
-      "target": "autopilot_trends_trend",
-      "confidence_score": 1.0
+      "target": "autopilot_trends_trend"
     },
     {
       "relation": "imports_from",
@@ -29578,9 +29578,9 @@
       "source_file": "lib/autopilot/trends.ts",
       "source_location": "L3",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "autopilot_trends",
-      "target": "autopilot_web_search",
-      "confidence_score": 1.0
+      "target": "autopilot_web_search"
     },
     {
       "relation": "imports",
@@ -29589,9 +29589,9 @@
       "source_file": "lib/autopilot/trends.ts",
       "source_location": "L3",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "autopilot_trends",
-      "target": "autopilot_web_search_extractjson",
-      "confidence_score": 1.0
+      "target": "autopilot_web_search_extractjson"
     },
     {
       "relation": "imports",
@@ -29600,9 +29600,9 @@
       "source_file": "lib/autopilot/trends.ts",
       "source_location": "L3",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "autopilot_trends",
-      "target": "autopilot_web_search_websearchanalyze",
-      "confidence_score": 1.0
+      "target": "autopilot_web_search_websearchanalyze"
     },
     {
       "relation": "imports_from",
@@ -29611,9 +29611,9 @@
       "source_file": "lib/autopilot/trends.ts",
       "source_location": "L1",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "autopilot_trends",
-      "target": "lib_shopify",
-      "confidence_score": 1.0
+      "target": "lib_shopify"
     },
     {
       "relation": "imports",
@@ -29622,9 +29622,9 @@
       "source_file": "lib/autopilot/trends.ts",
       "source_location": "L1",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "autopilot_trends",
-      "target": "lib_shopify_getproductsdetailed",
-      "confidence_score": 1.0
+      "target": "lib_shopify_getproductsdetailed"
     },
     {
       "relation": "imports_from",
@@ -29633,9 +29633,9 @@
       "source_file": "lib/autopilot/trends.ts",
       "source_location": "L4",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "autopilot_trends",
-      "target": "types_index",
-      "confidence_score": 1.0
+      "target": "types_index"
     },
     {
       "relation": "imports",
@@ -29644,9 +29644,9 @@
       "source_file": "lib/autopilot/trends.ts",
       "source_location": "L4",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "autopilot_trends",
-      "target": "types_index_store",
-      "confidence_score": 1.0
+      "target": "types_index_store"
     },
     {
       "relation": "calls",
@@ -29687,9 +29687,9 @@
       "source_file": "lib/autopilot/web-search.ts",
       "source_location": "L3",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "autopilot_web_search",
-      "target": "autopilot_web_search_anthropic",
-      "confidence_score": 1.0
+      "target": "autopilot_web_search_anthropic"
     },
     {
       "relation": "contains",
@@ -29697,9 +29697,9 @@
       "source_file": "lib/autopilot/web-search.ts",
       "source_location": "L42",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "autopilot_web_search",
-      "target": "autopilot_web_search_extractjson",
-      "confidence_score": 1.0
+      "target": "autopilot_web_search_extractjson"
     },
     {
       "relation": "contains",
@@ -29707,9 +29707,9 @@
       "source_file": "lib/autopilot/web-search.ts",
       "source_location": "L16",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "autopilot_web_search",
-      "target": "autopilot_web_search_websearchanalyze",
-      "confidence_score": 1.0
+      "target": "autopilot_web_search_websearchanalyze"
     },
     {
       "relation": "contains",
@@ -36718,5 +36718,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "86acbc74fed90b52fb826f5c4fcd215711fae16e"
+  "built_at_commit": "e361068ef4d20cf05eab7988b3daf0b25a699982"
 }
