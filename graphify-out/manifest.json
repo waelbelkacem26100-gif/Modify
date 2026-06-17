@@ -110,8 +110,8 @@
     "semantic_hash": "73a5d669a44755dcc1010d857d3d61f5"
   },
   "/Users/bendou/Modify.io/modify/app/(site)/legal/page.tsx": {
-    "mtime": 1781730512.1616902,
-    "ast_hash": "6a767c7685729a3057125066db4425e1",
+    "mtime": 1781732012.1422803,
+    "ast_hash": "7adf92d59cef533264c7ed6b59c7a3b9",
     "semantic_hash": ""
   },
   "/Users/bendou/Modify.io/modify/app/(site)/page.tsx": {
@@ -120,13 +120,13 @@
     "semantic_hash": ""
   },
   "/Users/bendou/Modify.io/modify/app/(site)/privacy/page.tsx": {
-    "mtime": 1781730512.1635246,
-    "ast_hash": "ac776be2cc18fe82a79c2cf2221bca13",
+    "mtime": 1781731992.3588276,
+    "ast_hash": "c8bef9fa7ffa7aadbaef7720f4744e3b",
     "semantic_hash": ""
   },
   "/Users/bendou/Modify.io/modify/app/(site)/terms/page.tsx": {
-    "mtime": 1781730512.1628888,
-    "ast_hash": "e475fb0660f042dd1b1be8a0c9e97b3c",
+    "mtime": 1781731965.9017425,
+    "ast_hash": "4af652bb76ea7b4044c0e0cdfe9149b4",
     "semantic_hash": ""
   },
   "/Users/bendou/Modify.io/modify/app/api/agent/chat/route.ts": {
@@ -495,9 +495,9 @@
     "semantic_hash": "a2c22592687729818ab9040537a7d886"
   },
   "/Users/bendou/Modify.io/modify/components/landing/Footer.tsx": {
-    "mtime": 1780606716.4099493,
-    "ast_hash": "c27e4fa340ac8da61f720d88bffd227e",
-    "semantic_hash": "c27e4fa340ac8da61f720d88bffd227e"
+    "mtime": 1781732077.058397,
+    "ast_hash": "0047dff00a03887e27d46ac21e13be6e",
+    "semantic_hash": ""
   },
   "/Users/bendou/Modify.io/modify/components/landing/Hero.tsx": {
     "mtime": 1781486770.7660906,
@@ -530,9 +530,9 @@
     "semantic_hash": ""
   },
   "/Users/bendou/Modify.io/modify/components/legal/LegalShell.tsx": {
-    "mtime": 1780606612.0482438,
-    "ast_hash": "f7e1afaecbe6df90b0e330853afb8348",
-    "semantic_hash": "f7e1afaecbe6df90b0e330853afb8348"
+    "mtime": 1781731909.9606905,
+    "ast_hash": "6c8190b2d58778fbd0042ca87c4052c2",
+    "semantic_hash": ""
   },
   "/Users/bendou/Modify.io/modify/components/ui/Badge.tsx": {
     "mtime": 1780526342.5227902,
@@ -1232,6 +1232,21 @@
   "/Users/bendou/Modify.io/modify/docs/AUDIT-TECHNIQUE.md": {
     "mtime": 1781730535.0102432,
     "ast_hash": "93e219cd1376fe19ec8ab12fbb15ed3c",
+    "semantic_hash": ""
+  },
+  "/Users/bendou/Modify.io/modify/app/(site)/cookies/page.tsx": {
+    "mtime": 1781732026.7623408,
+    "ast_hash": "e25eb2df84568bc688c17f7f5b784623",
+    "semantic_hash": ""
+  },
+  "/Users/bendou/Modify.io/modify/app/(site)/support/page.tsx": {
+    "mtime": 1781732046.547955,
+    "ast_hash": "b8cea8875601bcad28e3c2e0c2a8ef9e",
+    "semantic_hash": ""
+  },
+  "/Users/bendou/Modify.io/modify/lib/legal.ts": {
+    "mtime": 1781731917.9050581,
+    "ast_hash": "a6ec047e7994df4a028044be196b5178",
     "semantic_hash": ""
   }
 }

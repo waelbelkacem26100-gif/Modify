@@ -1,61 +1,68 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { LegalShell, LegalSection } from '@/components/legal/LegalShell'
+import { LEGAL } from '@/lib/legal'
 
 export const metadata: Metadata = {
-  title: 'Mentions légales — Modify',
-  description: 'Mentions légales du service Modify.',
+  title: 'Legal Notice — Modifea',
+  description: 'Legal information about Modifea, publisher of the Modify service (French law).',
 }
-
-const UPDATED = '4 juin 2026'
-const CONTACT = 'contact@modifea.com'
 
 export default function LegalPage() {
   return (
-    <LegalShell title="Mentions légales" updated={UPDATED}>
-      <LegalSection heading="Éditeur du service">
+    <LegalShell title="Legal Notice" updated={LEGAL.updated} updatedLabel="Last updated">
+      <LegalSection heading="Publisher">
         <p>
-          Le service Modify est édité par <strong>Wael Belkacem</strong>,
-          <br />Entrepreneur individuel (auto-entrepreneur),
-          <br />2 rue Etienne Dolet, 26100 Romans-sur-Isère, France,
-          <br />SIREN/SIRET : en cours d&apos;immatriculation,
-          <br />TVA : non applicable (franchise en base de TVA, art. 293 B du CGI).
-        </p>
-        <p>Contact : <Link href={`mailto:${CONTACT}`} className="text-primary hover:underline">{CONTACT}</Link></p>
-      </LegalSection>
-
-      <LegalSection heading="Directeur de la publication">
-        <p>Wael Belkacem.</p>
-      </LegalSection>
-
-      <LegalSection heading="Hébergement">
-        <p>
-          L&apos;application est hébergée par <strong>Vercel Inc.</strong>, 340 S Lemon Ave #4133,
-          Walnut, CA 91789, États-Unis — vercel.com.
+          The {LEGAL.service} service is published by <strong>{LEGAL.founder}</strong> ({LEGAL.company}),
+          <br />Sole trader (entrepreneur individuel),
+          <br />{LEGAL.address},
+          <br />SIRET: {LEGAL.siret},
+          <br />VAT: not applicable (VAT exemption, art. 293 B of the French General Tax Code).
         </p>
         <p>
-          Les données applicatives sont hébergées par <strong>Supabase Inc.</strong> — supabase.com.
+          Email:{' '}
+          <Link href={`mailto:${LEGAL.founderEmail}`} className="text-primary hover:underline">{LEGAL.founderEmail}</Link>
+          {' · '}Website:{' '}
+          <a href={LEGAL.site} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{LEGAL.site}</a>
         </p>
       </LegalSection>
 
-      <LegalSection heading="Propriété intellectuelle">
+      <LegalSection heading="Publication director">
+        <p>{LEGAL.founder}.</p>
+      </LegalSection>
+
+      <LegalSection heading="Hosting">
         <p>
-          L&apos;ensemble des éléments du service (marque « Modify », code, design, textes) est protégé par le droit
-          de la propriété intellectuelle. Toute reproduction non autorisée est interdite.
+          The application is hosted by <strong>{LEGAL.host.name}</strong>, {LEGAL.host.address} —{' '}
+          <a href={LEGAL.host.site} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">vercel.com</a>.
+        </p>
+        <p>
+          Application data is stored by <strong>Supabase Inc.</strong> —{' '}
+          <a href="https://supabase.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">supabase.com</a>.
         </p>
       </LegalSection>
 
-      <LegalSection heading="Données personnelles">
+      <LegalSection heading="Intellectual property">
         <p>
-          Le traitement des données personnelles est décrit dans notre{' '}
-          <Link href="/privacy" className="text-primary hover:underline">politique de confidentialité</Link>.
+          All elements of the service (the &quot;{LEGAL.service}&quot; brand, source code, design and
+          text) are protected by intellectual property law. Any unauthorised reproduction or use is
+          prohibited.
+        </p>
+      </LegalSection>
+
+      <LegalSection heading="Personal data">
+        <p>
+          The processing of personal data is described in our{' '}
+          <Link href="/privacy" className="text-primary hover:underline">Privacy Policy</Link>, and the use
+          of cookies in our <Link href="/cookies" className="text-primary hover:underline">Cookie Policy</Link>.
         </p>
       </LegalSection>
 
       <LegalSection heading="Contact">
         <p>
-          Pour toute question : <Link href={`mailto:${CONTACT}`} className="text-primary hover:underline">{CONTACT}</Link>
-          {' '}— voir aussi la page <Link href="/contact" className="text-primary hover:underline">Contact</Link>.
+          For any question:{' '}
+          <Link href={`mailto:${LEGAL.contactEmail}`} className="text-primary hover:underline">{LEGAL.contactEmail}</Link>
+          {' '}— see also our <Link href="/support" className="text-primary hover:underline">Support</Link> page.
         </p>
       </LegalSection>
     </LegalShell>

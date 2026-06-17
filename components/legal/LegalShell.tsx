@@ -4,10 +4,13 @@ import Footer from '@/components/landing/Footer'
 export function LegalShell({
   title,
   updated,
+  updatedLabel = 'Dernière mise à jour',
   children,
 }: {
   title: string
   updated?: string
+  /** Label devant la date (ex. « Last updated » pour les pages anglaises). */
+  updatedLabel?: string
   children: React.ReactNode
 }) {
   return (
@@ -15,7 +18,7 @@ export function LegalShell({
       <Navbar />
       <article className="max-w-3xl mx-auto px-4 sm:px-6 pt-28 sm:pt-36 pb-16 sm:pb-24">
         <h1 className="font-syne font-bold text-3xl sm:text-4xl text-text-primary mb-3">{title}</h1>
-        {updated && <p className="text-text-muted text-sm mb-10">Dernière mise à jour : {updated}</p>}
+        {updated && <p className="text-text-muted text-sm mb-10">{updatedLabel} : {updated}</p>}
         <div className="space-y-8">{children}</div>
       </article>
       <Footer />

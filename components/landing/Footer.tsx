@@ -17,10 +17,11 @@ export default function Footer() {
         </p>
 
         <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-text-muted">
-          <Link href="/privacy" className="hover:text-text-secondary transition-colors">Confidentialité</Link>
-          <Link href="/terms" className="hover:text-text-secondary transition-colors">CGU</Link>
-          <Link href="/legal" className="hover:text-text-secondary transition-colors">Mentions légales</Link>
-          <Link href="/contact" className="hover:text-text-secondary transition-colors">Contact</Link>
+          <Link href="/terms" className="hover:text-text-secondary transition-colors">Terms</Link>
+          <Link href="/privacy" className="hover:text-text-secondary transition-colors">Privacy</Link>
+          <Link href="/cookies" className="hover:text-text-secondary transition-colors">Cookies</Link>
+          <Link href="/legal" className="hover:text-text-secondary transition-colors">Legal Notice</Link>
+          <Link href="/support" className="hover:text-text-secondary transition-colors">Support</Link>
         </div>
       </div>
     </footer>
