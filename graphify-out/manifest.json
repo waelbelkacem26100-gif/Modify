@@ -44,20 +44,10 @@
     "ast_hash": "6cbd7136fa852f1859645de6b95ad02b",
     "semantic_hash": "6cbd7136fa852f1859645de6b95ad02b"
   },
-  "/Users/bendou/Modify.io/modify/app/(site)/dashboard/audit/page.tsx": {
-    "mtime": 1781231529.4707067,
-    "ast_hash": "51dc1e6e43fb5cb6505c9b0e768d47bd",
-    "semantic_hash": "51dc1e6e43fb5cb6505c9b0e768d47bd"
-  },
   "/Users/bendou/Modify.io/modify/app/(site)/dashboard/connect/page.tsx": {
     "mtime": 1780344354.1059535,
     "ast_hash": "8fffcfb244848e0bb9cebe8dde46b00b",
     "semantic_hash": "8fffcfb244848e0bb9cebe8dde46b00b"
-  },
-  "/Users/bendou/Modify.io/modify/app/(site)/dashboard/corrections/page.tsx": {
-    "mtime": 1781230779.3837285,
-    "ast_hash": "63b1da53767adc602bab55bd1d4ecf78",
-    "semantic_hash": "63b1da53767adc602bab55bd1d4ecf78"
   },
   "/Users/bendou/Modify.io/modify/app/(site)/dashboard/error.tsx": {
     "mtime": 1780357043.993653,
@@ -65,14 +55,9 @@
     "semantic_hash": "3d82d60c7f6fbcacf66a5ca25b445d40"
   },
   "/Users/bendou/Modify.io/modify/app/(site)/dashboard/fixes/page.tsx": {
-    "mtime": 1781230838.1352382,
-    "ast_hash": "c52173179160d243bc370b7063f778b8",
-    "semantic_hash": "c52173179160d243bc370b7063f778b8"
-  },
-  "/Users/bendou/Modify.io/modify/app/(site)/dashboard/guides/page.tsx": {
-    "mtime": 1781230838.141371,
-    "ast_hash": "b6b55f3e332892015c5afd72b763ca52",
-    "semantic_hash": "b6b55f3e332892015c5afd72b763ca52"
+    "mtime": 1781728266.2475584,
+    "ast_hash": "41aa1b3814f7fad2f9ba8a077411c4a7",
+    "semantic_hash": ""
   },
   "/Users/bendou/Modify.io/modify/app/(site)/dashboard/layout.tsx": {
     "mtime": 1781492141.1764627,
@@ -113,16 +98,6 @@
     "mtime": 1781230838.137459,
     "ast_hash": "da00e20ab361dac4f85671811800380e",
     "semantic_hash": "da00e20ab361dac4f85671811800380e"
-  },
-  "/Users/bendou/Modify.io/modify/app/(site)/dashboard/tracking/_legacy.tsx": {
-    "mtime": 1781187278.0320756,
-    "ast_hash": "430556e08a14373ed28a3fee8ee3d256",
-    "semantic_hash": "430556e08a14373ed28a3fee8ee3d256"
-  },
-  "/Users/bendou/Modify.io/modify/app/(site)/dashboard/tracking/page.tsx": {
-    "mtime": 1781230838.1432452,
-    "ast_hash": "e39cdb33f4e755f4f131faa46ba2d626",
-    "semantic_hash": "e39cdb33f4e755f4f131faa46ba2d626"
   },
   "/Users/bendou/Modify.io/modify/app/(site)/dashboard/winning-products/page.tsx": {
     "mtime": 1781143831.0940237,
@@ -264,11 +239,6 @@
     "ast_hash": "aa4a91dab07d21ec1b36751fd2cd93e8",
     "semantic_hash": ""
   },
-  "/Users/bendou/Modify.io/modify/app/api/health/route.ts": {
-    "mtime": 1780605657.0574756,
-    "ast_hash": "51f7e4d193721c091865732cdfc912aa",
-    "semantic_hash": "51f7e4d193721c091865732cdfc912aa"
-  },
   "/Users/bendou/Modify.io/modify/app/api/images/compress/route.ts": {
     "mtime": 1780592907.9666271,
     "ast_hash": "ec1e80d560ab6cf0c9468e5e8a9b8efd",
@@ -308,11 +278,6 @@
     "mtime": 1780596781.9753842,
     "ast_hash": "ee85ed2ba0cd21706922dda5a102a7e0",
     "semantic_hash": "ee85ed2ba0cd21706922dda5a102a7e0"
-  },
-  "/Users/bendou/Modify.io/modify/app/api/score/route.ts": {
-    "mtime": 1780596230.0186117,
-    "ast_hash": "347128518716d5c19969cb81c193d32d",
-    "semantic_hash": "347128518716d5c19969cb81c193d32d"
   },
   "/Users/bendou/Modify.io/modify/app/api/seo/audit/route.ts": {
     "mtime": 1781144734.8773382,
@@ -404,19 +369,14 @@
     "ast_hash": "7672fb37f22cae6072e37aaf4ce219a4",
     "semantic_hash": ""
   },
-  "/Users/bendou/Modify.io/modify/components/dashboard/ActivationCard.tsx": {
-    "mtime": 1781132526.6692483,
-    "ast_hash": "334e2caf8ac298a2d8520acd19b61f72",
-    "semantic_hash": "334e2caf8ac298a2d8520acd19b61f72"
-  },
   "/Users/bendou/Modify.io/modify/components/dashboard/AgentChat.tsx": {
     "mtime": 1781668478.313755,
     "ast_hash": "459c3d0164ad5ad3f17920b8bb6d2eb7",
     "semantic_hash": ""
   },
   "/Users/bendou/Modify.io/modify/components/dashboard/AnalyseContent.tsx": {
-    "mtime": 1781706212.1956851,
-    "ast_hash": "727dbb2b20bb083c2f1769f5c48ad003",
+    "mtime": 1781726484.0049183,
+    "ast_hash": "f15afdfbbf9b2048d2af0ea49b819c06",
     "semantic_hash": ""
   },
   "/Users/bendou/Modify.io/modify/components/dashboard/AuditContent.tsx": {
@@ -439,16 +399,6 @@
     "ast_hash": "f3791a694734acd2c28e6b09b601b471",
     "semantic_hash": ""
   },
-  "/Users/bendou/Modify.io/modify/components/dashboard/DisconnectStoreButton.tsx": {
-    "mtime": 1780432801.2449362,
-    "ast_hash": "c857663b100fa3e64476d0e881978c1c",
-    "semantic_hash": "c857663b100fa3e64476d0e881978c1c"
-  },
-  "/Users/bendou/Modify.io/modify/components/dashboard/EmailReportButton.tsx": {
-    "mtime": 1780595598.1927269,
-    "ast_hash": "c55c79dc012cc46c3423a8168d2e6e2c",
-    "semantic_hash": "c55c79dc012cc46c3423a8168d2e6e2c"
-  },
   "/Users/bendou/Modify.io/modify/components/dashboard/FixPanel.tsx": {
     "mtime": 1781230859.815196,
     "ast_hash": "904a2530fc4363037b714c4088874b10",
@@ -459,20 +409,10 @@
     "ast_hash": "a276fa50a11e1632960708a153b34652",
     "semantic_hash": ""
   },
-  "/Users/bendou/Modify.io/modify/components/dashboard/GlobalScoreCard.tsx": {
-    "mtime": 1780596297.0181775,
-    "ast_hash": "ef0da3e847f6f8261167698b21148f92",
-    "semantic_hash": "ef0da3e847f6f8261167698b21148f92"
-  },
   "/Users/bendou/Modify.io/modify/components/dashboard/GuidesContent.tsx": {
     "mtime": 1781285151.6104574,
     "ast_hash": "49cbed3305ba36da97d7bbe40b8dc6f5",
     "semantic_hash": ""
-  },
-  "/Users/bendou/Modify.io/modify/components/dashboard/HealthCheck.tsx": {
-    "mtime": 1780605670.8752801,
-    "ast_hash": "8bdf229592c4064972fd964f374f4432",
-    "semantic_hash": "8bdf229592c4064972fd964f374f4432"
   },
   "/Users/bendou/Modify.io/modify/components/dashboard/ImageOptimizer.tsx": {
     "mtime": 1780592963.3648927,
@@ -484,11 +424,6 @@
     "ast_hash": "465891fb4c510644c8659a08efdcd148",
     "semantic_hash": "465891fb4c510644c8659a08efdcd148"
   },
-  "/Users/bendou/Modify.io/modify/components/dashboard/MetricCard.tsx": {
-    "mtime": 1780341777.55522,
-    "ast_hash": "3f708657b16b212afd6c67f81ca21a35",
-    "semantic_hash": "3f708657b16b212afd6c67f81ca21a35"
-  },
   "/Users/bendou/Modify.io/modify/components/dashboard/MobileNav.tsx": {
     "mtime": 1781704981.8619313,
     "ast_hash": "b3a5a52459ccf303ca6b06fb6f32ba0f",
@@ -498,11 +433,6 @@
     "mtime": 1781269006.2286856,
     "ast_hash": "c885e05b3c5724d08bc3bdeb038d745b",
     "semantic_hash": "c885e05b3c5724d08bc3bdeb038d745b"
-  },
-  "/Users/bendou/Modify.io/modify/components/dashboard/PageSpeedCard.tsx": {
-    "mtime": 1780594269.8727424,
-    "ast_hash": "74ba79ce095d5ee504e5723887dfe911",
-    "semantic_hash": "74ba79ce095d5ee504e5723887dfe911"
   },
   "/Users/bendou/Modify.io/modify/components/dashboard/ProductsContent.tsx": {
     "mtime": 1780596902.5149028,
@@ -515,8 +445,8 @@
     "semantic_hash": "87d3a7f2329bc5c831158da272d7c29c"
   },
   "/Users/bendou/Modify.io/modify/components/dashboard/Sidebar.tsx": {
-    "mtime": 1781704972.2570362,
-    "ast_hash": "03392517c50e2000372bb445e21c5289",
+    "mtime": 1781726475.6171467,
+    "ast_hash": "ebb38295773a7ead2572e7d90b466d33",
     "semantic_hash": ""
   },
   "/Users/bendou/Modify.io/modify/components/dashboard/StoreConnect.tsx": {
@@ -885,9 +815,9 @@
     "semantic_hash": "1f8983d8ab97eb3ea31ef47288908f47"
   },
   "/Users/bendou/Modify.io/modify/next.config.ts": {
-    "mtime": 1780765363.4316561,
-    "ast_hash": "6017c35ca8fda198362981bb006a0136",
-    "semantic_hash": "6017c35ca8fda198362981bb006a0136"
+    "mtime": 1781726503.9234228,
+    "ast_hash": "541b0ec2d5b3ac47e852f82440d935ed",
+    "semantic_hash": ""
   },
   "/Users/bendou/Modify.io/modify/package.json": {
     "mtime": 1780595476.3292432,
@@ -1034,19 +964,14 @@
     "ast_hash": "82efb97a359f5c7290bf2513d14686be",
     "semantic_hash": ""
   },
-  "/Users/bendou/Modify.io/modify/MIGRATION_NEW_APP.md": {
-    "mtime": 1780848229.127169,
-    "ast_hash": "8b060e9fd64e13c818791d5bb4cce756",
-    "semantic_hash": ""
-  },
   "/Users/bendou/Modify.io/modify/app/icon.svg": {
     "mtime": 1781432990.3676624,
     "ast_hash": "ce9a69120648d0c285bb6df809adf19a",
     "semantic_hash": ""
   },
   "/Users/bendou/Modify.io/modify/app/api/copilot/missions/route.ts": {
-    "mtime": 1781484719.0208519,
-    "ast_hash": "ff9d5bf900d3a2b657f3d0799e53c8f1",
+    "mtime": 1781726338.666396,
+    "ast_hash": "a6d4081f121794be6bda7cdb48aab41e",
     "semantic_hash": ""
   },
   "/Users/bendou/Modify.io/modify/components/dashboard/CopilotMissions.tsx": {
@@ -1069,14 +994,9 @@
     "ast_hash": "a73eff3682da3e5aab3b8cabc78f6719",
     "semantic_hash": ""
   },
-  "/Users/bendou/Modify.io/modify/app/(site)/dashboard/resultats/preuves/page.tsx": {
-    "mtime": 1781346249.7153726,
-    "ast_hash": "4cffeadcc8ae8e8a1dafd2fa49dc32ba",
-    "semantic_hash": ""
-  },
   "/Users/bendou/Modify.io/modify/app/api/proofs/route.ts": {
-    "mtime": 1781483188.989051,
-    "ast_hash": "4bba4220936bacd3c28300f8e6b62424",
+    "mtime": 1781726331.051376,
+    "ast_hash": "b361fb9e6726be42d61b26a4bce4c2a0",
     "semantic_hash": ""
   },
   "/Users/bendou/Modify.io/modify/components/analyse/RecentActivityFeed.tsx": {
@@ -1095,8 +1015,8 @@
     "semantic_hash": ""
   },
   "/Users/bendou/Modify.io/modify/components/proofs/ProofsContent.tsx": {
-    "mtime": 1781484801.782267,
-    "ast_hash": "09abb78034a54a1d5f15004203c22124",
+    "mtime": 1781726400.7401867,
+    "ast_hash": "8a01be8e364d4417acd712ee9b05cee9",
     "semantic_hash": ""
   },
   "/Users/bendou/Modify.io/modify/components/proofs/StructuredDataExplainer.tsx": {
@@ -1115,8 +1035,8 @@
     "semantic_hash": ""
   },
   "/Users/bendou/Modify.io/modify/app/api/audit/strengths/route.ts": {
-    "mtime": 1781483169.510674,
-    "ast_hash": "5844bbbccac74d5488b3befeb7a4e0c1",
+    "mtime": 1781726322.9534128,
+    "ast_hash": "a4a51fafe3afeb19bc9e58033e0060df",
     "semantic_hash": ""
   },
   "/Users/bendou/Modify.io/modify/components/brand/ModyAvatar.tsx": {
@@ -1125,13 +1045,13 @@
     "semantic_hash": ""
   },
   "/Users/bendou/Modify.io/modify/components/dashboard/ModyBanner.tsx": {
-    "mtime": 1781483237.6616032,
-    "ast_hash": "fb638ea52b16431194f0ec7387554320",
+    "mtime": 1781726402.970778,
+    "ast_hash": "2b2964412413d12f17e950200f7c4ac9",
     "semantic_hash": ""
   },
   "/Users/bendou/Modify.io/modify/components/dashboard/ModyCompanion.tsx": {
-    "mtime": 1781703851.731329,
-    "ast_hash": "9fa1b0f3d562ee04831524c6eaf58222",
+    "mtime": 1781726402.2467754,
+    "ast_hash": "ef629c61e167f8bdbf0db3b53a5c2f4b",
     "semantic_hash": ""
   },
   "/Users/bendou/Modify.io/modify/lib/audit/accessibility.ts": {
@@ -1157,26 +1077,6 @@
   "/Users/bendou/Modify.io/modify/scripts/compare-audit-v5.mjs": {
     "mtime": 1781318376.6033301,
     "ast_hash": "358fc36bfe4217b25b08d7458cfae9e0",
-    "semantic_hash": ""
-  },
-  "/Users/bendou/Modify.io/modify/MODY_BRANDING_NOTES.md": {
-    "mtime": 1781402564.2718399,
-    "ast_hash": "8105d5f3ff3642734f110334ed32c304",
-    "semantic_hash": ""
-  },
-  "/Users/bendou/Modify.io/modify/app/(site)/preview/page.tsx": {
-    "mtime": 1781483327.2202094,
-    "ast_hash": "6cb251899b93de440facb18eb66b5878",
-    "semantic_hash": ""
-  },
-  "/Users/bendou/Modify.io/modify/lib/preview.ts": {
-    "mtime": 1781483158.0194588,
-    "ast_hash": "b0cc8f04fb14036e4b7ad6bddb639e89",
-    "semantic_hash": ""
-  },
-  "/Users/bendou/Modify.io/modify/app/(site)/preview/resultats/page.tsx": {
-    "mtime": 1781484814.0053055,
-    "ast_hash": "5ac3617291debcacff12d20ca1559a42",
     "semantic_hash": ""
   },
   "/Users/bendou/Modify.io/modify/lib/suivi-data.ts": {
@@ -1214,11 +1114,6 @@
     "ast_hash": "a211ac1e3fd801cd77acc3716807c1ce",
     "semantic_hash": ""
   },
-  "/Users/bendou/Modify.io/modify/app/(site)/preview/pilote/page.tsx": {
-    "mtime": 1781581610.5753493,
-    "ast_hash": "b5ad5d7d418e2bdcd32e3e99dc192902",
-    "semantic_hash": ""
-  },
   "/Users/bendou/Modify.io/modify/app/api/webhooks/products/create/route.ts": {
     "mtime": 1781582783.0813034,
     "ast_hash": "e1f9e82c364b87e80344d35c77ae84d7",
@@ -1237,11 +1132,6 @@
   "/Users/bendou/Modify.io/modify/supabase/migrations/019_autopilot_v10.sql": {
     "mtime": 1781581507.973183,
     "ast_hash": "4b9ce3c888e82171a841fa0e9de31a64",
-    "semantic_hash": ""
-  },
-  "/Users/bendou/Modify.io/modify/app/api/autopilot/optimize/route.ts": {
-    "mtime": 1781582974.970912,
-    "ast_hash": "befc4a52e04c7e27b0d708c85ab42211",
     "semantic_hash": ""
   },
   "/Users/bendou/Modify.io/modify/lib/autopilot/product-optimizer.ts": {
@@ -1285,18 +1175,18 @@
     "semantic_hash": ""
   },
   "/Users/bendou/Modify.io/modify/app/api/cron/competitor-monitor/route.ts": {
-    "mtime": 1781646529.3696437,
-    "ast_hash": "be2380f7a56c5e7ae12abb4ae700d22a",
+    "mtime": 1781726350.8314583,
+    "ast_hash": "fa669cf82c6e936648ea9f413a71c456",
     "semantic_hash": ""
   },
   "/Users/bendou/Modify.io/modify/app/api/cron/price-suggest/route.ts": {
-    "mtime": 1781646805.1217942,
-    "ast_hash": "58fc2fac01add41112246c99b6770bca",
+    "mtime": 1781726357.1698682,
+    "ast_hash": "655313cf490ef63311a7208c1dda8345",
     "semantic_hash": ""
   },
   "/Users/bendou/Modify.io/modify/app/api/cron/trend-predict/route.ts": {
-    "mtime": 1781646792.3613276,
-    "ast_hash": "c6aec8a0fea49c9841a5bb759a55794a",
+    "mtime": 1781726362.5719094,
+    "ast_hash": "28998ca9843ddf8c1ca443c41d2fea2e",
     "semantic_hash": ""
   },
   "/Users/bendou/Modify.io/modify/lib/autopilot/competitive.ts": {
@@ -1332,6 +1222,16 @@
   "/Users/bendou/Modify.io/modify/components/dashboard/UrgentBanner.tsx": {
     "mtime": 1781705033.9407134,
     "ast_hash": "b1ed357bac811e84bd16f29434915cad",
+    "semantic_hash": ""
+  },
+  "/Users/bendou/Modify.io/modify/docs/ARCHITECTURE.md": {
+    "mtime": 1781718252.9177885,
+    "ast_hash": "e086af10acb4b0b3eb2849c74982846d",
+    "semantic_hash": ""
+  },
+  "/Users/bendou/Modify.io/modify/docs/AUDIT-TECHNIQUE.md": {
+    "mtime": 1781726562.1309216,
+    "ast_hash": "44f6162fed416325b7e288eb9c733e1a",
     "semantic_hash": ""
   }
 }
