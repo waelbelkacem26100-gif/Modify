@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   description: 'Contactez l\'équipe Modify : support, confidentialité, questions légales.',
 }
 
-const EMAIL = 'waelbelkacem26100@gmail.com'
+const EMAIL = 'contact@modifea.com'
 
 const channels = [
   { icon: LifeBuoy, title: 'Support', desc: 'Aide à l\'installation, questions sur le service, problème technique.', email: EMAIL },

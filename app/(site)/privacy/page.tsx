@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 }
 
 const UPDATED = '4 juin 2026'
-const CONTACT = 'waelbelkacem26100@gmail.com'
+const CONTACT = 'contact@modifea.com'
 
 export default function PrivacyPage() {
   return (

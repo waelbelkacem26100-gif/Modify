@@ -188,7 +188,7 @@ Aucun package orphelin détecté. `sharp` correctement déclaré dans `serverExt
    - `STRIPE_WEBHOOK_SECRET` (récupérer depuis Stripe Dashboard > Webhooks)
    - `CRON_SECRET` (générer avec `openssl rand -hex 32`) — désormais **obligatoire** pour les liens d'approbation (plus de fallback)
    - `RESEND_API_KEY` (depuis resend.com)
-   - `EMAIL_FROM` (ex: `Modify <rapport@modify-coral.vercel.app>`)
+   - `EMAIL_FROM` (ex: `Modify <contact@modifea.com>`)
 
 2. **Remplacer `ESTIMATED_DAILY_SESSIONS`** par une vraie intégration analytics Shopify (GA4 / Shopify Analytics API). Sans source de sessions réelle, le `conversion_rate` resterait une approximation.
 

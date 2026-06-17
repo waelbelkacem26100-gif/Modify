@@ -1,6 +1,6 @@
 import { Resend } from 'resend'
 
-const FROM = process.env.EMAIL_FROM ?? 'Modify <rapport@modify-coral.vercel.app>'
+const FROM = process.env.EMAIL_FROM ?? 'Modify <contact@modifea.com>'
 
 export interface WeeklyReportData {
   shopName: string
