@@ -11,21 +11,14 @@ export async function createCheckoutSession(
   plan: PaidPlanId = 'starter'
 ): Promise<string> {
   const p = PLANS[plan]
+  if (!p.stripePriceId) throw new Error(`No Stripe price configured for plan "${plan}"`)
   const session = await stripe.checkout.sessions.create({
     mode: 'subscription',
     payment_method_types: ['card'],
     customer_email: email,
     line_items: [
       {
-        price_data: {
-          currency: 'eur',
-          product_data: {
-            name: `Modify — ${p.name}`,
-            description: p.tagline,
-          },
-          unit_amount: p.amountCents,
-          recurring: { interval: 'month' },
-        },
+        price: p.stripePriceId,
         quantity: 1,
       },
     ],

@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { Check } from 'lucide-react'
 import { PLANS, type PlanId } from '@/lib/pricing'
 
-const ORDER: PlanId[] = ['free', 'starter', 'pro']
+const ORDER: PlanId[] = ['free', 'starter', 'pro', 'agency']
 
 export default function Pricing() {
   return (
@@ -18,7 +18,7 @@ export default function Pricing() {
           </p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-5 max-w-5xl mx-auto items-start">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5 max-w-6xl mx-auto items-start">
           {ORDER.map((id) => {
             const p = PLANS[id]
             const featured = p.highlight
@@ -72,7 +72,7 @@ export default function Pricing() {
         </div>
 
         <p className="text-center text-text-muted text-xs mt-8">
-          14 jours d’essai gratuit sur Starter et Pro · Sans engagement · Annulable à tout moment
+          14 jours d’essai gratuit sur les plans payants · Sans engagement · Annulable à tout moment
         </p>
       </div>
     </section>

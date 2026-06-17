@@ -77,8 +77,8 @@ export default function WinningProductsFeed() {
             <Lock className="w-4 h-4 text-primary flex-shrink-0" />
             <p className="text-text-secondary text-sm">
               {plan === 'free'
-                ? 'Passez à Starter (9€) pour 5 produits/semaine, ou Pro (29€) pour des produits gagnants chaque jour.'
-                : 'Passez à Pro (29€) pour de nouveaux produits gagnants chaque jour.'}
+                ? 'Passez à Starter (19€) pour 5 produits/semaine, ou Pro (49€) pour des produits gagnants chaque jour.'
+                : 'Passez à Pro (49€) pour de nouveaux produits gagnants chaque jour.'}
             </p>
           </div>
           <div className="w-full sm:w-auto">

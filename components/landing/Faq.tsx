@@ -18,7 +18,7 @@ const QA = [
   },
   {
     q: 'Combien ça coûte ?',
-    a: 'Gratuit pour découvrir (analyse + 3 problèmes visibles). Starter à 9€/mois pour l’analyse complète chaque semaine. Pro à 29€/mois pour tout en automatique : corrections hebdomadaires, articles de blog, coach dédié. Essai de 14 jours, sans engagement.',
+    a: 'Gratuit pour découvrir (analyse + 3 problèmes visibles). Starter à 19€/mois pour l’analyse complète chaque semaine. Pro à 49€/mois pour tout en automatique : corrections hebdomadaires, articles de blog, coach dédié. Agency à 149€/mois pour plusieurs boutiques, veille concurrentielle et suggestions de prix. Essai de 14 jours, sans engagement.',
   },
 ]
 

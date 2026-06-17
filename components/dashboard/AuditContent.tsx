@@ -202,7 +202,7 @@ export default function AuditPage({ isSubscribed }: { isSubscribed: boolean }) {
                             Débloquez tous les problèmes et leurs correctifs.
                           </p>
                           <SubscribeButton />
-                          <p className="text-text-muted text-[11px] mt-2">Voir tous les problèmes — 9€/mois</p>
+                          <p className="text-text-muted text-[11px] mt-2">Voir tous les problèmes — 19€/mois</p>
                         </div>
                       </div>
                     )}

@@ -29,8 +29,9 @@ export function hasActiveAccess(subscription: Subscription | null): boolean {
   return ['active', 'trialing'].includes(subscription.status)
 }
 
-// Resolved plan for an active subscriber: 'pro' | 'starter', else 'free'.
+// Resolved access tier for an active subscriber: 'pro' | 'starter', else 'free'.
+// Agency unlocks everything Pro does, so it resolves to 'pro' for gating.
 export function planFor(subscription: Subscription | null): PlanId {
   if (!hasActiveAccess(subscription)) return 'free'
-  return subscription?.plan === 'pro' ? 'pro' : 'starter'
+  return subscription?.plan === 'pro' || subscription?.plan === 'agency' ? 'pro' : 'starter'
 }

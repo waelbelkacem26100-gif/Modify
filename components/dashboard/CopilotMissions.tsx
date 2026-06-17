@@ -343,7 +343,7 @@ export default function CopilotMissions({ isPro, hasAccess, initialMissionTitle 
             <div className="bg-gradient-to-br from-primary/15 to-primary/5 border border-primary/25 rounded-2xl p-6 text-center">
               <p className="font-syne font-semibold text-text-primary mb-1">Débloquez toutes vos missions</p>
               <p className="text-text-secondary text-sm mb-4">Contenu complet généré pour chaque mission + Copilot illimité.</p>
-              <SubscribeButton plan="pro" size="md" label="Passer à Pro — 29€/mois" />
+              <SubscribeButton plan="pro" size="md" label="Passer à Pro — 49€/mois" />
             </div>
           )}
         </div>

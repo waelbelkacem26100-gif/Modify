@@ -11,7 +11,7 @@ import type { Store, WinningProduct } from '@/types'
 export const runtime = 'nodejs'
 export const maxDuration = 300
 
-const COUNT_BY_PLAN: Record<PlanId, number> = { free: 3, starter: 5, pro: 5 }
+const COUNT_BY_PLAN: Record<PlanId, number> = { free: 3, starter: 5, pro: 5, agency: 5 }
 
 async function userStore(supabase: Awaited<ReturnType<typeof createServiceRoleClient>>, userId: string) {
   const { data } = await supabase

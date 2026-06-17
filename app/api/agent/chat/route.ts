@@ -11,7 +11,7 @@ import type { Store } from '@/types'
 export const runtime = 'nodejs'
 export const maxDuration = 120
 
-// Free/Starter get a short preview; the agent is a Pro (29€) feature.
+// Free/Starter get a short preview; the agent is a Pro (49€) feature.
 const PREVIEW_USER_MESSAGES = 3
 
 export async function POST(request: NextRequest) {
@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
   const userTurns = messages.filter((m) => m.role === 'user').length
   if (!isPro && userTurns > PREVIEW_USER_MESSAGES) {
     return NextResponse.json({
-      error: 'L’assistant illimité est réservé au plan Pro (29€).',
+      error: 'L’assistant illimité est réservé au plan Pro (49€).',
       code: 'UPGRADE_REQUIRED',
     }, { status: 402 })
   }

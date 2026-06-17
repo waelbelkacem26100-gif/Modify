@@ -210,8 +210,8 @@ export default function AgentChat({ isPro, missionId, compact }: AgentChatProps)
           <div className="bg-surface border border-primary/30 rounded-2xl p-5 text-center max-w-md mx-auto">
             <Lock className="w-6 h-6 text-primary mx-auto mb-2" />
             <p className="text-text-primary font-semibold text-sm mb-1">Continuez avec votre conseiller en illimité</p>
-            <p className="text-text-secondary text-xs mb-4">L’assistant complet est inclus dans le plan Pro (29€/mois).</p>
-            <SubscribeButton plan="pro" size="md" label="Passer à Pro — 29€/mois" />
+            <p className="text-text-secondary text-xs mb-4">L’assistant complet est inclus dans le plan Pro (49€/mois).</p>
+            <SubscribeButton plan="pro" size="md" label="Passer à Pro — 49€/mois" />
           </div>
         )}
 
