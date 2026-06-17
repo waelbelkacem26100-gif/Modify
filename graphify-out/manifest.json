@@ -1278,5 +1278,10 @@
     "mtime": 1781733491.1258285,
     "ast_hash": "b18ab2002849ba09e4eddaeb97c62040",
     "semantic_hash": ""
+  },
+  "/Users/bendou/Modify.io/modify/app/robots.ts": {
+    "mtime": 1781735193.1442542,
+    "ast_hash": "d848817bfb560e8738c7ea99c24f2d93",
+    "semantic_hash": ""
   }
 }
