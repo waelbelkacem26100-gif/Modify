@@ -8,8 +8,13 @@ import crypto from 'crypto'
  */
 const TTL_SECONDS = 8 * 24 * 60 * 60 // 8 days — valid until past the next weekly run
 
+// Signing key = CRON_SECRET only. We deliberately do NOT fall back to
+// SHOPIFY_CLIENT_SECRET: reusing the OAuth secret to sign approval links would
+// share one key across two trust domains. If CRON_SECRET is unset we fail
+// closed — signApprovalToken/verifyApprovalToken return null (no link issued,
+// no approval accepted) rather than mint an insecurely-signed token.
 function key(): string | null {
-  return process.env.CRON_SECRET || process.env.SHOPIFY_CLIENT_SECRET || null
+  return process.env.CRON_SECRET || null
 }
 
 export function signApprovalToken(storeId: string): string | null {
