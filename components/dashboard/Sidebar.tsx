@@ -41,16 +41,6 @@ export default function Sidebar({ shopDomain }: Props) {
   const [disconnecting, setDisconnecting] = useState(false)
   const [accountOpen, setAccountOpen] = useState(false)
 
-  // Mode preview : les liens de nav pointent vers /preview/* (avec le token) pour
-  // que la démo publique reste navigable sans authentification.
-  const previewMode = pathname.startsWith('/preview')
-  const previewQs = typeof window !== 'undefined' && previewMode ? window.location.search : ''
-  const navHref = (href: string) => {
-    if (!previewMode) return href
-    const base = href === '/dashboard' ? '/preview' : href.replace('/dashboard', '/preview')
-    return base + previewQs
-  }
-
   async function handleDisconnect() {
     if (!shopDomain) return
     const ok = window.confirm(
@@ -97,12 +87,11 @@ export default function Sidebar({ shopDomain }: Props) {
       {/* 2 espaces principaux — grands, explicites */}
       <nav className="flex-1 px-3 py-2 space-y-2">
         {SPACES.map((s) => {
-          // En preview, on normalise /preview → /dashboard pour l'état actif.
-          const active = s.match(previewMode ? pathname.replace('/preview', '/dashboard') || '/dashboard' : pathname)
+          const active = s.match(pathname)
           return (
             <Link
               key={s.href}
-              href={navHref(s.href)}
+              href={s.href}
               className={[
                 'flex items-center gap-3 px-3 py-2.5 rounded-r-xl border-l-[3px] transition-all duration-150',
                 active

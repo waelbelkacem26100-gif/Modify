@@ -1,18 +1,14 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { createServiceRoleClient } from '@/lib/supabase-server'
 import { auditStrengths, checksRunTotal } from '@/lib/audit/orchestrator'
-import { PREVIEW_TOKEN, PREVIEW_ADMIN_USER_ID } from '@/lib/preview'
 import type { Store, Audit } from '@/types'
 
 export const runtime = 'nodejs'
 
 // GET — points forts + nombre de checks réellement exécutés pour le dernier audit terminé.
-export async function GET(request: NextRequest) {
-  const { userId: clerkUserId } = await auth()
-  // Preview publique TEMPORAIRE (lecture seule) : bypass admin par token.
-  const userId = clerkUserId
-    ?? (request.nextUrl.searchParams.get('token') === PREVIEW_TOKEN ? PREVIEW_ADMIN_USER_ID : null)
+export async function GET() {
+  const { userId } = await auth()
   if (!userId) return new NextResponse('Unauthorized', { status: 401 })
 
   const supabase = await createServiceRoleClient()

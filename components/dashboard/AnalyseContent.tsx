@@ -16,7 +16,6 @@ import ModyBanner from '@/components/dashboard/ModyBanner'
 import UrgentBanner from '@/components/dashboard/UrgentBanner'
 import ProofCard from '@/components/proofs/ProofCard'
 import { openMody } from '@/lib/mody-companion'
-import { withPreviewToken } from '@/lib/preview'
 import { useCountUp } from '@/lib/use-count-up'
 import EmptyStateIllustration from '@/components/brand/EmptyStateIllustration'
 import { categoryPresentation } from '@/lib/fix-presentation'
@@ -114,7 +113,7 @@ export default function AnalyseContent({ isSubscribed, shopDomain, initialAudit,
   // Fetch strengths + dynamic checks count once audit is completed.
   const fetchStrengths = useCallback(async () => {
     try {
-      const res = await fetch(withPreviewToken('/api/audit/strengths'))
+      const res = await fetch('/api/audit/strengths')
       if (!res.ok) return
       const d = await res.json() as { strengths: Strength[]; checksRun: number | null }
       setStrengths(d.strengths ?? [])
@@ -125,7 +124,7 @@ export default function AnalyseContent({ isSubscribed, shopDomain, initialAudit,
   // Fetch applied-fix proofs and key them by normalized title for in-card display.
   const fetchProofs = useCallback(async () => {
     try {
-      const res = await fetch(withPreviewToken('/api/proofs?limit=50'))
+      const res = await fetch('/api/proofs?limit=50')
       if (!res.ok) return
       const d = await res.json() as { proofs?: ProofRecord[]; shopDomain?: string }
       const m = new Map<string, ProofRecord>()

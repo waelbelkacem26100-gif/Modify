@@ -10,6 +10,15 @@ const nextConfig: NextConfig = {
       { protocol: 'https', hostname: '*.myshopify.com' },
     ],
   },
+  async redirects() {
+    return [
+      { source: '/dashboard/audit', destination: '/dashboard', permanent: true },
+      { source: '/dashboard/tracking', destination: '/dashboard/resultats', permanent: true },
+      { source: '/dashboard/guides', destination: '/dashboard/accompagnement', permanent: true },
+      { source: '/dashboard/corrections', destination: '/dashboard/fixes', permanent: true },
+      { source: '/dashboard/resultats/preuves', destination: '/dashboard/resultats#galerie-impact', permanent: true },
+    ]
+  },
   // Allow the embedded App Bridge surface to be framed by the Shopify admin.
   async headers() {
     return [

@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react'
 import { ArrowLeft, ArrowRight, Camera } from 'lucide-react'
 import ProofCard from '@/components/proofs/ProofCard'
-import { withPreviewToken } from '@/lib/preview'
 import type { ProofRecord } from '@/lib/proofs/types'
 
 const PAGE_SIZE = 20
@@ -27,7 +26,7 @@ export default function ProofsContent({ embedded = false }: { embedded?: boolean
   const [shown, setShown] = useState(PAGE_SIZE)
 
   useEffect(() => {
-    fetch(withPreviewToken('/api/proofs?limit=50'))
+    fetch('/api/proofs?limit=50')
       .then((r) => r.ok ? r.json() : null)
       .then((d) => setData(d))
       .finally(() => setLoading(false))
