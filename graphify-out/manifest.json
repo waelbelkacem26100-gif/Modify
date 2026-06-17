@@ -585,9 +585,9 @@
     "semantic_hash": ""
   },
   "/Users/bendou/Modify.io/modify/components/landing/Navbar.tsx": {
-    "mtime": 1780606070.1677861,
-    "ast_hash": "2492df0df7e24e660b53288787059f59",
-    "semantic_hash": "2492df0df7e24e660b53288787059f59"
+    "mtime": 1781716938.5718179,
+    "ast_hash": "f8f525f62bc70f1f88c178f652fd2c86",
+    "semantic_hash": ""
   },
   "/Users/bendou/Modify.io/modify/components/landing/Pricing.tsx": {
     "mtime": 1781668455.187702,
@@ -1180,8 +1180,8 @@
     "semantic_hash": ""
   },
   "/Users/bendou/Modify.io/modify/lib/suivi-data.ts": {
-    "mtime": 1781706311.3133647,
-    "ast_hash": "36f3879119036f12760b34afeb608032",
+    "mtime": 1781716978.0199482,
+    "ast_hash": "9dcd8e230335a23a64d4bc7faca2fb89",
     "semantic_hash": ""
   },
   "/Users/bendou/Modify.io/modify/components/landing/ModySection.tsx": {

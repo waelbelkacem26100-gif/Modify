@@ -61,11 +61,22 @@ export async function buildSuiviData(store: Store, plan: 'free' | 'pro' | string
   const { data: audits } = await supabase.from('audits').select('id').eq('store_id', store.id)
   const auditIds = (audits ?? []).map((a: { id: string }) => a.id)
   const { data: fixesRows } = auditIds.length
-    ? await supabase.from('fixes').select('id, title, impact_euros, created_at, status')
-        .in('audit_id', auditIds).eq('status', 'applied').order('impact_euros', { ascending: false })
+    ? await supabase.from('fixes').select('id, title, type, impact_euros, created_at, status')
+        .in('audit_id', auditIds).eq('status', 'applied').order('created_at', { ascending: false })
     : { data: [] }
-  const appliedFixes = ((fixesRows ?? []) as Pick<Fix, 'id' | 'title' | 'impact_euros' | 'created_at' | 'status'>[])
+  // Dédup par issue (type + titre normalisé) : un même problème corrigé sur
+  // plusieurs audits ne doit apparaître — ni compter dans le total — qu'une
+  // seule fois. Rows triées created_at desc ⇒ on garde la plus récente.
+  const seenIssues = new Set<string>()
+  const appliedFixes = ((fixesRows ?? []) as Pick<Fix, 'id' | 'title' | 'type' | 'impact_euros' | 'created_at' | 'status'>[])
+    .filter((f) => {
+      const key = `${f.type}::${(f.title ?? '').trim().toLowerCase()}`
+      if (seenIssues.has(key)) return false
+      seenIssues.add(key)
+      return true
+    })
     .map((f) => ({ id: f.id, title: f.title, impact_euros: f.impact_euros, created_at: f.created_at }))
+    .sort((a, b) => b.impact_euros - a.impact_euros)
   const recovered = appliedFixes.reduce((s, f) => s + f.impact_euros, 0)
   const firstFixDate = appliedFixes.length
     ? [...appliedFixes].sort((a, b) => +new Date(a.created_at) - +new Date(b.created_at))[0].created_at

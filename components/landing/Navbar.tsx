@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useUser } from '@clerk/nextjs'
 import { Zap, Menu, X } from 'lucide-react'
+import ThemeToggle from '@/components/ThemeToggle'
 
 export default function Navbar() {
   const { isSignedIn } = useUser()
@@ -35,6 +36,7 @@ export default function Navbar() {
 
         {/* Desktop CTA */}
         <div className="hidden sm:flex items-center gap-3">
+          <ThemeToggle />
           {isSignedIn ? (
             <Link
               href="/dashboard"
@@ -60,8 +62,9 @@ export default function Navbar() {
           )}
         </div>
 
-        {/* Mobile: CTA button + hamburger */}
+        {/* Mobile: toggle thème + CTA button + hamburger */}
         <div className="flex sm:hidden items-center gap-2">
+          <ThemeToggle />
           {isSignedIn ? (
             <Link
               href="/dashboard"

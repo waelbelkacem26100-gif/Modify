@@ -1,16 +1,16 @@
 # Graph Report - modify  (2026-06-17)
 
 ## Corpus Check
-- 266 files · ~108,479 words
+- 266 files · ~108,562 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 1101 nodes · 2548 edges · 84 communities (67 shown, 17 thin omitted)
+- 1101 nodes · 2549 edges · 90 communities (71 shown, 19 thin omitted)
 - Extraction: 98% EXTRACTED · 2% INFERRED · 0% AMBIGUOUS · INFERRED: 46 edges (avg confidence: 0.8)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `8789eac7`
+- Built from commit: `a710f2fd`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -84,6 +84,11 @@
 - [[_COMMUNITY_Community 81|Community 81]]
 - [[_COMMUNITY_Community 82|Community 82]]
 - [[_COMMUNITY_Community 83|Community 83]]
+- [[_COMMUNITY_Community 84|Community 84]]
+- [[_COMMUNITY_Community 85|Community 85]]
+- [[_COMMUNITY_Community 86|Community 86]]
+- [[_COMMUNITY_Community 87|Community 87]]
+- [[_COMMUNITY_Community 89|Community 89]]
 
 ## God Nodes (most connected - your core abstractions)
 1. `createServiceRoleClient()` - 146 edges
@@ -112,7 +117,7 @@
 ## Import Cycles
 - None detected.
 
-## Communities (84 total, 17 thin omitted)
+## Communities (90 total, 19 thin omitted)
 
 ### Community 0 - "Community 0"
 Cohesion: 0.26
@@ -127,12 +132,12 @@ Cohesion: 0.06
 Nodes (65): anthropic, competitiveAgent, funnelAgent, mobileAgent, performanceSeoAgent, productPagesAgent, anthropic, AuditAgent (+57 more)
 
 ### Community 3 - "Community 3"
-Cohesion: 0.06
-Nodes (57): GET(), page(), runFullAuditSequential(), GET(), applyPendingFixesForStore(), getPendingFixes(), PendingFix, SupabaseClient (+49 more)
+Cohesion: 0.07
+Nodes (48): GET(), page(), runFullAuditSequential(), applyPendingFixesForStore(), getPendingFixes(), PendingFix, SupabaseClient, ApprovalEmailData (+40 more)
 
 ### Community 4 - "Community 4"
-Cohesion: 0.05
-Nodes (16): channels, metadata, categories, QA, steps, METIERS, breakdown, max (+8 more)
+Cohesion: 0.13
+Nodes (3): categories, steps, METIERS
 
 ### Community 5 - "Community 5"
 Cohesion: 0.06
@@ -322,20 +327,32 @@ Nodes (3): DomainTooltip(), euros(), DomainScore
 Cohesion: 0.40
 Nodes (3): BadgeProps, BadgeVariant, variantClasses
 
+### Community 84 - "Community 84"
+Cohesion: 0.26
+Nodes (6): LegalList(), LegalSection(), LegalShell(), metadata, metadata, metadata
+
+### Community 85 - "Community 85"
+Cohesion: 0.24
+Nodes (9): GET(), CheckStatus, envCheck(), HealthCheck, HealthReport, REQUIRED_SCOPES, REQUIRED_TABLES, runHealthChecks() (+1 more)
+
+### Community 86 - "Community 86"
+Cohesion: 0.33
+Nodes (4): breakdown, max, stats, total
+
 ## Knowledge Gaps
 - **333 isolated node(s):** `PreToolUse`, `trust_badges`, `social_proof`, `urgency`, `json_ld` (+328 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **17 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **19 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `createServiceRoleClient()` connect `Community 13` to `Community 0`, `Community 1`, `Community 2`, `Community 3`, `Community 6`, `Community 11`, `Community 14`, `Community 16`, `Community 21`, `Community 23`, `Community 24`, `Community 25`, `Community 32`, `Community 38`, `Community 71`, `Community 72`, `Community 73`, `Community 76`, `Community 78`, `Community 79`, `Community 80`, `Community 81`?**
-  _High betweenness centrality (0.123) - this node is a cross-community bridge._
-- **Why does `Store` connect `Community 3` to `Community 0`, `Community 1`, `Community 2`, `Community 6`, `Community 11`, `Community 12`, `Community 13`, `Community 14`, `Community 16`, `Community 20`, `Community 21`, `Community 24`, `Community 25`, `Community 32`, `Community 38`, `Community 44`, `Community 71`, `Community 72`, `Community 73`, `Community 76`, `Community 78`, `Community 79`, `Community 80`, `Community 81`?**
-  _High betweenness centrality (0.077) - this node is a cross-community bridge._
+- **Why does `createServiceRoleClient()` connect `Community 13` to `Community 0`, `Community 1`, `Community 2`, `Community 3`, `Community 6`, `Community 11`, `Community 14`, `Community 16`, `Community 21`, `Community 23`, `Community 24`, `Community 25`, `Community 32`, `Community 38`, `Community 71`, `Community 72`, `Community 73`, `Community 76`, `Community 78`, `Community 79`, `Community 80`, `Community 81`, `Community 85`?**
+  _High betweenness centrality (0.124) - this node is a cross-community bridge._
+- **Why does `Store` connect `Community 3` to `Community 0`, `Community 1`, `Community 2`, `Community 6`, `Community 11`, `Community 12`, `Community 13`, `Community 14`, `Community 16`, `Community 20`, `Community 21`, `Community 24`, `Community 25`, `Community 32`, `Community 38`, `Community 44`, `Community 71`, `Community 72`, `Community 73`, `Community 76`, `Community 78`, `Community 79`, `Community 80`, `Community 81`, `Community 85`?**
+  _High betweenness centrality (0.080) - this node is a cross-community bridge._
 - **Why does `PlanId` connect `Community 76` to `Community 0`, `Community 10`?**
-  _High betweenness centrality (0.028) - this node is a cross-community bridge._
+  _High betweenness centrality (0.019) - this node is a cross-community bridge._
 - **Are the 13 inferred relationships involving `createServiceRoleClient()` (e.g. with `POST()` and `POST()`) actually correct?**
   _`createServiceRoleClient()` has 13 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `PreToolUse`, `trust_badges`, `social_proof` to the rest of the system?**
@@ -343,4 +360,4 @@ _Questions this graph is uniquely positioned to answer:_
 - **Should `Community 2` be split into smaller, more focused modules?**
   _Cohesion score 0.05714285714285714 - nodes in this community are weakly interconnected._
 - **Should `Community 3` be split into smaller, more focused modules?**
-  _Cohesion score 0.05517503805175038 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.06874669487043893 - nodes in this community are weakly interconnected._
