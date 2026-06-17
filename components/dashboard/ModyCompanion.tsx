@@ -138,8 +138,11 @@ export default function ModyCompanion({ isPro, hasAccess }: Props) {
               </button>
             </div>
 
-            {/* Corps — réutilise le copilote 4 métiers, contextualisé */}
-            <div className="flex-1 min-h-0 overflow-hidden">
+            {/* Corps — réutilise le copilote 4 métiers, contextualisé.
+                overflow-y-auto + min-h-0 : le contenu (missions + messages) scrolle
+                à l'intérieur du drawer, l'en-tête reste fixe. overscroll-contain
+                évite que le scroll « fuie » vers la page derrière l'overlay. */}
+            <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain scroll-smooth">
               <CopilotMissions
                 key={mountKey.current}
                 isPro={isPro}

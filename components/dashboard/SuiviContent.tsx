@@ -2,9 +2,22 @@
 
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import ConversionChart from '@/components/dashboard/ConversionChart'
+import DomainChart from '@/components/dashboard/DomainChart'
 import { Gauge, Wand2, CalendarClock, CheckCircle2 } from 'lucide-react'
 import type { ReactNode } from 'react'
 import type { Conversion } from '@/types'
+
+/** Score par domaine d'audit (graphique barres horizontales — v10.1). */
+export interface DomainScore {
+  /** Clé catégorie (products, uiux, …). */
+  key: string
+  /** Nom court pour l'axe (ex: « Produits »). */
+  label: string
+  /** Score du domaine 0–100, dérivé des problèmes réels du dernier audit. */
+  score: number
+  /** Manque à gagner mensuel du domaine (€/mois) — négatif = perte en cours. */
+  impact: number
+}
 
 export interface SuiviData {
   planName: string
@@ -22,6 +35,8 @@ export interface SuiviData {
   conversions: Conversion[]
   scoreHistory: { date: string; score: number }[]
   appliedFixes: { id: string; title: string; impact_euros: number; created_at: string }[]
+  /** Scores par domaine du dernier audit — vide si aucun audit. */
+  domains: DomainScore[]
 }
 
 function euros(n: number) { return `€${Math.round(n).toLocaleString('fr-FR')}` }
@@ -74,6 +89,9 @@ export default function SuiviContent({ d, gallery }: { d: SuiviData; gallery?: R
 
       {/* Galerie des preuves — remontée AVANT les graphiques (v7) */}
       {gallery}
+
+      {/* Scores par domaine — barres horizontales (v10.1), données du dernier audit */}
+      <DomainChart domains={d.domains} />
 
       {/* Before / after — masqué tant qu'il n'y a aucune donnée de conversion (bug 3) */}
       <div className="bg-surface border border-border rounded-2xl p-5 mb-6">

@@ -348,7 +348,10 @@ export default function FixesContent() {
             const applied = fix.status === 'applied'
             const isExpanded = expanded === fix.id
             return (
-              <div key={fix.id} className="bg-surface border border-border rounded-2xl p-5 transition-colors duration-150">
+              <div key={fix.id} className={[
+                'bg-surface border rounded-2xl p-5 transition-all duration-150',
+                applied ? 'border-success/30 opacity-70 hover:opacity-100' : 'border-border',
+              ].join(' ')}>
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1 min-w-0">
                     {/* Badges */}
@@ -364,8 +367,16 @@ export default function FixesContent() {
                            fix.status === 'preview' ? 'En attente de votre validation' : 'À appliquer'}
                         </Badge>
                       )}
-                      <span className="text-success text-sm font-semibold ml-auto flex-shrink-0">
-                        +€{fix.impact_euros}/mois
+                      {/* Badge impact — rouge tant que le problème coûte, vert une fois récupéré */}
+                      <span className={[
+                        'ml-auto flex-shrink-0 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold border',
+                        applied
+                          ? 'text-success bg-success/10 border-success/25'
+                          : 'text-danger bg-danger/10 border-danger/25',
+                      ].join(' ')}>
+                        {applied
+                          ? <><CheckCircle className="w-3.5 h-3.5" /> +€{fix.impact_euros}/mois récupérés</>
+                          : <>−€{fix.impact_euros}/mois</>}
                       </span>
                     </div>
 
@@ -400,6 +411,13 @@ export default function FixesContent() {
                         </div>
                       )
                     })()}
+
+                    {/* Détail complet — révélé par « Voir le détail » (description du correctif) */}
+                    {isExpanded && cap !== 'guide' && fix.description && (
+                      <div className="mt-3 bg-surface-2 border border-border rounded-lg p-3">
+                        <p className="text-text-secondary text-xs leading-relaxed whitespace-pre-wrap">{fix.description}</p>
+                      </div>
+                    )}
 
                     {/* Preuve compacte visible SANS clic (Impact Visible) */}
                     {applied && proofsById[fix.id] && <CompactProof proof={proofsById[fix.id]} />}
@@ -440,18 +458,26 @@ export default function FixesContent() {
                     )}
                   </div>
 
-                  {/* Actions */}
-                  <div className="flex items-center gap-2 flex-shrink-0">
+                  {/* Actions — CTA primaire « Corriger maintenant » + secondaire « Voir le détail » */}
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 flex-shrink-0">
                     {cap === 'guide' && (
                       <a href={`/dashboard/accompagnement?mission=${encodeURIComponent(fix.title)}`}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-sky-400/30 text-sky-400 hover:bg-sky-400/10 transition-colors">
+                        className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-sky-400/30 text-sky-400 hover:bg-sky-400/10 transition-colors">
                         Lancer la mission avec le Copilot →
                       </a>
                     )}
                     {cap === 'auto' && fix.status === 'pending' && (
-                      <Button size="sm" onClick={() => applyFix(fix)} loading={applying === fix.id} disabled={applyingAll}>
-                        <CheckCircle className="w-3.5 h-3.5" /> Appliquer
-                      </Button>
+                      <>
+                        <Button size="sm" onClick={() => applyFix(fix)} loading={applying === fix.id} disabled={applyingAll}>
+                          <CheckCircle className="w-3.5 h-3.5" /> Corriger maintenant
+                        </Button>
+                        {/* Secondaire : contour violet, fond transparent (hiérarchie claire) */}
+                        <button
+                          onClick={() => setExpanded(isExpanded ? null : fix.id)}
+                          className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-primary text-primary bg-transparent hover:bg-primary/10 transition-colors">
+                          {isExpanded ? 'Masquer le détail' : 'Voir le détail'}
+                        </button>
+                      </>
                     )}
                     {fix.status === 'preview' && (
                       <>

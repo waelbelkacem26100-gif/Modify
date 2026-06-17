@@ -1,9 +1,40 @@
 import { planById } from '@/lib/pricing'
-import type { SuiviData } from '@/components/dashboard/SuiviContent'
-import type { Store, Conversion, Fix } from '@/types'
+import { CATEGORY_ORDER } from '@/lib/audit/types'
+import type { SuiviData, DomainScore } from '@/components/dashboard/SuiviContent'
+import type { Store, Conversion, Fix, AuditResult } from '@/types'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type SupabaseClient = any
+
+// Noms courts pour l'axe Y du graphique par domaine (v10.1).
+const DOMAIN_SHORT: Record<string, string> = {
+  products: 'Produits',
+  uiux: 'Apparence',
+  perf_seo: 'Vitesse / SEO',
+  trust: 'Confiance',
+  funnel: 'Tunnel d’achat',
+  mobile: 'Mobile',
+  competitive: 'Concurrence',
+}
+
+// Pénalité de score par priorité de problème (calibrée sur le score global 0–100).
+const PRIORITY_PENALTY: Record<string, number> = { high: 15, medium: 8, low: 4 }
+
+/**
+ * Dérive un score 0–100 + impact €/mois par domaine, à partir des problèmes
+ * RÉELS du dernier audit. Aucun chiffre inventé : un domaine sans problème
+ * détecté vaut 100 (rien à corriger), l'impact agrège les manques à gagner.
+ */
+function buildDomains(auditResults: AuditResult[]): DomainScore[] {
+  if (auditResults.length === 0) return []
+  return CATEGORY_ORDER.map((key) => {
+    const items = auditResults.filter((r) => r.category === key)
+    const penalty = items.reduce((s, r) => s + (PRIORITY_PENALTY[r.priority] ?? 8), 0)
+    const score = Math.max(0, Math.min(100, 100 - penalty))
+    const impact = -items.reduce((s, r) => s + (r.impact_euros || 0), 0)
+    return { key, label: DOMAIN_SHORT[key] ?? key, score, impact }
+  })
+}
 
 /**
  * Construit les données de la page 📊 Impact & Résultats à partir de la base.
@@ -51,6 +82,12 @@ export async function buildSuiviData(store: Store, plan: 'free' | 'pro' | string
   const { count: articles } = await supabase.from('blog_articles').select('id', { count: 'exact', head: true }).eq('store_id', store.id)
   const { count: winningProducts } = await supabase.from('winning_products').select('id', { count: 'exact', head: true }).eq('store_id', store.id)
 
+  // Scores par domaine — issus du dernier audit (résultats réels).
+  const { data: latestAudit } = await supabase
+    .from('audits').select('results').eq('store_id', store.id)
+    .order('created_at', { ascending: false }).limit(1).maybeSingle()
+  const domains = buildDomains((latestAudit?.results ?? []) as AuditResult[])
+
   return {
     planName: planMeta.name,
     planPrice: planMeta.priceEur,
@@ -67,5 +104,6 @@ export async function buildSuiviData(store: Store, plan: 'free' | 'pro' | string
     conversions,
     scoreHistory,
     appliedFixes,
+    domains,
   }
 }

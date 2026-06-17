@@ -3,9 +3,38 @@
 @tailwind utilities;
 
 @layer base {
+  /* v10.1 — thème pilotable. Variables = canaux RGB (« r g b ») pour rester
+     compatibles avec rgb(var(--x) / <alpha-value>) côté Tailwind.
+     :root = mode clair (défaut) · .dark = mode sombre (design system v9 conservé). */
+  :root {
+    --bg-base: 248 250 252;        /* #F8FAFC */
+    --bg-card: 255 255 255;        /* #FFFFFF */
+    --bg-surface-2: 241 245 249;   /* #F1F5F9 */
+    --border-color: 226 232 240;   /* #E2E8F0 */
+    --text-primary: 30 41 59;      /* #1E293B */
+    --text-secondary: 100 116 139; /* #64748B */
+    --text-muted: 148 163 184;     /* #94A3B8 */
+
+    /* Invariants dans les deux modes (référence — l'interface les consomme via Tailwind) */
+    --modify-primary: #8B7BFF;
+    --mody-accent: #10B981;
+    --color-danger: #EF4444;
+    --color-success: #22C55E;
+  }
+
+  .dark {
+    --bg-base: 8 11 20;            /* #080B14 */
+    --bg-card: 15 20 36;          /* #0F1424 */
+    --bg-surface-2: 26 32 53;     /* #1A2035 */
+    --border-color: 28 36 64;     /* #1C2440 */
+    --text-primary: 232 234 237;  /* #E8EAED */
+    --text-secondary: 136 146 164;/* #8892A4 */
+    --text-muted: 82 95 114;      /* #525F72 */
+  }
+
   * {
     box-sizing: border-box;
-    border-color: theme('colors.border');
+    border-color: rgb(var(--border-color));
   }
 
   html {
@@ -13,15 +42,17 @@
   }
 
   body {
-    background-color: #0A0A0B;
-    color: #E8EAED;
+    background-color: rgb(var(--bg-base));
+    color: rgb(var(--text-primary));
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    /* Bascule douce dark ⇆ light (coupée par prefers-reduced-motion plus bas). */
+    transition: background-color 0.2s ease, color 0.2s ease;
   }
 
   ::selection {
     background-color: rgba(139, 123, 255, 0.3);
-    color: #E8EAED;
+    color: rgb(var(--text-primary));
   }
 
   ::-webkit-scrollbar {
@@ -30,16 +61,16 @@
   }
 
   ::-webkit-scrollbar-track {
-    background: #0F1424;
+    background: rgb(var(--bg-card));
   }
 
   ::-webkit-scrollbar-thumb {
-    background: #1C2440;
+    background: rgb(var(--bg-surface-2));
     border-radius: 3px;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background: #2A3556;
+    background: rgb(var(--text-muted));
   }
 }
 

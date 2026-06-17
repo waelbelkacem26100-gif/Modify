@@ -1,6 +1,8 @@
 import type { Config } from 'tailwindcss'
 
 const config: Config = {
+  // v10.1 — bascule dark/light pilotée par la classe `.dark` sur <html>.
+  darkMode: 'class',
   content: [
     './pages/**/*.{js,ts,jsx,tsx,mdx}',
     './components/**/*.{js,ts,jsx,tsx,mdx}',
@@ -9,12 +11,19 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // Design system v9 — bleu nuit profond (vivant, pas noir morose).
-        background: '#080B14',
-        surface: '#0F1424',
-        'surface-2': '#1A2035',
-        border: '#1C2440',
+        // v10.1 — tokens « surface/texte/bordure » pilotés par variables CSS
+        // (canaux RGB) pour basculer dark ⇆ light SANS toucher les composants.
+        // Le format `rgb(var(--x) / <alpha-value>)` préserve les modificateurs
+        // d'opacité Tailwind (ex: bg-surface/40, border-border/40).
+        background: 'rgb(var(--bg-base) / <alpha-value>)',
+        surface: 'rgb(var(--bg-card) / <alpha-value>)',
+        'surface-2': 'rgb(var(--bg-surface-2) / <alpha-value>)',
+        border: 'rgb(var(--border-color) / <alpha-value>)',
+        'text-primary': 'rgb(var(--text-primary) / <alpha-value>)',
+        'text-secondary': 'rgb(var(--text-secondary) / <alpha-value>)',
+        'text-muted': 'rgb(var(--text-muted) / <alpha-value>)',
         // VIOLET = Modify (toute l'interface : logo, sidebar active, CTA, accents).
+        // Invariants dans les deux modes (design system v9 conservé).
         primary: '#8B7BFF',
         'primary-dark': '#6D5FE8',
         'primary-bright': '#A99BFF',
@@ -25,9 +34,6 @@ const config: Config = {
         'mody-dark': '#059669',
         'mody-bright': '#34D399',
         'mody-glow': 'rgba(16, 185, 129, 0.16)',
-        'text-primary': '#E8EAED',
-        'text-secondary': '#8892A4',
-        'text-muted': '#525F72',
         success: '#22C55E',
         warning: '#F59E0B',
         danger: '#EF4444',

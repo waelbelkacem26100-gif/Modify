@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { UserButton } from '@clerk/nextjs'
 import { Home, BarChart3, Gauge, CreditCard, LogOut, ChevronUp, Zap } from 'lucide-react'
+import ThemeToggle from '@/components/ThemeToggle'
 
 // Navigation v6 — 2 espaces seulement. Tout le reste (Corrections, Mody) vit
 // dans la page ou dans le compagnon flottant. Le marchand comprend en 5s qu'il
@@ -72,13 +73,16 @@ export default function Sidebar({ shopDomain }: Props) {
       /* Lueur violette ambiante subtile — la sidebar « porte » la couleur Modify (v7) */
       style={{ backgroundImage: 'radial-gradient(120% 60% at 0% 0%, rgba(139,123,255,0.07), transparent 60%)' }}
     >
-      {/* Logo — éclair violet + « Modify » en Syne */}
-      <Link href="/" className="flex items-center gap-2.5 px-5 py-5 hover:opacity-80 transition-opacity">
-        <div className="w-7 h-7 bg-primary rounded-lg flex items-center justify-center flex-shrink-0 shadow-lg shadow-primary-glow">
-          <Zap className="w-4 h-4 text-white fill-white" />
-        </div>
-        <span className="font-display font-bold text-lg tracking-tight text-text-primary">Modify</span>
-      </Link>
+      {/* Logo — éclair violet + « Modify » en Syne · bascule thème en haut à droite */}
+      <div className="flex items-center justify-between pr-2">
+        <Link href="/" className="flex items-center gap-2.5 px-5 py-5 hover:opacity-80 transition-opacity">
+          <div className="w-7 h-7 bg-primary rounded-lg flex items-center justify-center flex-shrink-0 shadow-lg shadow-primary-glow">
+            <Zap className="w-4 h-4 text-white fill-white" />
+          </div>
+          <span className="font-display font-bold text-lg tracking-tight text-text-primary">Modify</span>
+        </Link>
+        <ThemeToggle />
+      </div>
 
       {/* Store badge */}
       {shopDomain && (

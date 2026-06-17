@@ -385,8 +385,8 @@
     "semantic_hash": "d98dde5fcc9de47da6809dc3a5c7e3ed"
   },
   "/Users/bendou/Modify.io/modify/app/layout.tsx": {
-    "mtime": 1781432380.1382003,
-    "ast_hash": "f207f49eaeafbb1e9fbd246207a776c5",
+    "mtime": 1781704953.3458278,
+    "ast_hash": "756c1902e6c0cdbd1902ee5f984cfd3f",
     "semantic_hash": ""
   },
   "/Users/bendou/Modify.io/modify/app/shopify/AppBridgeRefresh.tsx": {
@@ -415,8 +415,8 @@
     "semantic_hash": ""
   },
   "/Users/bendou/Modify.io/modify/components/dashboard/AnalyseContent.tsx": {
-    "mtime": 1781668527.1122332,
-    "ast_hash": "b0d5d5d6d7e2c239770e9dd326b3faaf",
+    "mtime": 1781706212.1956851,
+    "ast_hash": "727dbb2b20bb083c2f1769f5c48ad003",
     "semantic_hash": ""
   },
   "/Users/bendou/Modify.io/modify/components/dashboard/AuditContent.tsx": {
@@ -455,8 +455,8 @@
     "semantic_hash": "904a2530fc4363037b714c4088874b10"
   },
   "/Users/bendou/Modify.io/modify/components/dashboard/FixesContent.tsx": {
-    "mtime": 1781314301.6121533,
-    "ast_hash": "bec52836652f628f67eca5343164de7f",
+    "mtime": 1781706484.6755097,
+    "ast_hash": "a276fa50a11e1632960708a153b34652",
     "semantic_hash": ""
   },
   "/Users/bendou/Modify.io/modify/components/dashboard/GlobalScoreCard.tsx": {
@@ -490,8 +490,8 @@
     "semantic_hash": "3f708657b16b212afd6c67f81ca21a35"
   },
   "/Users/bendou/Modify.io/modify/components/dashboard/MobileNav.tsx": {
-    "mtime": 1781345598.3254356,
-    "ast_hash": "e0f04664a1482df6cb94cf443711be90",
+    "mtime": 1781704981.8619313,
+    "ast_hash": "b3a5a52459ccf303ca6b06fb6f32ba0f",
     "semantic_hash": ""
   },
   "/Users/bendou/Modify.io/modify/components/dashboard/OnboardingProgress.tsx": {
@@ -515,8 +515,8 @@
     "semantic_hash": "87d3a7f2329bc5c831158da272d7c29c"
   },
   "/Users/bendou/Modify.io/modify/components/dashboard/Sidebar.tsx": {
-    "mtime": 1781581623.33752,
-    "ast_hash": "38ed172c11b12fcd366fd964ba42ceda",
+    "mtime": 1781704972.2570362,
+    "ast_hash": "03392517c50e2000372bb445e21c5289",
     "semantic_hash": ""
   },
   "/Users/bendou/Modify.io/modify/components/dashboard/StoreConnect.tsx": {
@@ -535,8 +535,8 @@
     "semantic_hash": "71b7802387d3244b04a70ca3047b5373"
   },
   "/Users/bendou/Modify.io/modify/components/dashboard/SuiviContent.tsx": {
-    "mtime": 1781492041.059468,
-    "ast_hash": "56d64becd284c2948200aafcef7de8e2",
+    "mtime": 1781706338.4563248,
+    "ast_hash": "c944de325c8747dc819e263d6695b863",
     "semantic_hash": ""
   },
   "/Users/bendou/Modify.io/modify/components/dashboard/TokenGuard.tsx": {
@@ -995,8 +995,8 @@
     "semantic_hash": "e9bafa2ab5227aed38a2c290a2a43b57"
   },
   "/Users/bendou/Modify.io/modify/tailwind.config.ts": {
-    "mtime": 1781492104.1261249,
-    "ast_hash": "bfad410891a832734b780d1ba944d105",
+    "mtime": 1781704017.1256092,
+    "ast_hash": "243984f785db074889eee96fbc4e1407",
     "semantic_hash": ""
   },
   "/Users/bendou/Modify.io/modify/tsconfig.json": {
@@ -1130,8 +1130,8 @@
     "semantic_hash": ""
   },
   "/Users/bendou/Modify.io/modify/components/dashboard/ModyCompanion.tsx": {
-    "mtime": 1781492169.6853182,
-    "ast_hash": "133ccd9316d449e43eef7b6035d8bf64",
+    "mtime": 1781703851.731329,
+    "ast_hash": "9fa1b0f3d562ee04831524c6eaf58222",
     "semantic_hash": ""
   },
   "/Users/bendou/Modify.io/modify/lib/audit/accessibility.ts": {
@@ -1180,8 +1180,8 @@
     "semantic_hash": ""
   },
   "/Users/bendou/Modify.io/modify/lib/suivi-data.ts": {
-    "mtime": 1781484756.9808302,
-    "ast_hash": "63f5ef0e618b1eb502bf49b1b2074afd",
+    "mtime": 1781706311.3133647,
+    "ast_hash": "36f3879119036f12760b34afeb608032",
     "semantic_hash": ""
   },
   "/Users/bendou/Modify.io/modify/components/landing/ModySection.tsx": {
@@ -1317,6 +1317,21 @@
   "/Users/bendou/Modify.io/modify/lib/autopilot/web-search.ts": {
     "mtime": 1781646564.6214201,
     "ast_hash": "3155c893b216433c96a942134ebb0511",
+    "semantic_hash": ""
+  },
+  "/Users/bendou/Modify.io/modify/components/ThemeToggle.tsx": {
+    "mtime": 1781704089.9184039,
+    "ast_hash": "f52d77a255ff08dcd55d402f05463d9a",
+    "semantic_hash": ""
+  },
+  "/Users/bendou/Modify.io/modify/components/dashboard/DomainChart.tsx": {
+    "mtime": 1781706327.2910182,
+    "ast_hash": "a18000dd47c76b9dcef3b2d42371cee7",
+    "semantic_hash": ""
+  },
+  "/Users/bendou/Modify.io/modify/components/dashboard/UrgentBanner.tsx": {
+    "mtime": 1781705033.9407134,
+    "ast_hash": "b1ed357bac811e84bd16f29434915cad",
     "semantic_hash": ""
   }
 }

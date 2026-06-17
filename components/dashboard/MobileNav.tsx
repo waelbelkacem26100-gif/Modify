@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Home, BarChart3 } from 'lucide-react'
+import ThemeToggle from '@/components/ThemeToggle'
 
 // Bottom-nav mobile v6 — 2 espaces seulement (le compagnon Mody flottant et le
 // menu compte sont ailleurs). Touch targets ≥48px.
@@ -33,6 +34,10 @@ export default function MobileNav() {
             </Link>
           )
         })}
+        {/* Bascule thème — accessible sur mobile (pas de header dédié) */}
+        <div className="flex flex-col items-center justify-center px-4 flex-1 min-h-[52px]">
+          <ThemeToggle />
+        </div>
       </div>
     </nav>
   )

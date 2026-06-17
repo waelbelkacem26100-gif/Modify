@@ -30,9 +30,16 @@ export const metadata: Metadata = {
   },
 }
 
+// v10.1 — applique le thème AVANT le premier paint (zéro flash).
+// Priorité : localStorage `modifyTheme` > préférence système. Défaut = système.
+const THEME_INIT = `(function(){try{var t=localStorage.getItem('modifyTheme');if(t!=='dark'&&t!=='light'){t=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';}document.documentElement.classList.toggle('dark',t==='dark');}catch(e){}})();`
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="fr" className={`${inter.variable} ${syne.variable}`}>
+    <html lang="fr" className={`${inter.variable} ${syne.variable}`} suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT }} />
+      </head>
       <body className="bg-background text-text-primary font-sans antialiased">
         {children}
       </body>

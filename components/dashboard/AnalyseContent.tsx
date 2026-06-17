@@ -13,6 +13,7 @@ import { AUDIT_CATEGORIES, CATEGORY_ORDER, type ProblemCategory, type Strength }
 import { TOTAL_CHECKS } from '@/lib/audit/checks'
 import RecentActivityFeed from '@/components/analyse/RecentActivityFeed'
 import ModyBanner from '@/components/dashboard/ModyBanner'
+import UrgentBanner from '@/components/dashboard/UrgentBanner'
 import ProofCard from '@/components/proofs/ProofCard'
 import { openMody } from '@/lib/mody-companion'
 import { withPreviewToken } from '@/lib/preview'
@@ -106,6 +107,7 @@ export default function AnalyseContent({ isSubscribed, shopDomain, initialAudit,
   const pollStart = useRef(0)
   const autoStarted = useRef(false)  // F1 — garde anti-double auto-lancement
   const firstAuditMody = useRef(false)  // F1 — Mody ouvert une seule fois à la fin
+  const problemsRef = useRef<HTMLDivElement>(null)  // cible scroll de la bannière urgences
 
   const running = audit?.status === 'running'
 
@@ -284,7 +286,18 @@ export default function AnalyseContent({ isSubscribed, shopDomain, initialAudit,
     .sort((a, b) => b.impact_euros - a.impact_euros)
   const correctableCount = correctableItems.length
   // Problèmes urgents non encore corrigés (pour le bouton « Corriger les urgences »).
-  const urgentCount = results.filter((r) => r.priority === 'high' && !proofFor(r)).length
+  const urgentItems = results.filter((r) => r.priority === 'high' && !proofFor(r))
+  const urgentCount = urgentItems.length
+  // Manque à gagner cumulé des urgences — données réelles d'audit (jamais inventées).
+  const urgentEuros = urgentItems.reduce((s, r) => s + r.impact_euros, 0)
+
+  // ⚠️ Bannière urgences : filtre sur 🔴 Urgent + onglet « À corriger », puis
+  // scrolle vers la liste des problèmes (même page).
+  const seeUrgent = () => {
+    setTab('todo')
+    setPrio('high')
+    problemsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
 
   // Rendu d'UN problème (réutilisé pour le top-3 toujours visible et le reste).
   const renderProblem = (r: AuditResult) => {
@@ -374,6 +387,12 @@ export default function AnalyseContent({ isSubscribed, shopDomain, initialAudit,
           </a>
         )}
       </div>
+
+      {/* ⚠️ Bannière urgences — visible tant qu'il reste des problèmes 🔴 non corrigés.
+          Masquée (non montée) dès que tout est corrigé. Réservée à /dashboard. */}
+      {isSubscribed && !running && (
+        <UrgentBanner count={urgentCount} montant={urgentEuros} onSee={seeUrgent} />
+      )}
 
       {/* Hero v7 — le chiffre €/mois domine, score à droite, 2 boutons sur 1 ligne.
           v9 — lueur radiale violette ambiante. */}
@@ -628,8 +647,9 @@ export default function AnalyseContent({ isSubscribed, shopDomain, initialAudit,
             </div>
           )}
 
-          {/* Filtres v7 — 2 onglets + 3 chips de priorité (5 contrôles max) */}
-          <div className="flex items-center justify-between gap-3 flex-wrap mb-4">
+          {/* Filtres v7 — 2 onglets + 3 chips de priorité (5 contrôles max).
+              scroll-mt : cible de la bannière urgences, sans coller au bord. */}
+          <div ref={problemsRef} className="flex items-center justify-between gap-3 flex-wrap mb-4 scroll-mt-4">
             <div className="inline-flex p-0.5 bg-surface-2 rounded-xl">
               {([
                 { key: 'todo', label: 'À corriger' },
