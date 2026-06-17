@@ -1248,5 +1248,35 @@
     "mtime": 1781731917.9050581,
     "ast_hash": "a6ec047e7994df4a028044be196b5178",
     "semantic_hash": ""
+  },
+  "/Users/bendou/Modify.io/modify/app/sitemap.ts": {
+    "mtime": 1781735065.9890678,
+    "ast_hash": "c99863ef7436e2db4f649946f5d0e27d",
+    "semantic_hash": ""
+  },
+  "/Users/bendou/Modify.io/modify/public/brand/logo-dark.svg": {
+    "mtime": 1781733480.4418476,
+    "ast_hash": "0e2f6a58459be49e0345da4c21f6a1c3",
+    "semantic_hash": ""
+  },
+  "/Users/bendou/Modify.io/modify/public/brand/logo-full.svg": {
+    "mtime": 1781733474.773936,
+    "ast_hash": "e3c1f8b704210e07e318a66ae9dda1f2",
+    "semantic_hash": ""
+  },
+  "/Users/bendou/Modify.io/modify/public/brand/logo-icon.svg": {
+    "mtime": 1781733468.7065263,
+    "ast_hash": "1ae829942430269c0311c8928a358b32",
+    "semantic_hash": ""
+  },
+  "/Users/bendou/Modify.io/modify/public/brand/logo-light.svg": {
+    "mtime": 1781733485.845554,
+    "ast_hash": "c48f2d9347cddae0fd551d9c04aa2688",
+    "semantic_hash": ""
+  },
+  "/Users/bendou/Modify.io/modify/public/brand/logo-white.svg": {
+    "mtime": 1781733491.1258285,
+    "ast_hash": "b18ab2002849ba09e4eddaeb97c62040",
+    "semantic_hash": ""
   }
 }
