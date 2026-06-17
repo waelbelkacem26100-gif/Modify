@@ -2113,7 +2113,7 @@
       "label": "inter",
       "file_type": "code",
       "source_file": "app/layout.tsx",
-      "source_location": "L5",
+      "source_location": "L6",
       "id": "app_layout_inter",
       "community": 42,
       "norm_label": "inter"
@@ -2122,7 +2122,7 @@
       "label": "syne",
       "file_type": "code",
       "source_file": "app/layout.tsx",
-      "source_location": "L14",
+      "source_location": "L15",
       "id": "app_layout_syne",
       "community": 42,
       "norm_label": "syne"
@@ -2131,7 +2131,7 @@
       "label": "metadata",
       "file_type": "code",
       "source_file": "app/layout.tsx",
-      "source_location": "L21",
+      "source_location": "L22",
       "id": "app_layout_metadata",
       "community": 42,
       "norm_label": "metadata"
@@ -2140,7 +2140,7 @@
       "label": "RootLayout()",
       "file_type": "code",
       "source_file": "app/layout.tsx",
-      "source_location": "L37",
+      "source_location": "L41",
       "id": "app_layout_rootlayout",
       "community": 42,
       "norm_label": "rootlayout()"
@@ -21838,9 +21838,9 @@
       "source_file": "app/robots.ts",
       "source_location": "L7",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "app_robots",
-      "target": "app_robots_robots",
-      "confidence_score": 1.0
+      "target": "app_robots_robots"
     },
     {
       "relation": "imports_from",
@@ -21849,9 +21849,9 @@
       "source_file": "app/robots.ts",
       "source_location": "L2",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "app_robots",
-      "target": "lib_legal",
-      "confidence_score": 1.0
+      "target": "lib_legal"
     },
     {
       "relation": "imports",
@@ -21860,9 +21860,9 @@
       "source_file": "app/robots.ts",
       "source_location": "L2",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "app_robots",
-      "target": "lib_legal_legal",
-      "confidence_score": 1.0
+      "target": "lib_legal_legal"
     },
     {
       "relation": "contains",
@@ -38304,5 +38304,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "3b62fe4951072cc9e63962cdd71c35dbc4c2b2e6"
+  "built_at_commit": "da36df7da3501dd7d7243d1313d6278e3e88ac0e"
 }

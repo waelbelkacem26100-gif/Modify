@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { Inter, Syne } from 'next/font/google'
+import Script from 'next/script'
 import './globals.css'
 
 const inter = Inter({
@@ -34,6 +35,9 @@ export const metadata: Metadata = {
 // Priorité : localStorage `modifyTheme` > préférence système. Défaut = système.
 const THEME_INIT = `(function(){try{var t=localStorage.getItem('modifyTheme');if(t!=='dark'&&t!=='light'){t=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';}document.documentElement.classList.toggle('dark',t==='dark');}catch(e){}})();`
 
+// Google Analytics 4 — chargé uniquement si NEXT_PUBLIC_GA_ID est défini.
+const GA_ID = process.env.NEXT_PUBLIC_GA_ID
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="fr" className={`${inter.variable} ${syne.variable}`} suppressHydrationWarning>
@@ -42,6 +46,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className="bg-background text-text-primary font-sans antialiased">
         {children}
+        {GA_ID && (
+          <>
+            <Script
+              src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`}
+              strategy="afterInteractive"
+            />
+            <Script id="ga4-init" strategy="afterInteractive">
+              {`window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','${GA_ID}');`}
+            </Script>
+          </>
+        )}
       </body>
     </html>
   )
